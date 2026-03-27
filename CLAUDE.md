@@ -1,1 +1,31 @@
-@AGENTS.md
+# 정율 교육정보 홈페이지
+
+## 프로젝트 개요
+- 프로젝트명: 정율 교육정보 (jungyoul-homepage)
+- 기술 스택: Next.js 16, TypeScript, Tailwind CSS, shadcn/ui
+- 배포 환경: Vercel
+- 참고 사이트: https://news.samsung.com/kr/ (삼성 뉴스룸 한국어)
+- 현재 사이트: https://www.jungyoul.net/
+
+## 핵심 목표
+1. 삼성 뉴스룸 레이아웃/구조를 최대한 동일하게 구현
+2. 구글/네이버 SEO + AI 검색(AEO) 최적화
+3. 학원 홍보가 아닌 "교육 정보 미디어" 포지셔닝
+
+## 사업자 정보
+- 사업자: 주식회사정율 (대표: 곽정율)
+- 주소: 경기도 부천시 원미구 길주로91 601호(비잔티움 6층)
+- 사업자등록번호: 392-88-00208
+- 학원등록번호: 제5042호
+- 고객센터: 032-321-9937
+- 이메일: jungyoul3@naver.com
+- SNS: Instagram(@jysk_official), 네이버블로그, 카카오톡, 정율TV(YouTube)
+
+## 핵심 규칙
+- 삼성 뉴스룸 구조를 최대한 그대로 재현할 것
+- SEO 관련: 모든 페이지에 JSON-LD, Open Graph, 시맨틱 HTML 적용
+- 다크 모드가 아닌 라이트 모드 기본 (교육 사이트 특성)
+- 한국어 폰트: Noto Sans KR 사용
+
+## ⚠️ 실수 노트 (Mistake Log)
+(아직 없음 — 작업 중 발생 시 기록)
