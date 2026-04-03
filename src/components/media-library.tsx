@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import { ChevronLeft, ChevronRight, Play } from "lucide-react";
 import { AdminEditButton } from "./admin-edit-button";
+import { isValidThumbnail } from "@/lib/thumbnail";
 
 interface Video {
   id: string;
@@ -88,6 +89,13 @@ export function MediaLibrary({ videos }: MediaLibraryProps) {
                       hsl(${parseInt(video.id) * 60 + 20}, 80%, 30%) 100%)`,
                   }}
                 />
+                {isValidThumbnail(video.thumbnail) && (
+                  <img
+                    src={video.thumbnail}
+                    alt={video.title}
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
+                )}
                 {/* Play Icon */}
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center group-hover:bg-white/30 transition-colors">

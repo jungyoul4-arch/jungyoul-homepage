@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   FileText,
   Star,
@@ -25,7 +25,6 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const router = useRouter();
 
   // 로그인 페이지는 사이드바 없이 렌더링
   if (pathname === "/admin/login") {
@@ -34,7 +33,7 @@ export default function AdminLayout({
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
-    router.push("/admin/login");
+    window.location.href = "/admin/login";
   }
 
   return (

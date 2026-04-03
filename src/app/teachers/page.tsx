@@ -76,12 +76,19 @@ export default async function TeachersPage() {
                           hsl(${parseInt(teacher.id) * 25 + 220}, 40%, 55%) 100%)`,
                       }}
                     />
-                    {/* Placeholder initial */}
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-white text-3xl font-bold opacity-50">
-                        {teacher.name[0]}
-                      </span>
-                    </div>
+                    {isValidThumbnail(teacher.photo) ? (
+                      <img
+                        src={teacher.photo}
+                        alt={`${teacher.name} 선생님`}
+                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="text-white text-3xl font-bold opacity-50">
+                          {teacher.name[0]}
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Info */}

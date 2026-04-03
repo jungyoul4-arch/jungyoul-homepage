@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { categories, type Article, type Category } from "@/lib/data";
+import { isValidThumbnail } from "@/lib/thumbnail";
 
 interface ArticleListProps {
   articles: Article[];
@@ -62,15 +63,22 @@ function ArticleRow({ article }: { article: Article }) {
         className="group flex gap-6 items-start"
       >
         {/* Thumbnail */}
-        <div className="shrink-0 w-[200px] md:w-[280px] aspect-[16/9] rounded-sm overflow-hidden hidden sm:block">
+        <div className="shrink-0 w-[200px] md:w-[280px] aspect-[16/9] rounded-sm overflow-hidden hidden sm:block relative">
           <div
-            className="w-full h-full transition-transform duration-300 group-hover:scale-105"
+            className="absolute inset-0 transition-transform duration-300 group-hover:scale-105"
             style={{
               background: `linear-gradient(135deg,
                 hsl(${parseInt(article.id) * 40 + 200}, 40%, 70%) 0%,
                 hsl(${parseInt(article.id) * 40 + 220}, 50%, 50%) 100%)`,
             }}
           />
+          {isValidThumbnail(article.thumbnail) && (
+            <img
+              src={article.thumbnail}
+              alt={article.title}
+              className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+            />
+          )}
         </div>
 
         {/* Text Content */}

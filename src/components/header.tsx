@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Search, X, Menu, Lock } from "lucide-react";
+import { Search, X, Menu, Lock, LayoutDashboard } from "lucide-react";
+import { useAuth } from "./auth-provider";
 
 const navItems = [
   { label: "교육정보", href: "/articles" },
@@ -15,6 +16,7 @@ const navItems = [
 ];
 
 export function Header() {
+  const { isAdmin } = useAuth();
   const [searchOpen, setSearchOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -58,13 +60,24 @@ export function Header() {
             >
               {searchOpen ? <X size={20} /> : <Search size={20} />}
             </button>
-            <Link
-              href="/admin"
-              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-              aria-label="관리자"
-            >
-              <Lock size={18} className="text-gray-500" />
-            </Link>
+            {isAdmin ? (
+              <Link
+                href="/admin"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-full hover:bg-blue-700 transition-colors"
+                aria-label="관리자 대시보드"
+              >
+                <LayoutDashboard size={14} />
+                <span className="hidden sm:inline">관리자</span>
+              </Link>
+            ) : (
+              <Link
+                href="/admin"
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                aria-label="관리자 로그인"
+              >
+                <Lock size={18} className="text-gray-500" />
+              </Link>
+            )}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="lg:hidden p-2 hover:bg-gray-100 rounded-full transition-colors"

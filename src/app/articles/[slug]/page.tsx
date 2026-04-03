@@ -7,6 +7,7 @@ import { eq } from "drizzle-orm";
 import { toArticle } from "@/lib/mappers";
 import { ChevronRight } from "lucide-react";
 import { AdminEditButton } from "@/components/admin-edit-button";
+import { isValidThumbnail } from "@/lib/thumbnail";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -169,13 +170,21 @@ export default async function ArticlePage({ params }: Props) {
 
         <div className="mb-10">
           <div
-            className="w-full aspect-[16/9] max-w-4xl mx-auto rounded-sm"
+            className="w-full aspect-[16/9] max-w-4xl mx-auto rounded-sm relative overflow-hidden"
             style={{
               background: `linear-gradient(135deg,
                 hsl(${parseInt(article.id) * 40 + 200}, 40%, 70%) 0%,
                 hsl(${parseInt(article.id) * 40 + 220}, 50%, 50%) 100%)`,
             }}
-          />
+          >
+            {isValidThumbnail(article.thumbnail) && (
+              <img
+                src={article.thumbnail}
+                alt={article.title}
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+            )}
+          </div>
         </div>
 
         <div className="max-w-3xl mx-auto prose prose-lg prose-gray mb-16">
@@ -212,13 +221,21 @@ export default async function ArticlePage({ params }: Props) {
                   className="group block"
                 >
                   <div
-                    className="aspect-[16/9] mb-3 rounded-sm overflow-hidden"
+                    className="aspect-[16/9] mb-3 rounded-sm overflow-hidden relative"
                     style={{
                       background: `linear-gradient(135deg,
                         hsl(${parseInt(related.id) * 40 + 200}, 40%, 70%) 0%,
                         hsl(${parseInt(related.id) * 40 + 220}, 50%, 50%) 100%)`,
                     }}
-                  />
+                  >
+                    {isValidThumbnail(related.thumbnail) && (
+                      <img
+                        src={related.thumbnail}
+                        alt={related.title}
+                        className="absolute inset-0 w-full h-full object-cover"
+                      />
+                    )}
+                  </div>
                   <span className="text-xs font-medium text-blue-600 mb-1 block">
                     {related.categoryLabel}
                   </span>

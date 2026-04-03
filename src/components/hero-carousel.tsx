@@ -6,6 +6,7 @@ import Image from "next/image";
 import { ChevronLeft, ChevronRight, Pause, Play } from "lucide-react";
 import type { Article } from "@/lib/data";
 import { AdminEditButton } from "./admin-edit-button";
+import { isValidThumbnail } from "@/lib/thumbnail";
 
 interface HeroCarouselProps {
   articles: Article[];
@@ -110,7 +111,7 @@ export function HeroCarousel({ articles }: HeroCarouselProps) {
                   href={`/articles/${art.slug}`}
                   className="block relative w-full h-full rounded-xl overflow-hidden group"
                 >
-                  {/* 이미지 (placeholder gradient → 실제 이미지로 교체) */}
+                  {/* 배경 그라디언트 (fallback) */}
                   <div
                     className="absolute inset-0"
                     style={{
@@ -119,14 +120,15 @@ export function HeroCarousel({ articles }: HeroCarouselProps) {
                         hsl(${220 + index * 35}, 45%, 20%) 100%)`,
                     }}
                   />
-                  {/* 실제 이미지가 있으면 보여줌 */}
-                  {art.thumbnail && !art.thumbnail.includes("placeholder") && (
+                  {/* 썸네일 이미지 */}
+                  {isValidThumbnail(art.thumbnail) && (
                     <Image
                       src={art.thumbnail}
                       alt={art.title}
                       fill
                       className="object-cover"
                       priority={index === 0}
+                      unoptimized
                     />
                   )}
 

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { Highlight } from "@/lib/data";
 import { AdminEditButton } from "./admin-edit-button";
+import { isValidThumbnail } from "@/lib/thumbnail";
 
 interface HighlightsCarouselProps {
   highlights: Highlight[];
@@ -80,6 +81,13 @@ export function HighlightsCarousel({ highlights }: HighlightsCarouselProps) {
                       hsl(${parseInt(item.id) * 50 + 200}, 60%, 40%) 100%)`,
                   }}
                 />
+                {isValidThumbnail(item.thumbnail) && (
+                  <img
+                    src={item.thumbnail}
+                    alt={item.title}
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
+                )}
                 {/* Overlay with title */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-4">
                   <span className="text-white font-bold text-lg">

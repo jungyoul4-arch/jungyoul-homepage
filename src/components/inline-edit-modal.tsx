@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 import { useAuth, type EditModalType } from "./auth-provider";
+import { ContentEditor } from "./content-editor";
+import { ThumbnailUploader } from "./thumbnail-uploader";
 
 const categoryOptions = [
   { value: "strategy", label: "입시전략" },
@@ -26,16 +28,42 @@ const titleMap: Record<EditModalType, string> = {
   video: "영상 편집",
 };
 
+const fetchMap: Record<EditModalType, string> = {
+  article: "/api/articles",
+  highlight: "/api/highlights",
+  teacher: "/api/teachers",
+  video: "/api/videos",
+};
+
 export function InlineEditModal() {
   const { editModal, closeEdit } = useAuth();
   const router = useRouter();
   const [form, setForm] = useState<Record<string, unknown>>({});
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(false);
 
+  // 모달 열릴 때 API에서 최신 데이터 fetch
   useEffect(() => {
-    if (editModal) {
-      setForm({ ...editModal.data });
-    }
+    if (!editModal) return;
+
+    const { type, data } = editModal;
+    const id = data.id as string;
+
+    // 우선 props 데이터로 폼을 채우고 (빠른 표시)
+    setForm({ ...data });
+    setLoading(true);
+
+    // API에서 최신 데이터를 가져와 덮어씌움
+    fetch(fetchMap[type])
+      .then((res) => res.json())
+      .then((items: Record<string, unknown>[]) => {
+        const latest = items.find((item) => item.id === id);
+        if (latest) setForm({ ...latest });
+      })
+      .catch(() => {
+        // fetch 실패 시 props 데이터 유지
+      })
+      .finally(() => setLoading(false));
   }, [editModal]);
 
   useEffect(() => {
@@ -106,10 +134,16 @@ export function InlineEditModal() {
 
         {/* Form */}
         <div className="p-6 space-y-4">
-          {type === "article" && <ArticleForm form={form} update={update} />}
-          {type === "highlight" && <HighlightForm form={form} update={update} />}
-          {type === "teacher" && <TeacherForm form={form} update={update} />}
-          {type === "video" && <VideoForm form={form} update={update} />}
+          {loading ? (
+            <p className="text-sm text-gray-500 py-4">불러오는 중...</p>
+          ) : (
+            <>
+              {type === "article" && <ArticleForm form={form} update={update} />}
+              {type === "highlight" && <HighlightForm form={form} update={update} />}
+              {type === "teacher" && <TeacherForm form={form} update={update} />}
+              {type === "video" && <VideoForm form={form} update={update} />}
+            </>
+          )}
         </div>
 
         {/* Footer */}
@@ -191,19 +225,15 @@ function ArticleForm({
         />
       </Field>
       <Field label="본문">
-        <textarea
+        <ContentEditor
           value={(form.content as string) || ""}
-          onChange={(e) => update("content", e.target.value)}
-          rows={8}
-          className={textareaClass}
+          onChange={(val) => update("content", val)}
         />
       </Field>
-      <Field label="썸네일 경로">
-        <input
-          type="text"
+      <Field label="썸네일">
+        <ThumbnailUploader
           value={(form.thumbnail as string) || ""}
-          onChange={(e) => update("thumbnail", e.target.value)}
-          className={inputClass}
+          onChange={(url) => update("thumbnail", url)}
         />
       </Field>
       <div className="flex items-center gap-2">
@@ -248,12 +278,10 @@ function HighlightForm({
           className={inputClass}
         />
       </Field>
-      <Field label="썸네일 경로">
-        <input
-          type="text"
+      <Field label="썸네일">
+        <ThumbnailUploader
           value={(form.thumbnail as string) || ""}
-          onChange={(e) => update("thumbnail", e.target.value)}
-          className={inputClass}
+          onChange={(url) => update("thumbnail", url)}
         />
       </Field>
     </>
@@ -335,12 +363,10 @@ function VideoForm({
           className={inputClass}
         />
       </Field>
-      <Field label="썸네일 경로">
-        <input
-          type="text"
+      <Field label="썸네일">
+        <ThumbnailUploader
           value={(form.thumbnail as string) || ""}
-          onChange={(e) => update("thumbnail", e.target.value)}
-          className={inputClass}
+          onChange={(url) => update("thumbnail", url)}
         />
       </Field>
     </>

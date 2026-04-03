@@ -15,5 +15,11 @@
 			"database_name": "jungyoul-db",
 			"database_id": "78b70756-d6db-453c-84ce-db514c77345f"
 		}
+	],
+	"r2_buckets": [
+		{
+			"binding": "IMAGES_BUCKET",
+			"bucket_name": "jungyoul-images"
+		}
 	]
 }

@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { ContentEditor } from "@/components/content-editor";
+import { ThumbnailUploader } from "@/components/thumbnail-uploader";
 
 const categoryOptions = [
   { value: "strategy", label: "입시전략" },
@@ -115,22 +117,17 @@ export default function NewArticlePage() {
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">본문</label>
-          <textarea
+          <ContentEditor
             value={form.content}
-            onChange={(e) => update("content", e.target.value)}
-            rows={10}
-            className="w-full px-3 py-2 border border-gray-300 rounded-sm text-sm focus:outline-none focus:border-blue-600"
+            onChange={(val) => update("content", val)}
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">썸네일 경로</label>
-          <input
-            type="text"
+          <label className="block text-sm font-medium text-gray-700 mb-1">썸네일</label>
+          <ThumbnailUploader
             value={form.thumbnail}
-            onChange={(e) => update("thumbnail", e.target.value)}
-            placeholder="/images/placeholder-1.jpg"
-            className="w-full h-10 px-3 border border-gray-300 rounded-sm text-sm focus:outline-none focus:border-blue-600"
+            onChange={(url) => update("thumbnail", url)}
           />
         </div>
 
