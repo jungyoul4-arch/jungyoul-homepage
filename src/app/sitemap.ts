@@ -1,8 +1,13 @@
 import type { MetadataRoute } from "next";
-import { articles } from "@/lib/data";
+import { getDb } from "@/db";
+import { articles as articlesTable } from "@/db/schema";
+import { toArticle } from "@/lib/mappers";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = "https://www.jungyoul.net";
+
+  const db = await getDb();
+  const articles = (await db.select().from(articlesTable)).map(toArticle);
 
   const articleEntries = articles.map((article) => ({
     url: `${baseUrl}/articles/${article.slug}`,

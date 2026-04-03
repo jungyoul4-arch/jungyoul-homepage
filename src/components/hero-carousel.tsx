@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight, Pause, Play } from "lucide-react";
 import type { Article } from "@/lib/data";
+import { AdminEditButton } from "./admin-edit-button";
 
 interface HeroCarouselProps {
   articles: Article[];
@@ -131,6 +132,11 @@ export function HeroCarousel({ articles }: HeroCarouselProps) {
 
                   {/* 하단 그라디언트 오버레이 (삼성 뉴스룸 패턴) */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+
+                  {/* 편집 버튼 (관리자 전용) */}
+                  <div className="absolute top-4 right-4">
+                    <AdminEditButton type="article" data={art} />
+                  </div>
 
                   {/* 제목 텍스트 — 하단 좌측, 흰색 bold 30px */}
                   <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8 lg:p-10">

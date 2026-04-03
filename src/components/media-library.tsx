@@ -2,6 +2,7 @@
 
 import { useRef } from "react";
 import { ChevronLeft, ChevronRight, Play } from "lucide-react";
+import { AdminEditButton } from "./admin-edit-button";
 
 interface Video {
   id: string;
@@ -67,12 +68,15 @@ export function MediaLibrary({ videos }: MediaLibraryProps) {
           style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
         >
           {videos.map((video) => (
+            <div key={video.id} className="relative shrink-0 w-[280px] md:w-[352px]">
+              <div className="absolute top-2 right-2 z-10">
+                <AdminEditButton type="video" data={video} />
+              </div>
             <a
-              key={video.id}
               href={`https://www.youtube.com/watch?v=${video.youtubeId}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="group shrink-0 w-[280px] md:w-[352px]"
+              className="group block"
             >
               {/* Thumbnail with play button */}
               <div className="relative aspect-square bg-gray-200 overflow-hidden rounded-sm">
@@ -98,6 +102,7 @@ export function MediaLibrary({ videos }: MediaLibraryProps) {
                 </div>
               </div>
             </a>
+            </div>
           ))}
         </div>
       </div>

@@ -45,3 +45,10 @@ report.md
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Cloudflare
+.open-next/
+.wrangler/
+
+# Drizzle
+/drizzle/meta/

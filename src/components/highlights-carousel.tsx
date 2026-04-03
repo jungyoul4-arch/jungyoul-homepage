@@ -4,6 +4,7 @@ import { useRef } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { Highlight } from "@/lib/data";
+import { AdminEditButton } from "./admin-edit-button";
 
 interface HighlightsCarouselProps {
   highlights: Highlight[];
@@ -60,6 +61,10 @@ export function HighlightsCarousel({ highlights }: HighlightsCarouselProps) {
           style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
         >
           {highlights.map((item) => (
+            <div key={item.id} className="relative shrink-0 w-[280px] md:w-[320px]">
+              <div className="absolute top-2 right-2 z-10">
+                <AdminEditButton type="highlight" data={item} />
+              </div>
             <Link
               key={item.id}
               href="/articles"
@@ -83,6 +88,7 @@ export function HighlightsCarousel({ highlights }: HighlightsCarouselProps) {
                 </div>
               </div>
             </Link>
+            </div>
           ))}
         </div>
       </div>

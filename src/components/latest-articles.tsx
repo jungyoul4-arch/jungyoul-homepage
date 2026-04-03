@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { categories, type Article, type Category } from "@/lib/data";
+import { AdminEditButton } from "./admin-edit-button";
 
 interface LatestArticlesProps {
   articles: Article[];
@@ -67,7 +68,10 @@ export function LatestArticles({ articles }: LatestArticlesProps) {
 
 function ArticleCard({ article }: { article: Article }) {
   return (
-    <article>
+    <article className="relative">
+      <div className="absolute top-2 right-2 z-10">
+        <AdminEditButton type="article" data={article} />
+      </div>
       <Link href={`/articles/${article.slug}`} className="group block">
         {/* Thumbnail — 삼성 뉴스룸 기사 썸네일 비율 */}
         <div className="relative aspect-[16/9] bg-gray-100 overflow-hidden mb-4">

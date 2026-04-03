@@ -18,7 +18,10 @@ export const metadata: Metadata = {
 // 과목별 그룹핑
 const subjects = ["국어", "수학", "영어", "탐구", "컨설팅"] as const;
 
-export default function TeachersPage() {
+export default async function TeachersPage() {
+  const db = await getDb();
+  const teachers = (await db.select().from(teachersTable)).map(toTeacher);
+
   return (
     <div className="max-w-[1280px] mx-auto px-4 py-10">
       {/* JSON-LD for teachers */}

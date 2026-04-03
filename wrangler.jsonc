@@ -1,0 +1,19 @@
+{
+	"name": "jungyoul-homepage",
+	"main": ".open-next/worker.js",
+	"compatibility_date": "2025-04-01",
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
+	"assets": {
+		"directory": ".open-next/assets",
+		"binding": "ASSETS"
+	},
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "jungyoul-db",
+			"database_id": "78b70756-d6db-453c-84ce-db514c77345f"
+		}
+	]
+}

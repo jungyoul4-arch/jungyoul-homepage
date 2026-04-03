@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { ArticleList } from "@/components/article-list";
-import { articles } from "@/lib/data";
+import { getDb } from "@/db";
+import { articles as articlesTable } from "@/db/schema";
+import { desc } from "drizzle-orm";
+import { toArticle } from "@/lib/mappers";
 
 export const metadata: Metadata = {
   title: "교육정보",
@@ -16,7 +19,11 @@ export const metadata: Metadata = {
   },
 };
 
-export default function ArticlesPage() {
+export default async function ArticlesPage() {
+  const db = await getDb();
+  const raw = await db.select().from(articlesTable).orderBy(desc(articlesTable.date));
+  const articles = raw.map(toArticle);
+
   return (
     <div className="max-w-[1280px] mx-auto px-4 py-10">
       {/* CollectionPage JSON-LD */}
