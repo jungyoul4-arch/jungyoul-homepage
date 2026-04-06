@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import { useMemo } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { categories, type Article, type Category } from "@/lib/data";
@@ -14,33 +14,34 @@ interface ArticleListProps {
 
 export function ArticleList({ articles }: ArticleListProps) {
   const searchParams = useSearchParams();
-  const initialCategory = searchParams.get("category") as Category | null;
-  const [activeTab, setActiveTab] = useState<Category>(
-    initialCategory && categories.some((c) => c.value === initialCategory)
-      ? initialCategory
-      : "all"
-  );
+  const router = useRouter();
+  const param = searchParams.get("category") as Category | null;
 
-  useEffect(() => {
-    const category = searchParams.get("category") as Category | null;
-    if (category && categories.some((c) => c.value === category)) {
-      setActiveTab(category);
-    }
-  }, [searchParams]);
+  const activeTab = useMemo<Category>(
+    () => (param && categories.some((c) => c.value === param) ? param : "all"),
+    [param]
+  );
 
   const filtered =
     activeTab === "all"
       ? articles
       : articles.filter((a) => a.category === activeTab);
 
+  function handleTab(value: Category) {
+    router.replace(
+      value === "all" ? "/articles" : `/articles?category=${value}`,
+      { scroll: false }
+    );
+  }
+
   return (
     <>
-      {/* Tab Filter — 삼성 뉴스룸 기사 목록 탭 (모바일 가로 스크롤) */}
+      {/* Tab Filter */}
       <div className="flex gap-1 mb-8 border-b border-gray-200 overflow-x-auto" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
         {categories.map((cat) => (
           <button
             key={cat.value}
-            onClick={() => setActiveTab(cat.value)}
+            onClick={() => handleTab(cat.value)}
             className={`px-4 py-3 text-sm font-medium transition-colors relative ${
               activeTab === cat.value
                 ? "text-blue-600"
