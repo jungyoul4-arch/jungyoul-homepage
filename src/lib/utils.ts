@@ -6,6 +6,22 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
+ * 제목 기반 슬러그 자동 생성
+ * 한글/영문/숫자 유지, 공백→하이픈, 8자리 UUID 접미사로 유니크 보장
+ */
+export function generateSlug(title: string): string {
+  const base = title
+    .trim()
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s-]/gu, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+  const suffix = crypto.randomUUID().slice(0, 8);
+  return base ? `${base}-${suffix}` : suffix;
+}
+
+/**
  * ID 기반 placeholder gradient 생성
  * 콘텐츠 타입별로 다른 색상 조합을 사용
  */

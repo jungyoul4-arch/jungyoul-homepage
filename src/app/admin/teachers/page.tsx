@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import Image from "next/image";
-import { Plus, Trash2, Save, ImageIcon, X, Upload } from "lucide-react";
+import { Plus, Trash2, Save, Pencil, ImageIcon, X, Upload } from "lucide-react";
 import { isValidThumbnail } from "@/lib/thumbnail";
 
 interface Teacher {
@@ -20,6 +20,13 @@ export default function AdminTeachersPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
+    name: "",
+    subject: "국어",
+    photo: "",
+    slug: "",
+  });
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({
     name: "",
     subject: "국어",
     photo: "",
@@ -47,6 +54,31 @@ export default function AdminTeachersPage() {
       setForm({ name: "", subject: "국어", photo: "", slug: "" });
       setShowForm(false);
       load();
+    }
+  }
+
+  function startEdit(t: Teacher) {
+    setEditingId(t.id);
+    setEditForm({ name: t.name, subject: t.subject, photo: t.photo, slug: t.slug });
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+  }
+
+  async function handleEdit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editingId) return;
+    const res = await fetch(`/api/admin/teachers/${editingId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(editForm),
+    });
+    if (res.ok) {
+      setEditingId(null);
+      load();
+    } else {
+      alert("저장에 실패했습니다.");
     }
   }
 
@@ -121,44 +153,123 @@ export default function AdminTeachersPage() {
         <p className="text-gray-500">불러오는 중...</p>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {items.map((t) => (
-            <div
-              key={t.id}
-              className="bg-white border border-gray-200 rounded-lg overflow-hidden"
-            >
-              <div className="relative aspect-square bg-gray-100">
-                {isValidThumbnail(t.photo) ? (
-                  <Image
-                    src={t.photo}
-                    alt={`${t.name} 선생님`}
-                    fill
-                    unoptimized
-                    className="object-cover"
+          {items.map((t) =>
+            editingId === t.id ? (
+              /* 수정 폼 */
+              <form
+                key={t.id}
+                onSubmit={handleEdit}
+                className="bg-white border-2 border-blue-400 rounded-lg p-4 space-y-3"
+              >
+                <div className="grid grid-cols-2 gap-3">
+                  <input
+                    type="text"
+                    value={editForm.name}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, name: e.target.value })
+                    }
+                    placeholder="이름"
+                    className="h-9 px-3 border border-gray-300 rounded-sm text-sm focus:outline-none focus:border-blue-600"
+                    required
                   />
-                ) : (
-                  <div className="absolute inset-0 flex items-center justify-center bg-gray-200">
-                    <span className="text-gray-400 text-3xl font-bold">
-                      {t.name[0]}
-                    </span>
-                  </div>
-                )}
-              </div>
-              <div className="p-3 flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="font-medium text-gray-900 text-sm">
-                    {t.name} 선생님
-                  </p>
-                  <p className="text-xs text-gray-400 mt-0.5">{t.subject}</p>
+                  <select
+                    value={editForm.subject}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, subject: e.target.value })
+                    }
+                    className="h-9 px-3 border border-gray-300 rounded-sm text-sm focus:outline-none focus:border-blue-600 bg-white"
+                  >
+                    {subjectOptions.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-                <button
-                  onClick={() => handleDelete(t.id, t.name)}
-                  className="p-1.5 text-gray-400 hover:text-red-600 transition-colors shrink-0"
-                >
-                  <Trash2 size={15} />
-                </button>
+                <input
+                  type="text"
+                  value={editForm.slug}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, slug: e.target.value })
+                  }
+                  placeholder="슬러그"
+                  className="w-full h-9 px-3 border border-gray-300 rounded-sm text-sm focus:outline-none focus:border-blue-600"
+                  required
+                />
+                <PhotoUploader
+                  value={editForm.photo}
+                  onChange={(url) =>
+                    setEditForm({ ...editForm, photo: url })
+                  }
+                />
+                <div className="flex gap-2">
+                  <button
+                    type="submit"
+                    className="flex items-center gap-1 px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700"
+                  >
+                    <Save size={14} /> 저장
+                  </button>
+                  <button
+                    type="button"
+                    onClick={cancelEdit}
+                    className="px-4 py-2 border border-gray-300 text-gray-700 text-sm rounded-md hover:bg-gray-50"
+                  >
+                    취소
+                  </button>
+                </div>
+              </form>
+            ) : (
+              /* 기존 카드 */
+              <div
+                key={t.id}
+                className="bg-white border border-gray-200 rounded-lg overflow-hidden"
+              >
+                <div className="relative aspect-square bg-gray-100">
+                  {isValidThumbnail(t.photo) ? (
+                    <Image
+                      src={t.photo}
+                      alt={`${t.name} 선생님`}
+                      fill
+                      unoptimized
+                      className="object-cover"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center bg-gray-200">
+                      <span className="text-gray-400 text-3xl font-bold">
+                        {t.name[0]}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <div className="p-3 flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="font-medium text-gray-900 text-sm">
+                      {t.name} 선생님
+                    </p>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      {t.subject}
+                    </p>
+                  </div>
+                  <div className="flex gap-1 shrink-0">
+                    <button
+                      onClick={() => startEdit(t)}
+                      className="p-1.5 text-gray-400 hover:text-blue-600 transition-colors"
+                      title="수정"
+                    >
+                      <Pencil size={15} />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(t.id, t.name)}
+                      className="p-1.5 text-gray-400 hover:text-red-600 transition-colors"
+                      title="삭제"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          )}
           {items.length === 0 && (
             <p className="text-gray-400 col-span-3">
               등록된 강사가 없습니다.

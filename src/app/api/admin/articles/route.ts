@@ -3,6 +3,7 @@ import { getDb } from "@/db";
 import { articles } from "@/db/schema";
 import { requireAdmin } from "@/lib/admin-auth";
 import { insertArticleSchema, errorResponse } from "@/lib/validation";
+import { generateSlug } from "@/lib/utils";
 
 export async function POST(request: NextRequest) {
   const authError = await requireAdmin(request);
@@ -11,6 +12,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const parsed = insertArticleSchema.parse(body);
+    if (!parsed.slug) parsed.slug = generateSlug(parsed.title);
     const db = await getDb();
     const id = crypto.randomUUID();
     const now = new Date().toISOString();

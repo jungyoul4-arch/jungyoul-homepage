@@ -21,6 +21,8 @@ function youtubeThumbnail(youtubeId: string): string {
   return `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`;
 }
 
+const subjectOptions = ["국어", "수학", "영어", "탐구", "컨설팅"] as const;
+
 const categoryOptions = [
   { value: "strategy", label: "입시전략" },
   { value: "column", label: "교육칼럼" },
@@ -328,12 +330,15 @@ function TeacherForm({
           />
         </Field>
         <Field label="과목">
-          <input
-            type="text"
-            value={(form.subject as string) || ""}
+          <select
+            value={(form.subject as string) || "국어"}
             onChange={(e) => update("subject", e.target.value)}
             className={inputClass}
-          />
+          >
+            {subjectOptions.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
         </Field>
       </div>
       <Field label="슬러그">
