@@ -34,6 +34,7 @@ export interface Video {
   title: string;
   youtubeId: string;
   thumbnail: string;
+  sortOrder: number;
 }
 
 export const categories: { value: Category; label: string }[] = [

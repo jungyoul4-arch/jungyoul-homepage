@@ -35,6 +35,7 @@ type DbVideo = {
   title: string;
   youtubeId: string;
   thumbnail: string | null;
+  sortOrder: number | null;
 };
 
 export function toArticle(row: DbArticle): Article {
@@ -77,5 +78,6 @@ export function toVideo(row: DbVideo): Video {
     title: row.title,
     youtubeId: row.youtubeId,
     thumbnail: row.thumbnail ?? "",
+    sortOrder: row.sortOrder ?? 0,
   };
 }
