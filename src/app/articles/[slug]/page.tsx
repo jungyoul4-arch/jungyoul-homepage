@@ -18,11 +18,12 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
+  const decodedSlug = decodeURIComponent(slug);
   const db = await getDb();
   const [raw] = await db
     .select()
     .from(articlesTable)
-    .where(eq(articlesTable.slug, slug))
+    .where(eq(articlesTable.slug, decodedSlug))
     .limit(1);
 
   if (!raw) return {};
@@ -54,12 +55,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ArticlePage({ params }: Props) {
   const { slug } = await params;
+  const decodedSlug = decodeURIComponent(slug);
   const db = await getDb();
 
   const [raw] = await db
     .select()
     .from(articlesTable)
-    .where(eq(articlesTable.slug, slug))
+    .where(eq(articlesTable.slug, decodedSlug))
     .limit(1);
 
   if (!raw) notFound();

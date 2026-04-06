@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { categories, type Article, type Category } from "@/lib/data";
@@ -12,7 +13,20 @@ interface ArticleListProps {
 }
 
 export function ArticleList({ articles }: ArticleListProps) {
-  const [activeTab, setActiveTab] = useState<Category>("all");
+  const searchParams = useSearchParams();
+  const initialCategory = searchParams.get("category") as Category | null;
+  const [activeTab, setActiveTab] = useState<Category>(
+    initialCategory && categories.some((c) => c.value === initialCategory)
+      ? initialCategory
+      : "all"
+  );
+
+  useEffect(() => {
+    const category = searchParams.get("category") as Category | null;
+    if (category && categories.some((c) => c.value === category)) {
+      setActiveTab(category);
+    }
+  }, [searchParams]);
 
   const filtered =
     activeTab === "all"

@@ -4,6 +4,7 @@ import { teachers } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { requireAdmin } from "@/lib/admin-auth";
 import { updateTeacherSchema, errorResponse } from "@/lib/validation";
+import { generateSlug } from "@/lib/utils";
 
 export async function PUT(
   request: NextRequest,
@@ -16,6 +17,9 @@ export async function PUT(
     const { id } = await params;
     const body = await request.json();
     const parsed = updateTeacherSchema.parse(body);
+    if (parsed.slug === "") {
+      parsed.slug = generateSlug(parsed.name || "untitled");
+    }
     const db = await getDb();
 
     await db.update(teachers).set(parsed).where(eq(teachers.id, id));

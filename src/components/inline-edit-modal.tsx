@@ -231,9 +231,9 @@ function ArticleForm({
         </Field>
         <Field label="날짜">
           <input
-            type="text"
-            value={(form.date as string) || ""}
-            onChange={(e) => update("date", e.target.value)}
+            type="date"
+            value={((form.date as string) || "").replace(/\//g, "-")}
+            onChange={(e) => update("date", e.target.value.replace(/-/g, "/"))}
             className={inputClass}
           />
         </Field>

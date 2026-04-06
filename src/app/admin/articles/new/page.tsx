@@ -72,9 +72,8 @@ export default function NewArticlePage() {
             type="text"
             value={form.slug}
             onChange={(e) => update("slug", e.target.value)}
-            placeholder="example-article-slug"
+            placeholder="비워두면 자동 생성"
             className="w-full h-10 px-3 border border-gray-300 rounded-sm text-sm focus:outline-none focus:border-blue-600"
-            required
           />
         </div>
 
@@ -94,10 +93,9 @@ export default function NewArticlePage() {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">날짜</label>
             <input
-              type="text"
-              value={form.date}
-              onChange={(e) => update("date", e.target.value)}
-              placeholder="2026/03/27"
+              type="date"
+              value={form.date.replace(/\//g, "-")}
+              onChange={(e) => update("date", e.target.value.replace(/-/g, "/"))}
               className="w-full h-10 px-3 border border-gray-300 rounded-sm text-sm focus:outline-none focus:border-blue-600"
               required
             />

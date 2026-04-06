@@ -132,9 +132,8 @@ export default function AdminTeachersPage() {
             type="text"
             value={form.slug}
             onChange={(e) => setForm({ ...form, slug: e.target.value })}
-            placeholder="슬러그"
+            placeholder="슬러그 (비워두면 자동 생성)"
             className="w-full h-9 px-3 border border-gray-300 rounded-sm text-sm focus:outline-none focus:border-blue-600"
-            required
           />
           <PhotoUploader
             value={form.photo}
@@ -192,9 +191,8 @@ export default function AdminTeachersPage() {
                   onChange={(e) =>
                     setEditForm({ ...editForm, slug: e.target.value })
                   }
-                  placeholder="슬러그"
+                  placeholder="슬러그 (비워두면 자동 생성)"
                   className="w-full h-9 px-3 border border-gray-300 rounded-sm text-sm focus:outline-none focus:border-blue-600"
-                  required
                 />
                 <PhotoUploader
                   value={editForm.photo}

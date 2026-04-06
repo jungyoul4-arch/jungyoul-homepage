@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { HeroCarousel } from "@/components/hero-carousel";
 import { LatestArticles } from "@/components/latest-articles";
 import { HighlightsCarousel } from "@/components/highlights-carousel";

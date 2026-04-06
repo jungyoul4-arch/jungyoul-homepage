@@ -71,9 +71,8 @@ export default function AdminHighlightsPage() {
             type="text"
             value={form.slug}
             onChange={(e) => setForm({ ...form, slug: e.target.value })}
-            placeholder="슬러그"
+            placeholder="슬러그 (비워두면 자동 생성)"
             className="w-full h-9 px-3 border border-gray-300 rounded-sm text-sm focus:outline-none focus:border-blue-600"
-            required
           />
           <input
             type="text"
