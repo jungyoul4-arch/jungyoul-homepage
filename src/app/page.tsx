@@ -6,7 +6,7 @@ import { HighlightsCarousel } from "@/components/highlights-carousel";
 import { MediaLibrary } from "@/components/media-library";
 import { getDb } from "@/db";
 import { articles as articlesTable, highlights as highlightsTable, videos as videosTable } from "@/db/schema";
-import { desc } from "drizzle-orm";
+import { desc, asc } from "drizzle-orm";
 import { toArticle, toHighlight, toVideo } from "@/lib/mappers";
 
 export default async function Home() {
@@ -15,7 +15,7 @@ export default async function Home() {
   const [rawArticles, rawHighlights, rawVideos] = await Promise.all([
     db.select().from(articlesTable).orderBy(desc(articlesTable.date)),
     db.select().from(highlightsTable),
-    db.select().from(videosTable),
+    db.select().from(videosTable).orderBy(asc(videosTable.sortOrder)),
   ]);
 
   const allArticles = rawArticles.map(toArticle);

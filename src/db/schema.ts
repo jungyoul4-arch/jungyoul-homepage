@@ -35,6 +35,7 @@ export const videos = sqliteTable("videos", {
   title: text("title").notNull(),
   youtubeId: text("youtube_id").notNull(),
   thumbnail: text("thumbnail").default(""),
+  sortOrder: integer("sort_order").default(0),
 });
 
 export const admin = sqliteTable("admin", {

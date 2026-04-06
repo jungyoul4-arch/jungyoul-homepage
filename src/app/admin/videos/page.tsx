@@ -1,14 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Image from "next/image";
-import { Plus, Trash2, Save } from "lucide-react";
+import { Plus, Trash2, Save, GripVertical } from "lucide-react";
 
 interface Video {
   id: string;
   title: string;
   youtubeId: string;
   thumbnail: string;
+  sortOrder: number;
 }
 
 function extractYoutubeId(input: string): string {
@@ -29,11 +30,19 @@ export default function AdminVideosPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ title: "", youtubeInput: "" });
+  const [orderChanged, setOrderChanged] = useState(false);
+  const [savingOrder, setSavingOrder] = useState(false);
+
+  // Drag state
+  const dragItem = useRef<number | null>(null);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [insertAt, setInsertAt] = useState<number | null>(null); // 삽입 슬롯 (카드 앞 = index, 카드 뒤 = index+1)
 
   async function load() {
     const res = await fetch("/api/videos");
     setItems(await res.json());
     setLoading(false);
+    setOrderChanged(false);
   }
 
   useEffect(() => {
@@ -70,17 +79,90 @@ export default function AdminVideosPage() {
     load();
   }
 
+  // Drag handlers
+  function handleDragStart(index: number) {
+    dragItem.current = index;
+    setDragIndex(index);
+  }
+
+  function handleDragOver(e: React.DragEvent, index: number) {
+    e.preventDefault();
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const midX = rect.left + rect.width / 2;
+    const slot = e.clientX < midX ? index : index + 1;
+    setInsertAt(slot);
+  }
+
+  function handleDrop() {
+    if (dragItem.current === null || insertAt === null) {
+      setDragIndex(null);
+      setInsertAt(null);
+      return;
+    }
+
+    let targetIndex = insertAt;
+    // 자기 자신 앞뒤로 이동하는 경우 보정
+    if (targetIndex > dragItem.current) targetIndex--;
+    if (targetIndex === dragItem.current) {
+      setDragIndex(null);
+      setInsertAt(null);
+      return;
+    }
+
+    const updated = [...items];
+    const [dragged] = updated.splice(dragItem.current, 1);
+    updated.splice(targetIndex, 0, dragged);
+    setItems(updated);
+    setOrderChanged(true);
+
+    dragItem.current = null;
+    setDragIndex(null);
+    setInsertAt(null);
+  }
+
+  function handleDragEnd() {
+    setDragIndex(null);
+    setInsertAt(null);
+  }
+
+  async function handleSaveOrder() {
+    setSavingOrder(true);
+    const res = await fetch("/api/admin/videos/reorder", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: items.map((v) => v.id) }),
+    });
+    if (res.ok) {
+      setOrderChanged(false);
+    } else {
+      alert("순서 저장에 실패했습니다.");
+    }
+    setSavingOrder(false);
+  }
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">영상 관리</h1>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"
-        >
-          <Plus size={16} />
-          추가
-        </button>
+        <div className="flex items-center gap-2">
+          {orderChanged && (
+            <button
+              onClick={handleSaveOrder}
+              disabled={savingOrder}
+              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 transition-colors disabled:opacity-50"
+            >
+              <Save size={16} />
+              {savingOrder ? "저장 중..." : "순서 저장"}
+            </button>
+          )}
+          <button
+            onClick={() => setShowForm(!showForm)}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"
+          >
+            <Plus size={16} />
+            추가
+          </button>
+        </div>
       </div>
 
       {showForm && (
@@ -129,48 +211,79 @@ export default function AdminVideosPage() {
       {loading ? (
         <p className="text-gray-500">불러오는 중...</p>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {items.map((v) => {
-            const thumb = v.thumbnail || youtubeThumbnail(v.youtubeId);
-            return (
-              <div
-                key={v.id}
-                className="bg-white border border-gray-200 rounded-lg overflow-hidden"
-              >
-                <div className="relative aspect-video bg-gray-100">
-                  <Image
-                    src={thumb}
-                    alt={v.title}
-                    fill
-                    unoptimized
-                    className="object-cover"
-                  />
-                </div>
-                <div className="p-3 flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="font-medium text-gray-900 text-sm truncate">
-                      {v.title}
-                    </p>
-                    <p className="text-xs text-gray-400 mt-0.5">
-                      {v.youtubeId}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => handleDelete(v.id, v.title)}
-                    className="p-1.5 text-gray-400 hover:text-red-600 transition-colors shrink-0"
-                  >
-                    <Trash2 size={15} />
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-          {items.length === 0 && (
-            <p className="text-gray-400 col-span-3">
-              등록된 영상이 없습니다.
+        <>
+          {orderChanged && (
+            <p className="text-sm text-amber-600 mb-3">
+              순서가 변경되었습니다. &quot;순서 저장&quot; 버튼을 눌러 저장하세요.
             </p>
           )}
-        </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {items.map((v, index) => {
+              const thumb = v.thumbnail || youtubeThumbnail(v.youtubeId);
+              const showBarLeft = dragIndex !== null && insertAt === index && insertAt !== dragIndex && insertAt !== dragIndex + 1;
+              const showBarRight = dragIndex !== null && insertAt === index + 1 && insertAt !== dragIndex && insertAt !== dragIndex + 1;
+              return (
+                <div key={v.id} className="relative">
+                  {/* 왼쪽 삽입 바 */}
+                  {showBarLeft && (
+                    <div className="absolute -left-2.5 top-0 bottom-0 w-1 bg-blue-500 rounded-full z-10" />
+                  )}
+                  {/* 오른쪽 삽입 바 */}
+                  {showBarRight && (
+                    <div className="absolute -right-2.5 top-0 bottom-0 w-1 bg-blue-500 rounded-full z-10" />
+                  )}
+                  <div
+                    draggable
+                    onDragStart={() => handleDragStart(index)}
+                    onDragOver={(e) => handleDragOver(e, index)}
+                    onDrop={handleDrop}
+                    onDragEnd={handleDragEnd}
+                    className={`bg-white border border-gray-200 rounded-lg overflow-hidden cursor-grab active:cursor-grabbing transition-all ${
+                      dragIndex === index ? "opacity-40 scale-95" : ""
+                    }`}
+                  >
+                    <div className="relative aspect-video bg-gray-100">
+                      <Image
+                        src={thumb}
+                        alt={v.title}
+                        fill
+                        unoptimized
+                        className="object-cover pointer-events-none"
+                      />
+                    </div>
+                    <div className="p-3 flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <GripVertical
+                          size={16}
+                          className="text-gray-300 shrink-0"
+                        />
+                        <div className="min-w-0">
+                          <p className="font-medium text-gray-900 text-sm truncate">
+                            {v.title}
+                          </p>
+                          <p className="text-xs text-gray-400 mt-0.5">
+                            {v.youtubeId}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleDelete(v.id, v.title)}
+                        className="p-1.5 text-gray-400 hover:text-red-600 transition-colors shrink-0"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+            {items.length === 0 && (
+              <p className="text-gray-400 col-span-3">
+                등록된 영상이 없습니다.
+              </p>
+            )}
+          </div>
+        </>
       )}
     </div>
   );
