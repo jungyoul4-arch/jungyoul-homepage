@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { requireAdmin } from "@/lib/admin-auth";
 
-const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml"];
+const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+const ALLOWED_EXTS = ["jpg", "jpeg", "png", "gif", "webp"];
 const MAX_SIZE = 10 * 1024 * 1024; // 10MB
 
 export async function POST(request: NextRequest) {
@@ -19,7 +20,7 @@ export async function POST(request: NextRequest) {
 
     if (!ALLOWED_TYPES.includes(file.type)) {
       return NextResponse.json(
-        { error: "허용되지 않는 파일 형식입니다. (JPG, PNG, GIF, WebP, SVG만 가능)" },
+        { error: "허용되지 않는 파일 형식입니다. (JPG, PNG, GIF, WebP만 가능)" },
         { status: 400 }
       );
     }
@@ -31,7 +32,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const ext = file.name.split(".").pop() || "jpg";
+    const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+    if (!ALLOWED_EXTS.includes(ext)) {
+      return NextResponse.json(
+        { error: "허용되지 않는 파일 확장자입니다." },
+        { status: 400 }
+      );
+    }
     const now = new Date();
     const path = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, "0")}`;
     const random = crypto.randomUUID().slice(0, 8);

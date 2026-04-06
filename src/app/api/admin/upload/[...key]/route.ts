@@ -8,7 +8,7 @@ export async function GET(
   const { key } = await params;
 
   // Path traversal 차단
-  if (key.some((segment) => segment === ".." || segment === ".")) {
+  if (key.some((segment) => segment.includes("..") || segment === "." || segment === "")) {
     return new Response("Invalid path", { status: 400 });
   }
 

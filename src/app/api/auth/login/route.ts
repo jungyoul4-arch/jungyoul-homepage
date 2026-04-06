@@ -10,16 +10,20 @@ export async function POST(request: NextRequest) {
   try {
     const { env } = await getCloudflareContext({ async: true });
 
-    // Rate limiting
-    const ip = request.headers.get("cf-connecting-ip") || "unknown";
-    const { success: withinLimit } = await env.LOGIN_RATE_LIMITER.limit({
-      key: ip,
-    });
-    if (!withinLimit) {
-      return NextResponse.json(
-        { error: "로그인 시도가 너무 많습니다. 잠시 후 다시 시도해주세요." },
-        { status: 429 }
-      );
+    // Rate limiting (graceful fallback if binding unavailable)
+    try {
+      const ip = request.headers.get("cf-connecting-ip") || "unknown";
+      const { success: withinLimit } = await env.LOGIN_RATE_LIMITER.limit({
+        key: ip,
+      });
+      if (!withinLimit) {
+        return NextResponse.json(
+          { error: "로그인 시도가 너무 많습니다. 잠시 후 다시 시도해주세요." },
+          { status: 429 }
+        );
+      }
+    } catch {
+      // Rate limiter unavailable (local dev) — allow request
     }
 
     const { username, password } = await request.json();

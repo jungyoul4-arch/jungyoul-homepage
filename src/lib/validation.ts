@@ -4,39 +4,71 @@ import { articles, highlights, teachers, videos } from "@/db/schema";
 import { NextResponse } from "next/server";
 
 // Articles
-export const insertArticleSchema = createInsertSchema(articles).omit({
+export const insertArticleSchema = createInsertSchema(articles, {
+  title: (schema) => schema.max(500),
+  excerpt: (schema) => schema.max(1000),
+  content: (schema) => schema.max(2_000_000),
+  category: (schema) => schema.max(50),
+  categoryLabel: (schema) => schema.max(50),
+  slug: (schema) => schema.max(200),
+  thumbnail: (schema) => schema.max(500),
+  date: (schema) => schema.max(50),
+}).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
 });
-export const updateArticleSchema = createUpdateSchema(articles).omit({
+export const updateArticleSchema = createUpdateSchema(articles, {
+  title: (schema) => schema.max(500),
+  excerpt: (schema) => schema.max(1000),
+  content: (schema) => schema.max(2_000_000),
+  category: (schema) => schema.max(50),
+  categoryLabel: (schema) => schema.max(50),
+  slug: (schema) => schema.max(200),
+  thumbnail: (schema) => schema.max(500),
+  date: (schema) => schema.max(50),
+}).omit({
   id: true,
   createdAt: true,
 });
 
 // Highlights
-export const insertHighlightSchema = createInsertSchema(highlights).omit({
-  id: true,
-});
-export const updateHighlightSchema = createUpdateSchema(highlights).omit({
-  id: true,
-});
+export const insertHighlightSchema = createInsertSchema(highlights, {
+  title: (schema) => schema.max(500),
+  slug: (schema) => schema.max(200),
+  thumbnail: (schema) => schema.max(500),
+}).omit({ id: true });
+export const updateHighlightSchema = createUpdateSchema(highlights, {
+  title: (schema) => schema.max(500),
+  slug: (schema) => schema.max(200),
+  thumbnail: (schema) => schema.max(500),
+}).omit({ id: true });
 
 // Teachers
-export const insertTeacherSchema = createInsertSchema(teachers).omit({
-  id: true,
-});
-export const updateTeacherSchema = createUpdateSchema(teachers).omit({
-  id: true,
-});
+export const insertTeacherSchema = createInsertSchema(teachers, {
+  name: (schema) => schema.max(100),
+  subject: (schema) => schema.max(50),
+  slug: (schema) => schema.max(200),
+  photo: (schema) => schema.max(500),
+}).omit({ id: true });
+export const updateTeacherSchema = createUpdateSchema(teachers, {
+  name: (schema) => schema.max(100),
+  subject: (schema) => schema.max(50),
+  slug: (schema) => schema.max(200),
+  photo: (schema) => schema.max(500),
+}).omit({ id: true });
 
 // Videos
-export const insertVideoSchema = createInsertSchema(videos).omit({
-  id: true,
-});
-export const updateVideoSchema = createUpdateSchema(videos).omit({
-  id: true,
-});
+export const insertVideoSchema = createInsertSchema(videos, {
+  title: (schema) => schema.max(500),
+  youtubeId: (schema) => schema.max(50),
+  thumbnail: (schema) => schema.max(500),
+}).omit({ id: true });
+export const updateVideoSchema = createUpdateSchema(videos, {
+  title: (schema) => schema.max(500),
+  youtubeId: (schema) => schema.max(50),
+  thumbnail: (schema) => schema.max(500),
+}).omit({ id: true });
 
 export function validationError(e: unknown) {
   if (e instanceof z.ZodError) {

@@ -47,8 +47,9 @@ export function getTokenCookieHeader(token: string, isProduction = true): string
   return `${COOKIE_NAME}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${EXPIRY_DAYS * 86400}${secure}`;
 }
 
-export function getLogoutCookieHeader(): string {
-  return `${COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`;
+export function getLogoutCookieHeader(isProduction = true): string {
+  const secure = isProduction ? "; Secure" : "";
+  return `${COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secure}`;
 }
 
 export function getTokenFromCookies(cookieHeader: string | null): string | null {
