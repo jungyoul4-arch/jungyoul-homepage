@@ -2,10 +2,24 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { X } from "lucide-react";
 import { useAuth, type EditModalType } from "./auth-provider";
 import { ContentEditor } from "./content-editor";
 import { ThumbnailUploader } from "./thumbnail-uploader";
+
+function extractYoutubeId(input: string): string {
+  const trimmed = input.trim();
+  if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) return trimmed;
+  const match = trimmed.match(
+    /(?:youtube\.com\/watch\?.*v=|youtube\.com\/embed\/|youtube\.com\/shorts\/|youtu\.be\/)([a-zA-Z0-9_-]{11})/
+  );
+  return match ? match[1] : trimmed;
+}
+
+function youtubeThumbnail(youtubeId: string): string {
+  return `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`;
+}
 
 const categoryOptions = [
   { value: "strategy", label: "입시전략" },
@@ -92,6 +106,12 @@ export function InlineEditModal() {
       if (type === "article" && body.category) {
         body.categoryLabel =
           categoryOptions.find((c) => c.value === body.category)?.label || "";
+      }
+      // video의 경우 youtubeId 파싱 + 자동 썸네일
+      if (type === "video" && body.youtubeId) {
+        const parsed = extractYoutubeId(body.youtubeId as string);
+        body.youtubeId = parsed;
+        body.thumbnail = youtubeThumbnail(parsed);
       }
 
       const res = await fetch(`${apiMap[type]}/${id}`, {
@@ -324,12 +344,10 @@ function TeacherForm({
           className={inputClass}
         />
       </Field>
-      <Field label="사진 경로">
-        <input
-          type="text"
+      <Field label="사진">
+        <ThumbnailUploader
           value={(form.photo as string) || ""}
-          onChange={(e) => update("photo", e.target.value)}
-          className={inputClass}
+          onChange={(url) => update("photo", url)}
         />
       </Field>
     </>
@@ -344,6 +362,10 @@ function VideoForm({
   form: Record<string, unknown>;
   update: (field: string, value: unknown) => void;
 }) {
+  const raw = (form.youtubeId as string) || "";
+  const parsedId = extractYoutubeId(raw);
+  const previewAvailable = parsedId.length === 11;
+
   return (
     <>
       <Field label="제목">
@@ -354,21 +376,26 @@ function VideoForm({
           className={inputClass}
         />
       </Field>
-      <Field label="YouTube ID">
+      <Field label="YouTube 링크 또는 ID">
         <input
           type="text"
-          value={(form.youtubeId as string) || ""}
+          value={raw}
           onChange={(e) => update("youtubeId", e.target.value)}
-          placeholder="예: 7usrDA98kL0"
+          placeholder="예: https://youtu.be/7usrDA98kL0"
           className={inputClass}
         />
       </Field>
-      <Field label="썸네일">
-        <ThumbnailUploader
-          value={(form.thumbnail as string) || ""}
-          onChange={(url) => update("thumbnail", url)}
-        />
-      </Field>
+      {previewAvailable && (
+        <div className="relative aspect-video w-full max-w-xs rounded-sm overflow-hidden bg-gray-100">
+          <Image
+            src={youtubeThumbnail(parsedId)}
+            alt="썸네일 미리보기"
+            fill
+            unoptimized
+            className="object-cover"
+          />
+        </div>
+      )}
     </>
   );
 }

@@ -42,8 +42,9 @@ export async function verifyToken(token: string): Promise<{ username: string } |
   }
 }
 
-export function getTokenCookieHeader(token: string): string {
-  return `${COOKIE_NAME}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${EXPIRY_DAYS * 86400}; Secure`;
+export function getTokenCookieHeader(token: string, isProduction = true): string {
+  const secure = isProduction ? "; Secure" : "";
+  return `${COOKIE_NAME}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${EXPIRY_DAYS * 86400}${secure}`;
 }
 
 export function getLogoutCookieHeader(): string {

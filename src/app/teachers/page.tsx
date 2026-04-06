@@ -68,23 +68,17 @@ export default async function TeachersPage() {
                 >
                   {/* Teacher Photo */}
                   <div className="relative w-full aspect-square bg-gray-100 rounded-sm overflow-hidden mb-3">
-                    <div
-                      className="absolute inset-0 transition-transform duration-300 group-hover:scale-105"
-                      style={{
-                        background: `linear-gradient(135deg,
-                          hsl(${parseInt(teacher.id) * 25 + 200}, 30%, 75%) 0%,
-                          hsl(${parseInt(teacher.id) * 25 + 220}, 40%, 55%) 100%)`,
-                      }}
-                    />
                     {isValidThumbnail(teacher.photo) ? (
-                      <img
+                      <Image
                         src={teacher.photo}
                         alt={`${teacher.name} 선생님`}
-                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        fill
+                        unoptimized
+                        className="object-cover transition-transform duration-300 group-hover:scale-105"
                       />
                     ) : (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="text-white text-3xl font-bold opacity-50">
+                      <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+                        <span className="text-gray-400 text-3xl font-bold">
                           {teacher.name[0]}
                         </span>
                       </div>

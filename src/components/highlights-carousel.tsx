@@ -2,10 +2,12 @@
 
 import { useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { Highlight } from "@/lib/data";
 import { AdminEditButton } from "./admin-edit-button";
 import { isValidThumbnail } from "@/lib/thumbnail";
+import { placeholderGradient } from "@/lib/utils";
 
 interface HighlightsCarouselProps {
   highlights: Highlight[];
@@ -76,16 +78,16 @@ export function HighlightsCarousel({ highlights }: HighlightsCarouselProps) {
                 <div
                   className="absolute inset-0 transition-transform duration-300 group-hover:scale-105"
                   style={{
-                    background: `linear-gradient(135deg,
-                      hsl(${parseInt(item.id) * 50 + 180}, 50%, 60%) 0%,
-                      hsl(${parseInt(item.id) * 50 + 200}, 60%, 40%) 100%)`,
+                    background: placeholderGradient(item.id, "highlight"),
                   }}
                 />
                 {isValidThumbnail(item.thumbnail) && (
-                  <img
+                  <Image
                     src={item.thumbnail}
                     alt={item.title}
-                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    fill
+                    unoptimized
+                    className="object-cover transition-transform duration-300 group-hover:scale-105"
                   />
                 )}
                 {/* Overlay with title */}

@@ -5,9 +5,12 @@ import { getDb } from "@/db";
 import { articles as articlesTable } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { toArticle } from "@/lib/mappers";
+import Image from "next/image";
 import { ChevronRight } from "lucide-react";
 import { AdminEditButton } from "@/components/admin-edit-button";
 import { isValidThumbnail } from "@/lib/thumbnail";
+import { sanitizeContent } from "@/lib/sanitize";
+import { placeholderGradient } from "@/lib/utils";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -172,16 +175,16 @@ export default async function ArticlePage({ params }: Props) {
           <div
             className="w-full aspect-[16/9] max-w-4xl mx-auto rounded-sm relative overflow-hidden"
             style={{
-              background: `linear-gradient(135deg,
-                hsl(${parseInt(article.id) * 40 + 200}, 40%, 70%) 0%,
-                hsl(${parseInt(article.id) * 40 + 220}, 50%, 50%) 100%)`,
+              background: placeholderGradient(article.id, "article"),
             }}
           >
             {isValidThumbnail(article.thumbnail) && (
-              <img
+              <Image
                 src={article.thumbnail}
                 alt={article.title}
-                className="absolute inset-0 w-full h-full object-cover"
+                fill
+                unoptimized
+                className="object-cover"
               />
             )}
           </div>
@@ -189,7 +192,7 @@ export default async function ArticlePage({ params }: Props) {
 
         <div className="max-w-3xl mx-auto prose prose-lg prose-gray mb-16">
           {article.content ? (
-            <div dangerouslySetInnerHTML={{ __html: article.content }} />
+            <div dangerouslySetInnerHTML={{ __html: sanitizeContent(article.content) }} />
           ) : (
             <>
               <p>{article.excerpt}</p>
@@ -223,16 +226,16 @@ export default async function ArticlePage({ params }: Props) {
                   <div
                     className="aspect-[16/9] mb-3 rounded-sm overflow-hidden relative"
                     style={{
-                      background: `linear-gradient(135deg,
-                        hsl(${parseInt(related.id) * 40 + 200}, 40%, 70%) 0%,
-                        hsl(${parseInt(related.id) * 40 + 220}, 50%, 50%) 100%)`,
+                      background: placeholderGradient(related.id, "article"),
                     }}
                   >
                     {isValidThumbnail(related.thumbnail) && (
-                      <img
+                      <Image
                         src={related.thumbnail}
                         alt={related.title}
-                        className="absolute inset-0 w-full h-full object-cover"
+                        fill
+                        unoptimized
+                        className="object-cover"
                       />
                     )}
                   </div>

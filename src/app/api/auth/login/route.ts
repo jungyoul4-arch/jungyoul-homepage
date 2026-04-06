@@ -4,9 +4,24 @@ import { getDb } from "@/db";
 import { admin } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { createToken, getTokenCookieHeader } from "@/lib/auth";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 
 export async function POST(request: NextRequest) {
   try {
+    const { env } = await getCloudflareContext({ async: true });
+
+    // Rate limiting
+    const ip = request.headers.get("cf-connecting-ip") || "unknown";
+    const { success: withinLimit } = await env.LOGIN_RATE_LIMITER.limit({
+      key: ip,
+    });
+    if (!withinLimit) {
+      return NextResponse.json(
+        { error: "로그인 시도가 너무 많습니다. 잠시 후 다시 시도해주세요." },
+        { status: 429 }
+      );
+    }
+
     const { username, password } = await request.json();
 
     if (!username || !password) {
@@ -39,15 +54,18 @@ export async function POST(request: NextRequest) {
     }
 
     const token = await createToken(username);
+    const isProduction = !!env.JWT_SECRET;
 
     const response = NextResponse.json({ success: true });
-    response.headers.set("Set-Cookie", getTokenCookieHeader(token));
+    response.headers.set(
+      "Set-Cookie",
+      getTokenCookieHeader(token, isProduction)
+    );
     return response;
   } catch (e) {
-    const message = e instanceof Error ? e.message : "알 수 없는 오류";
-    console.error("Login error:", message);
+    console.error("Login error:", e instanceof Error ? e.message : e);
     return NextResponse.json(
-      { error: `로그인 처리 중 오류가 발생했습니다: ${message}` },
+      { error: "로그인 처리 중 오류가 발생했습니다." },
       { status: 500 }
     );
   }

@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { categories, type Article, type Category } from "@/lib/data";
 import { AdminEditButton } from "./admin-edit-button";
 import { isValidThumbnail } from "@/lib/thumbnail";
+import { placeholderGradient } from "@/lib/utils";
 
 interface LatestArticlesProps {
   articles: Article[];
@@ -79,16 +81,16 @@ function ArticleCard({ article }: { article: Article }) {
           <div
             className="absolute inset-0 transition-transform duration-300 group-hover:scale-105"
             style={{
-              background: `linear-gradient(135deg,
-                hsl(${parseInt(article.id) * 40 + 200}, 40%, 70%) 0%,
-                hsl(${parseInt(article.id) * 40 + 220}, 50%, 50%) 100%)`,
+              background: placeholderGradient(article.id, "article"),
             }}
           />
           {isValidThumbnail(article.thumbnail) && (
-            <img
+            <Image
               src={article.thumbnail}
               alt={article.title}
-              className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+              fill
+              unoptimized
+              className="object-cover transition-transform duration-300 group-hover:scale-105"
             />
           )}
         </div>

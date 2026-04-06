@@ -6,8 +6,13 @@ export async function GET(
   { params }: { params: Promise<{ key: string[] }> }
 ) {
   const { key } = await params;
-  const objectKey = key.join("/");
 
+  // Path traversal 차단
+  if (key.some((segment) => segment === ".." || segment === ".")) {
+    return new Response("Invalid path", { status: 400 });
+  }
+
+  const objectKey = key.join("/");
   const { env } = await getCloudflareContext({ async: true });
   const object = await env.IMAGES_BUCKET.get(objectKey);
 

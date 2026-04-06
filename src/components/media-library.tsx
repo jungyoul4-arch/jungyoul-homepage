@@ -1,9 +1,11 @@
 "use client";
 
 import { useRef } from "react";
+import Image from "next/image";
 import { ChevronLeft, ChevronRight, Play } from "lucide-react";
 import { AdminEditButton } from "./admin-edit-button";
 import { isValidThumbnail } from "@/lib/thumbnail";
+import { placeholderGradient } from "@/lib/utils";
 
 interface Video {
   id: string;
@@ -84,16 +86,16 @@ export function MediaLibrary({ videos }: MediaLibraryProps) {
                 <div
                   className="absolute inset-0 transition-transform duration-300 group-hover:scale-105"
                   style={{
-                    background: `linear-gradient(135deg,
-                      hsl(${parseInt(video.id) * 60 + 0}, 70%, 45%) 0%,
-                      hsl(${parseInt(video.id) * 60 + 20}, 80%, 30%) 100%)`,
+                    background: placeholderGradient(video.id, "video"),
                   }}
                 />
                 {isValidThumbnail(video.thumbnail) && (
-                  <img
+                  <Image
                     src={video.thumbnail}
                     alt={video.title}
-                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    fill
+                    unoptimized
+                    className="object-cover transition-transform duration-300 group-hover:scale-105"
                   />
                 )}
                 {/* Play Icon */}
