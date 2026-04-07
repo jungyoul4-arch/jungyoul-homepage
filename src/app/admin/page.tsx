@@ -20,21 +20,26 @@ const cards = [
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState<Stats>({ articles: 0, highlights: 0, teachers: 0, videos: 0 });
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     async function load() {
-      const [a, h, t, v] = await Promise.all([
-        fetch("/api/articles").then((r) => r.json()),
-        fetch("/api/highlights").then((r) => r.json()),
-        fetch("/api/teachers").then((r) => r.json()),
-        fetch("/api/videos").then((r) => r.json()),
-      ]);
-      setStats({
-        articles: a.length,
-        highlights: h.length,
-        teachers: t.length,
-        videos: v.length,
-      });
+      try {
+        const [a, h, t, v] = await Promise.all([
+          fetch("/api/articles").then((r) => r.json()),
+          fetch("/api/highlights").then((r) => r.json()),
+          fetch("/api/teachers").then((r) => r.json()),
+          fetch("/api/videos").then((r) => r.json()),
+        ]);
+        setStats({
+          articles: a.length,
+          highlights: h.length,
+          teachers: t.length,
+          videos: v.length,
+        });
+      } catch {
+        setError(true);
+      }
     }
     load();
   }, []);
@@ -42,6 +47,7 @@ export default function AdminDashboard() {
   return (
     <div>
       <h1 className="text-2xl font-bold text-gray-900 mb-6">대시보드</h1>
+      {error && <p className="text-red-500 text-sm mb-4">데이터를 불러오지 못했습니다.</p>}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {cards.map((card) => (

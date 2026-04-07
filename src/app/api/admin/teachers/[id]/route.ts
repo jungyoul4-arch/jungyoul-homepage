@@ -26,6 +26,12 @@ export async function PUT(
 
     return NextResponse.json({ success: true });
   } catch (e) {
+    if (e instanceof Error && e.message.includes("UNIQUE constraint failed")) {
+      return NextResponse.json(
+        { error: "이미 사용 중인 슬러그입니다. 다른 슬러그를 입력하세요." },
+        { status: 409 }
+      );
+    }
     return errorResponse(e);
   }
 }

@@ -69,17 +69,22 @@ export function InlineEditModal() {
     setForm({ ...data });
     setLoading(true);
 
+    const controller = new AbortController();
+
     // API에서 최신 데이터를 가져와 덮어씌움
-    fetch(fetchMap[type])
+    fetch(fetchMap[type], { signal: controller.signal })
       .then((res) => res.json())
       .then((items: Record<string, unknown>[]) => {
         const latest = items.find((item) => item.id === id);
         if (latest) setForm({ ...latest });
       })
-      .catch(() => {
+      .catch((e) => {
+        if (e instanceof DOMException && e.name === "AbortError") return;
         // fetch 실패 시 props 데이터 유지
       })
       .finally(() => setLoading(false));
+
+    return () => controller.abort();
   }, [editModal]);
 
   useEffect(() => {

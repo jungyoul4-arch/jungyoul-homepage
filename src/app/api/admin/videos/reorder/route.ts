@@ -29,7 +29,8 @@ export async function PUT(request: NextRequest) {
     }
 
     return NextResponse.json({ success: true });
-  } catch {
+  } catch (e) {
+    console.error("Video reorder error:", e instanceof Error ? e.message : e);
     return NextResponse.json({ error: "순서 저장에 실패했습니다." }, { status: 500 });
   }
 }

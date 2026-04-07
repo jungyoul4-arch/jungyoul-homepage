@@ -91,7 +91,8 @@ INSERT INTO videos (id, title, youtube_id, thumbnail) VALUES
 ('2', '수능 국영수 4개 등급 상승 인터뷰', 'iRJfhyeTPxw', '/images/video-2.jpg'),
 ('3', '모의고사 4등급 → 수능 국어 1등급', 'ZylPxyd2x4A', '/images/video-3.jpg');
 
--- 기본 관리자 계정 (비밀번호: admin1234 의 bcrypt 해시)
--- 실제 배포 시 반드시 변경할 것
+-- !! WARNING: 아래는 개발 전용 기본 계정입니다.
+-- !! 프로덕션 배포 전 반드시 비밀번호를 변경하거나 이 INSERT를 제거하세요.
+-- !! 기본 비밀번호: admin1234 (bcrypt 해시)
 INSERT INTO admin (username, password_hash) VALUES
 ('admin', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy');

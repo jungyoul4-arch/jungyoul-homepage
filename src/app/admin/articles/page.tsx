@@ -19,9 +19,15 @@ export default function AdminArticlesPage() {
   const [loading, setLoading] = useState(true);
 
   async function load() {
-    const res = await fetch("/api/articles");
-    setArticles(await res.json());
-    setLoading(false);
+    try {
+      const res = await fetch("/api/articles");
+      if (!res.ok) throw new Error();
+      setArticles(await res.json());
+    } catch {
+      setArticles([]);
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => { load(); }, []);
