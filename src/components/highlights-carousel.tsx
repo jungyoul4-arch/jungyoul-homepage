@@ -69,9 +69,8 @@ export function HighlightsCarousel({ highlights }: HighlightsCarouselProps) {
                 <AdminEditButton type="highlight" data={item} />
               </div>
             <Link
-              key={item.id}
-              href="/articles"
-              className="group shrink-0 w-[280px] md:w-[320px]"
+              href={`/highlights/${item.slug}`}
+              className="group block"
             >
               {/* Thumbnail */}
               <div className="relative aspect-[728/410] bg-gray-200 overflow-hidden rounded-sm">

@@ -1,7 +1,13 @@
 export const dynamic = "force-dynamic";
 
 import type { Metadata } from "next";
-import { teachers } from "@/lib/data";
+import Link from "next/link";
+import Image from "next/image";
+import { getDb } from "@/db";
+import { teachers as teachersTable } from "@/db/schema";
+import { toTeacher } from "@/lib/mappers";
+import { AdminEditButton } from "@/components/admin-edit-button";
+import { isValidThumbnail } from "@/lib/thumbnail";
 
 export const metadata: Metadata = {
   title: "선생님 소개",
@@ -64,36 +70,41 @@ export default async function TeachersPage() {
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
               {subjectTeachers.map((teacher) => (
-                <div
-                  key={teacher.id}
-                  className="group text-center"
-                >
-                  {/* Teacher Photo */}
-                  <div className="relative w-full aspect-square bg-gray-100 rounded-sm overflow-hidden mb-3">
-                    {isValidThumbnail(teacher.photo) ? (
-                      <Image
-                        src={teacher.photo}
-                        alt={`${teacher.name} 선생님`}
-                        fill
-                        unoptimized
-                        className="object-cover transition-transform duration-300 group-hover:scale-105"
-                      />
-                    ) : (
-                      <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
-                        <span className="text-gray-400 text-3xl font-bold">
-                          {teacher.name[0]}
-                        </span>
-                      </div>
-                    )}
+                <div key={teacher.id} className="relative text-center">
+                  <div className="absolute top-2 right-2 z-10">
+                    <AdminEditButton type="teacher" data={teacher} />
                   </div>
+                  <Link
+                    href={`/teachers/${teacher.slug}`}
+                    className="group block"
+                  >
+                    {/* Teacher Photo */}
+                    <div className="relative w-full aspect-square bg-gray-100 rounded-sm overflow-hidden mb-3">
+                      {isValidThumbnail(teacher.photo) ? (
+                        <Image
+                          src={teacher.photo}
+                          alt={`${teacher.name} 선생님`}
+                          fill
+                          unoptimized
+                          className="object-cover transition-transform duration-300 group-hover:scale-105"
+                        />
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+                          <span className="text-gray-400 text-3xl font-bold">
+                            {teacher.name[0]}
+                          </span>
+                        </div>
+                      )}
+                    </div>
 
-                  {/* Info */}
-                  <p className="text-xs text-blue-600 font-medium mb-1">
-                    {teacher.subject}
-                  </p>
-                  <p className="text-sm font-bold text-gray-900">
-                    {teacher.name} 선생님
-                  </p>
+                    {/* Info */}
+                    <p className="text-xs text-blue-600 font-medium mb-1">
+                      {teacher.subject}
+                    </p>
+                    <p className="text-sm font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
+                      {teacher.name} 선생님
+                    </p>
+                  </Link>
                 </div>
               ))}
             </div>

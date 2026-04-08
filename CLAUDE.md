@@ -3,7 +3,7 @@
 ## 프로젝트 개요
 - 프로젝트명: 정율 교육정보 (jungyoul-homepage)
 - 기술 스택: Next.js 16, TypeScript, Tailwind CSS, shadcn/ui
-- 배포 환경: Vercel
+- 배포 환경: Cloudflare Pages (OpenNext)
 - 참고 사이트: https://news.samsung.com/kr/ (삼성 뉴스룸 한국어)
 - 현재 사이트: https://www.jungyoul.net/
 
