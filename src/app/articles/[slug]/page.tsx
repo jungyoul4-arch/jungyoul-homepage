@@ -39,7 +39,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description: article.excerpt,
       url: `https://www.jungyoul.net/articles/${article.slug}`,
       siteName: "정율 교육정보",
-      images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+      images: [{ url: article.thumbnail || "/og-image.png", width: 1200, height: 630 }],
       publishedTime: article.date.replace(/\//g, "-"),
     },
     twitter: {
@@ -83,9 +83,13 @@ export default async function ArticlePage({ params }: Props) {
             "@type": "Article",
             headline: article.title,
             description: article.excerpt,
-            image: ["https://www.jungyoul.net/og-image.png"],
+            image: article.thumbnail
+              ? [`https://www.jungyoul.net${article.thumbnail}`]
+              : ["https://www.jungyoul.net/og-image.png"],
             datePublished: article.date.replace(/\//g, "-"),
-            dateModified: article.date.replace(/\//g, "-"),
+            dateModified: raw.updatedAt
+              ? raw.updatedAt.split("T")[0]
+              : article.date.replace(/\//g, "-"),
             author: {
               "@type": "Organization",
               name: "정율 교육정보",
@@ -103,6 +107,13 @@ export default async function ArticlePage({ params }: Props) {
               "@type": "WebPage",
               "@id": `https://www.jungyoul.net/articles/${article.slug}`,
             },
+            articleSection: article.categoryLabel,
+            ...(article.content ? {
+              wordCount: article.content.replace(/<[^>]*>/g, "").trim().length,
+            } : {}),
+            keywords: [article.categoryLabel, "정율 교육정보", "입시", "교육"],
+            inLanguage: "ko",
+            isAccessibleForFree: true,
           }).replace(/</g, "\\u003c"),
         }}
       />
