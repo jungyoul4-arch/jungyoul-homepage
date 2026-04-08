@@ -641,10 +641,11 @@ git commit -m "feat: add tracking codes admin UI with CRUD"
 
 ---
 
-### Task 5: Article OG Image — Use Thumbnail
+### Task 5: Article OG Image + Schema Markup Enrichment
 
 **Files:**
-- Modify: `src/app/articles/[slug]/page.tsx:30-31`
+- Modify: `src/app/articles/[slug]/page.tsx:30-31` (generateMetadata og:image)
+- Modify: `src/app/articles/[slug]/page.tsx:78-107` (Article JSON-LD)
 
 - [ ] **Step 1: Update generateMetadata to use thumbnail as og:image**
 
@@ -662,11 +663,95 @@ images: [{ url: article.thumbnail || "/og-image.png", width: 1200, height: 630 }
 
 This uses the article's thumbnail if available, falling back to the default.
 
-- [ ] **Step 2: Commit**
+- [ ] **Step 2: Enrich Article JSON-LD schema**
+
+In `src/app/articles/[slug]/page.tsx`, update the Article JSON-LD script (lines 78-107).
+
+Change the existing JSON-LD from:
+```typescript
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  headline: article.title,
+  description: article.excerpt,
+  image: ["https://www.jungyoul.net/og-image.png"],
+  datePublished: article.date.replace(/\//g, "-"),
+  dateModified: article.date.replace(/\//g, "-"),
+  author: {
+    "@type": "Organization",
+    name: "정율 교육정보",
+    url: "https://www.jungyoul.net",
+  },
+  publisher: {
+    "@type": "Organization",
+    name: "정율 교육정보",
+    logo: {
+      "@type": "ImageObject",
+      url: "https://www.jungyoul.net/logo.png",
+    },
+  },
+  mainEntityOfPage: {
+    "@type": "WebPage",
+    "@id": `https://www.jungyoul.net/articles/${article.slug}`,
+  },
+}
+```
+
+to:
+```typescript
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  headline: article.title,
+  description: article.excerpt,
+  image: article.thumbnail
+    ? [`https://www.jungyoul.net${article.thumbnail}`]
+    : ["https://www.jungyoul.net/og-image.png"],
+  datePublished: article.date.replace(/\//g, "-"),
+  dateModified: article.updatedAt
+    ? article.updatedAt.split("T")[0]
+    : article.date.replace(/\//g, "-"),
+  author: {
+    "@type": "Organization",
+    name: "정율 교육정보",
+    url: "https://www.jungyoul.net",
+  },
+  publisher: {
+    "@type": "Organization",
+    name: "정율 교육정보",
+    logo: {
+      "@type": "ImageObject",
+      url: "https://www.jungyoul.net/logo.png",
+    },
+  },
+  mainEntityOfPage: {
+    "@type": "WebPage",
+    "@id": `https://www.jungyoul.net/articles/${article.slug}`,
+  },
+  articleSection: article.categoryLabel,
+  wordCount: article.content
+    ? article.content.replace(/<[^>]*>/g, "").trim().length
+    : undefined,
+  keywords: [article.categoryLabel, "정율 교육정보", "입시", "교육"],
+  inLanguage: "ko",
+  isAccessibleForFree: true,
+}
+```
+
+Changes:
+- `image`: hardcoded og-image.png → article thumbnail (with absolute URL)
+- `dateModified`: was same as datePublished → now uses DB `updatedAt`
+- `articleSection`: new — maps to categoryLabel (입시전략, 교육칼럼 등)
+- `wordCount`: new — extracted from HTML content (tags stripped)
+- `keywords`: new — category + base keywords
+- `inLanguage`: new — "ko"
+- `isAccessibleForFree`: new — true (무료 콘텐츠)
+
+- [ ] **Step 3: Commit**
 
 ```bash
 git add src/app/articles/[slug]/page.tsx
-git commit -m "feat: use article thumbnail as og:image with fallback"
+git commit -m "feat: enrich article schema markup + use thumbnail as og:image"
 ```
 
 ---
