@@ -88,7 +88,7 @@ interface Article {
   content: string;             // HTML 본문 (신규 필드)
   category: Category;          // "strategy" | "column" | "success" | "news"
   categoryLabel: string;       // "입시전략" | "교육칼럼" | "합격스토리" | "공지사항"
-  thumbnail: string;           // 썸네일 이미지 경로
+  thumbnail: string;           // 대표 이미지 URL (목록 + OG image로 사용)
   date: string;                // "2026/03/27" 형식
   slug: string;                // URL slug
   featured?: boolean;          // 홈 featured 여부
@@ -133,6 +133,33 @@ Vercel Blob에 `articles.json`으로 저장. 기존 `data.ts`의 12개 기사를
 - 홈페이지의 hero, latest articles 등도 Blob에서 fetch
 - `data.ts`의 highlights, videos, teachers 데이터는 현재 scope에서 그대로 유지
 
+### OG Tag / Meta Tag 전략
+
+**기사(누적 콘텐츠)**:
+- `og:title` = 기사 title
+- `og:description` = 기사 excerpt
+- `og:image` = 기사 thumbnail (대표 이미지) — 기사별 고유 이미지
+- `meta description` = 기사 excerpt
+- 관리자 UI에서 대표 이미지(thumbnail)를 필수 입력으로 설정
+
+**고정 페이지 (about, contact, faq, location, teachers)**:
+- 각 고정 페이지 상단에 hero/banner 이미지 섹션 추가
+- `og:image` = 해당 페이지의 hero 이미지
+- `og:title` = 페이지 meta title과 동일
+- `og:description` = 페이지 meta description과 동일
+- hero 이미지는 `/public/images/hero-{page}.jpg` 형태로 저장 (1200x630 이상, OG 호환 비율)
+
+**고정 페이지 hero 이미지 목록**:
+| 페이지 | 이미지 파일 | 설명 |
+|--------|------------|------|
+| 홈 | 기존 HeroCarousel 유지 | OG는 `/og-image.png` 유지 |
+| 회사소개 | `/images/hero-about.jpg` | 학원 외관 또는 브랜드 이미지 |
+| 교육정보 | `/images/hero-articles.jpg` | 교육 콘텐츠 대표 이미지 |
+| 상담신청 | `/images/hero-contact.jpg` | 상담 안내 이미지 |
+| FAQ | `/images/hero-faq.jpg` | FAQ 대표 이미지 |
+| 찾아오는 길 | `/images/hero-location.jpg` | 학원 위치/건물 사진 |
+| 선생님 소개 | `/images/hero-teachers.jpg` | 강사진 단체 또는 대표 이미지 |
+
 ### Migration (초기 시드)
 
 기존 `data.ts`의 12개 기사에 `content` 필드(기존 placeholder 본문)를 추가하여 Blob에 업로드하는 시드 스크립트 작성.
@@ -171,7 +198,7 @@ Vercel Blob에 `articles.json`으로 저장. 기존 `data.ts`의 12개 기사를
 | 6 | Blob 런타임 fetch → TTFB 증가 → Core Web Vitals 감점 | layout.tsx, articles 페이지에 ISR `revalidate: 60` 적용 |
 | 7 | HTML 본문에 시맨틱 태그 없이 작성 → AEO 효과 없음 | 관리자 UI에 시맨틱 HTML 템플릿 제공 (`<h2>`, `<p>`, `<ul>`) |
 | 8 | 추적 코드 렌더링 블로킹 → FCP/LCP 저하 | 삽입 시 `async`/`defer` 권장 안내 표시 |
-| 9 | 모든 기사 OG 이미지 동일 → SNS/AI 인용 시 구분 불가 | `thumbnail` 필드를 `og:image`로 활용 |
+| 9 | 모든 기사 OG 이미지 동일 → SNS/AI 인용 시 구분 불가 | 기사: thumbnail → og:image, 고정 페이지: hero 이미지 → og:image (해결됨) |
 | 10 | HTML 본문 깨짐 (닫히지 않은 태그) → 페이지 레이아웃 파괴 | 미리보기 기능 + 본문을 격리된 `<div>`로 감싸기 |
 | 11 | articles.json 비대화 (수백 개 기사) | 초기엔 단일 파일, 50개 이상 시 목록/상세 분리 저장 |
 | 12 | JSON 데이터 백업 부재 → Blob 장애 시 복구 불가 | 관리자 UI에 JSON 내보내기/가져오기 버튼 |
@@ -192,5 +219,6 @@ Vercel Blob에 `articles.json`으로 저장. 기존 `data.ts`의 12개 기사를
 
 - 추적 코드: 전체 페이지 공통 삽입만
 - 콘텐츠: 기사(articles)만 관리. highlights, videos, teachers는 현재 scope 외
-- 이미지 업로드: 현재 scope 외 (URL 직접 입력)
+- 이미지 업로드: 현재 scope 외 (URL 직접 입력). 단, 고정 페이지 hero 이미지는 `/public/images/`에 정적 배치
+- OG 태그: 기사별 대표 이미지 + 고정 페이지 hero 이미지 적용 (scope 내)
 - sitemap.ts: Blob 기반으로 업데이트 (scope 내)
