@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { X } from "lucide-react";
+import { X, Trash2 } from "lucide-react";
 import { useAuth, type EditModalType } from "./auth-provider";
 import { ContentEditor } from "./content-editor";
 import { ThumbnailUploader } from "./thumbnail-uploader";
@@ -57,6 +57,7 @@ export function InlineEditModal() {
   const [form, setForm] = useState<Record<string, unknown>>({});
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   // 모달 열릴 때 API에서 최신 데이터 fetch
   useEffect(() => {
@@ -67,6 +68,7 @@ export function InlineEditModal() {
 
     // 우선 props 데이터로 폼을 채우고 (빠른 표시)
     setForm({ ...data });
+    setConfirmDelete(false);
     setLoading(true);
 
     const controller = new AbortController();
@@ -138,6 +140,26 @@ export function InlineEditModal() {
     }
   }
 
+  async function handleDelete() {
+    if (!confirmDelete) {
+      setConfirmDelete(true);
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await fetch(`${apiMap[type]}/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        closeEdit();
+        router.refresh();
+      } else {
+        alert("삭제에 실패했습니다.");
+      }
+    } finally {
+      setSaving(false);
+      setConfirmDelete(false);
+    }
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
       {/* Backdrop */}
@@ -174,19 +196,33 @@ export function InlineEditModal() {
         </div>
 
         {/* Footer */}
-        <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4 flex gap-3">
+        <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4 space-y-3">
+          <div className="flex gap-3">
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="flex-1 h-10 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
+            >
+              {saving ? "저장 중..." : "저장"}
+            </button>
+            <button
+              onClick={closeEdit}
+              className="px-4 h-10 border border-gray-300 text-gray-700 text-sm rounded-md hover:bg-gray-50 transition-colors"
+            >
+              취소
+            </button>
+          </div>
           <button
-            onClick={handleSave}
+            onClick={handleDelete}
             disabled={saving}
-            className="flex-1 h-10 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
+            className={`w-full h-9 text-sm font-medium rounded-md transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5 ${
+              confirmDelete
+                ? "bg-red-600 text-white hover:bg-red-700"
+                : "text-red-600 border border-red-200 hover:bg-red-50"
+            }`}
           >
-            {saving ? "저장 중..." : "저장"}
-          </button>
-          <button
-            onClick={closeEdit}
-            className="px-4 h-10 border border-gray-300 text-gray-700 text-sm rounded-md hover:bg-gray-50 transition-colors"
-          >
-            취소
+            <Trash2 size={14} />
+            {confirmDelete ? "정말 삭제하시겠습니까?" : "삭제"}
           </button>
         </div>
       </div>
