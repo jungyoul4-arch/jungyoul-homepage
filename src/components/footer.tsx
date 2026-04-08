@@ -104,6 +104,9 @@ export function Footer() {
         {/* Bottom Links */}
         <div className="mt-8 pt-6 border-t border-gray-700 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="flex flex-wrap gap-4 text-xs">
+            <Link href="/faq" className="hover:text-white transition-colors">
+              자주 묻는 질문
+            </Link>
             <Link href="/about" className="hover:text-white transition-colors">
               회사소개
             </Link>
