@@ -5,6 +5,7 @@ import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { AuthProvider } from "@/components/auth-provider";
 import { InlineEditModal } from "@/components/inline-edit-modal";
+import { TrackingCodeHead, TrackingCodeBodyStart, TrackingCodeBodyEnd } from "@/components/tracking-code-injector";
 
 const notoSansKR = Noto_Sans_KR({
   variable: "--font-noto-sans-kr",
@@ -135,14 +136,17 @@ export default function RootLayout({
             }).replace(/</g, "\\u003c"),
           }}
         />
+        <TrackingCodeHead />
       </head>
       <body className="min-h-full flex flex-col font-[family-name:var(--font-noto-sans-kr)]">
+        <TrackingCodeBodyStart />
         <AuthProvider>
           <Header />
           <main className="flex-1">{children}</main>
           <Footer />
           <InlineEditModal />
         </AuthProvider>
+        <TrackingCodeBodyEnd />
       </body>
     </html>
   );
