@@ -103,7 +103,8 @@ export default function RootLayout({
   return (
     <html lang="ko" className={`${notoSansKR.variable} h-full antialiased`}>
       <head>
-        <meta name="naver-site-verification" content="REPLACE_WITH_NAVER_VERIFICATION_CODE" />
+        <meta name="naver-site-verification" content="5c65f2da2ffd38277848b8bf1f454d6599ffe850" />
+        <meta name="google-site-verification" content="cUDL_79cigC39kEYAtf9YYsGfgYZaQQ2IFFYzGpNogA" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
