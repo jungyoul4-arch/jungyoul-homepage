@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { HeroBanner } from "@/components/hero-banner";
 
 export const metadata: Metadata = {
   title: "자주 묻는 질문(FAQ)",
@@ -15,6 +16,7 @@ export const metadata: Metadata = {
     title: "자주 묻는 질문(FAQ) | 정율 교육정보",
     description:
       "정율사관학원에 대해 자주 묻는 질문과 답변입니다.",
+    images: [{ url: "/images/hero-faq.jpg", width: 1200, height: 514 }],
   },
   alternates: {
     canonical: "/faq",
@@ -76,8 +78,10 @@ const faqs = [
 
 export default function FAQPage() {
   return (
-    <div className="max-w-[1280px] mx-auto px-4 py-10">
-      {/* FAQPage JSON-LD — AEO 핵심 */}
+    <>
+      <HeroBanner src="/images/hero-faq.jpg" alt="정율 교육정보 자주 묻는 질문" />
+      <div className="max-w-[1280px] mx-auto px-4 py-10">
+        {/* FAQPage JSON-LD — AEO 핵심 */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -146,6 +150,7 @@ export default function FAQPage() {
           </details>
         ))}
       </div>
-    </div>
+      </div>
+    </>
   );
 }

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { HeroBanner } from "@/components/hero-banner";
 
 export const metadata: Metadata = {
   title: "회사소개",
@@ -7,6 +8,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "회사소개 | 정율 교육정보",
     description: "주식회사정율 — 맞춤형 교육 전문 기업",
+    images: [{ url: "/images/hero-about.jpg", width: 1200, height: 514 }],
   },
   alternates: {
     canonical: "/about",
@@ -15,8 +17,10 @@ export const metadata: Metadata = {
 
 export default function AboutPage() {
   return (
-    <div className="max-w-[1280px] mx-auto px-4 py-10">
-      {/* AboutPage JSON-LD */}
+    <>
+      <HeroBanner src="/images/hero-about.jpg" alt="정율 교육정보 회사소개" />
+      <div className="max-w-[1280px] mx-auto px-4 py-10">
+        {/* AboutPage JSON-LD */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -128,6 +132,7 @@ export default function AboutPage() {
           </table>
         </section>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

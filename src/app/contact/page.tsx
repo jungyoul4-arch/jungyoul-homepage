@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Phone, Mail, MapPin, MessageCircle } from "lucide-react";
+import { HeroBanner } from "@/components/hero-banner";
 
 export const metadata: Metadata = {
   title: "상담신청",
@@ -8,6 +9,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "상담신청 | 정율 교육정보",
     description: "정율사관학원 입시 상담을 신청하세요.",
+    images: [{ url: "/images/hero-contact.jpg", width: 1200, height: 514 }],
   },
   alternates: {
     canonical: "/contact",
@@ -16,8 +18,10 @@ export const metadata: Metadata = {
 
 export default function ContactPage() {
   return (
-    <div className="max-w-[1280px] mx-auto px-4 py-10">
-      {/* JSON-LD ContactPage */}
+    <>
+      <HeroBanner src="/images/hero-contact.jpg" alt="정율 교육정보 상담신청" />
+      <div className="max-w-[1280px] mx-auto px-4 py-10">
+        {/* JSON-LD ContactPage */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -232,6 +236,7 @@ export default function ContactPage() {
           </form>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }
