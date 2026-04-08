@@ -6,6 +6,7 @@ import { Footer } from "@/components/footer";
 import { AuthProvider } from "@/components/auth-provider";
 import { InlineEditModal } from "@/components/inline-edit-modal";
 import { TrackingCodeHead, TrackingCodeBodyStart, TrackingCodeBodyEnd } from "@/components/tracking-code-injector";
+import { ScrollTopButton } from "@/components/scroll-top-button";
 
 const notoSansKR = Noto_Sans_KR({
   variable: "--font-noto-sans-kr",
@@ -146,6 +147,7 @@ export default function RootLayout({
           <Footer />
           <InlineEditModal />
         </AuthProvider>
+        <ScrollTopButton />
         <TrackingCodeBodyEnd />
       </body>
     </html>

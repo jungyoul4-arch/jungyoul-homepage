@@ -32,7 +32,7 @@ export function Header() {
               <span className="text-white font-bold text-sm">JY</span>
             </div>
             <div className="flex flex-col">
-              <span className="text-lg font-bold text-gray-900 leading-tight">
+              <span className="text-lg font-extrabold text-gray-900 leading-tight">
                 정율 교육정보
               </span>
             </div>
@@ -44,9 +44,10 @@ export function Header() {
               <Link
                 key={item.label}
                 href={item.href}
-                className="text-[15px] font-medium text-gray-700 hover:text-blue-600 transition-colors"
+                className="relative text-[15px] font-medium text-gray-700 hover:text-[#1428a0] transition-colors group"
               >
                 {item.label}
+                <span className="absolute bottom-0 left-0 h-[2px] w-0 bg-[#1428a0] transition-all duration-[250ms] group-hover:w-full" />
               </Link>
             ))}
           </nav>
@@ -122,7 +123,7 @@ export function Header() {
                     <Link
                       key={item.label}
                       href={item.href}
-                      className="px-3 py-1.5 bg-white border border-gray-200 rounded-sm text-sm text-gray-600 hover:border-blue-600 hover:text-blue-600 transition-colors"
+                      className="px-3 py-1.5 bg-white border border-gray-200 rounded-sm text-sm text-gray-600 hover:border-[#1428a0] hover:text-[#1428a0] transition-colors"
                     >
                       {item.label}
                     </Link>
