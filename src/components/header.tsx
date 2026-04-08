@@ -10,6 +10,7 @@ const navItems = [
   { label: "교육칼럼", href: "/articles?category=column" },
   { label: "합격스토리", href: "/articles?category=success" },
   { label: "선생님", href: "/teachers" },
+  { label: "FAQ", href: "/faq" },
   { label: "상담신청", href: "/contact" },
 ];
 
