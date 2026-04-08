@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { teachers } from "@/lib/data";
 
 export const metadata: Metadata = {
@@ -36,7 +35,7 @@ export default function TeachersPage() {
               name: t.name,
               jobTitle: `${t.subject} 강사`,
             })),
-          }),
+          }).replace(/</g, "\\u003c"),
         }}
       />
 
@@ -60,9 +59,8 @@ export default function TeachersPage() {
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
               {subjectTeachers.map((teacher) => (
-                <Link
+                <div
                   key={teacher.id}
-                  href={`/teachers/${teacher.slug}`}
                   className="group text-center"
                 >
                   {/* Teacher Photo */}
@@ -87,10 +85,10 @@ export default function TeachersPage() {
                   <p className="text-xs text-blue-600 font-medium mb-1">
                     {teacher.subject}
                   </p>
-                  <p className="text-sm font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
+                  <p className="text-sm font-bold text-gray-900">
                     {teacher.name} 선생님
                   </p>
-                </Link>
+                </div>
               ))}
             </div>
           </section>

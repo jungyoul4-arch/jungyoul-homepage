@@ -62,7 +62,7 @@ export function HighlightsCarousel({ highlights }: HighlightsCarouselProps) {
           {highlights.map((item) => (
             <Link
               key={item.id}
-              href={`/highlights/${item.slug}`}
+              href="/articles"
               className="group shrink-0 w-[280px] md:w-[320px]"
             >
               {/* Thumbnail */}

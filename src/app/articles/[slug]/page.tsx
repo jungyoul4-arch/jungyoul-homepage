@@ -20,6 +20,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: article.title,
     description: article.excerpt,
+    keywords: [article.categoryLabel, "정율 교육정보", "입시", "교육"],
     openGraph: {
       type: "article",
       title: article.title,
@@ -61,6 +62,7 @@ export default async function ArticlePage({ params }: Props) {
             "@type": "Article",
             headline: article.title,
             description: article.excerpt,
+            image: ["https://www.jungyoul.net/og-image.png"],
             datePublished: article.date.replace(/\//g, "-"),
             dateModified: article.date.replace(/\//g, "-"),
             author: {
@@ -80,7 +82,37 @@ export default async function ArticlePage({ params }: Props) {
               "@type": "WebPage",
               "@id": `https://www.jungyoul.net/articles/${article.slug}`,
             },
-          }),
+          }).replace(/</g, "\\u003c"),
+        }}
+      />
+
+      {/* BreadcrumbList JSON-LD — 구글 리치 결과 */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            itemListElement: [
+              {
+                "@type": "ListItem",
+                position: 1,
+                name: "홈",
+                item: "https://www.jungyoul.net",
+              },
+              {
+                "@type": "ListItem",
+                position: 2,
+                name: "교육정보",
+                item: "https://www.jungyoul.net/articles",
+              },
+              {
+                "@type": "ListItem",
+                position: 3,
+                name: article.categoryLabel,
+              },
+            ],
+          }).replace(/</g, "\\u003c"),
         }}
       />
 
@@ -115,7 +147,12 @@ export default async function ArticlePage({ params }: Props) {
           <p className="text-base md:text-lg text-gray-600 leading-relaxed mb-4">
             {article.excerpt}
           </p>
-          <time className="text-sm text-gray-400">{article.date}</time>
+          <time
+            dateTime={article.date.replace(/\//g, "-")}
+            className="text-sm text-gray-400"
+          >
+            {article.date}
+          </time>
         </header>
 
         {/* Article Hero Image */}
@@ -176,7 +213,12 @@ export default async function ArticlePage({ params }: Props) {
                   <h3 className="text-sm font-bold text-gray-900 line-clamp-2 group-hover:text-blue-600 transition-colors">
                     {related.title}
                   </h3>
-                  <time className="text-xs text-gray-400 mt-1 block">{related.date}</time>
+                  <time
+                    dateTime={related.date.replace(/\//g, "-")}
+                    className="text-xs text-gray-400 mt-1 block"
+                  >
+                    {related.date}
+                  </time>
                 </Link>
               ))}
             </div>

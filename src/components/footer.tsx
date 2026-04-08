@@ -16,24 +16,10 @@ export function Footer() {
             </Link>
             <span className="text-gray-600 hidden sm:inline">|</span>
             <Link
-              href="/seminars"
-              className="text-sm text-gray-400 hover:text-white transition-colors"
-            >
-              설명회 안내
-            </Link>
-            <span className="text-gray-600 hidden sm:inline">|</span>
-            <Link
               href="/teachers"
               className="text-sm text-gray-400 hover:text-white transition-colors"
             >
               선생님 소개
-            </Link>
-            <span className="text-gray-600 hidden sm:inline">|</span>
-            <Link
-              href="/tuition"
-              className="text-sm text-gray-400 hover:text-white transition-colors"
-            >
-              교습비 안내
             </Link>
             <span className="text-gray-600 hidden sm:inline">|</span>
             <Link
@@ -126,9 +112,6 @@ export function Footer() {
             </Link>
             <Link href="/terms" className="hover:text-white transition-colors">
               이용약관
-            </Link>
-            <Link href="/csr" className="hover:text-white transition-colors">
-              사회공헌
             </Link>
           </div>
           <p className="text-xs">

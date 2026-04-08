@@ -92,14 +92,12 @@ export function HeroCarousel({ articles }: HeroCarouselProps) {
     };
   };
 
-  const article = articles[current];
-
   return (
     <section className="relative bg-white pt-6 pb-2" aria-label="주요 교육정보">
       {/* Carousel Container — 삼성 뉴스룸 스타일: overflow visible로 양쪽 카드 프리뷰 */}
       <div className="relative max-w-[1420px] mx-auto">
         {/* Slides Viewport */}
-        <div className="relative overflow-hidden" style={{ paddingBottom: "37%" }}>
+        <div className="relative overflow-hidden aspect-[100/37]">
           <div className="absolute inset-0 flex items-center justify-center">
             {articles.map((art, index) => (
               <div

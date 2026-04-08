@@ -3,6 +3,10 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "이용약관",
   description: "주식회사정율 서비스 이용약관",
+  openGraph: {
+    title: "이용약관 | 정율 교육정보",
+    description: "주식회사정율 서비스 이용약관",
+  },
   alternates: {
     canonical: "/terms",
   },

@@ -7,6 +7,7 @@ import { Search, X, Menu } from "lucide-react";
 const navItems = [
   { label: "교육정보", href: "/articles" },
   { label: "입시전략", href: "/articles?category=strategy" },
+  { label: "교육칼럼", href: "/articles?category=column" },
   { label: "합격스토리", href: "/articles?category=success" },
   { label: "선생님", href: "/teachers" },
   { label: "상담신청", href: "/contact" },
@@ -89,17 +90,22 @@ export function Header() {
             <div className="mt-4 max-w-2xl mx-auto">
               <p className="text-xs text-gray-500 mb-2">추천 검색어</p>
               <div className="flex flex-wrap gap-2">
-                {["수능전략", "논술", "내신관리", "고교학점제", "합격스토리", "AI교육"].map(
-                  (keyword) => (
+                {[
+                  { label: "수능전략", href: "/articles?category=strategy" },
+                  { label: "논술", href: "/articles?category=strategy" },
+                  { label: "내신관리", href: "/articles?category=strategy" },
+                  { label: "고교학점제", href: "/articles?category=column" },
+                  { label: "합격스토리", href: "/articles?category=success" },
+                  { label: "AI교육", href: "/articles?category=column" },
+                ].map((item) => (
                     <Link
-                      key={keyword}
-                      href={`/search?q=${keyword}`}
+                      key={item.label}
+                      href={item.href}
                       className="px-3 py-1.5 bg-white border border-gray-200 rounded-sm text-sm text-gray-600 hover:border-blue-600 hover:text-blue-600 transition-colors"
                     >
-                      {keyword}
+                      {item.label}
                     </Link>
-                  )
-                )}
+                  ))}
               </div>
             </div>
           </div>

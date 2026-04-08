@@ -7,7 +7,8 @@ import { Footer } from "@/components/footer";
 const notoSansKR = Noto_Sans_KR({
   variable: "--font-noto-sans-kr",
   subsets: ["latin"],
-  weight: ["300", "400", "500", "700", "900"],
+  weight: ["400", "500", "700"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -27,6 +28,17 @@ export const metadata: Metadata = {
     "교육칼럼",
     "정율사관",
     "부천학원",
+    "부천 입시학원",
+    "부천역 학원",
+    "부천 수능학원",
+    "부천 논술학원",
+    "수능 국어 공부법",
+    "내신 1등급 전략",
+    "약술형 논술",
+    "2026 수능",
+    "학생부종합전형",
+    "수시 정시 전략",
+    "AI 진로설계",
   ],
   authors: [{ name: "정율 교육정보" }],
   creator: "주식회사정율",
@@ -37,6 +49,10 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://www.jungyoul.net"),
   alternates: {
     canonical: "/",
+    languages: {
+      ko: "https://www.jungyoul.net",
+      "x-default": "https://www.jungyoul.net",
+    },
   },
   openGraph: {
     type: "website",
@@ -73,7 +89,7 @@ export const metadata: Metadata = {
     },
   },
   verification: {
-    google: "YOUR_GOOGLE_VERIFICATION_CODE",
+    google: "REPLACE_WITH_GOOGLE_VERIFICATION_CODE",
   },
 };
 
@@ -85,7 +101,7 @@ export default function RootLayout({
   return (
     <html lang="ko" className={`${notoSansKR.variable} h-full antialiased`}>
       <head>
-        <meta name="naver-site-verification" content="YOUR_NAVER_VERIFICATION_CODE" />
+        <meta name="naver-site-verification" content="REPLACE_WITH_NAVER_VERIFICATION_CODE" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -113,7 +129,7 @@ export default function RootLayout({
                 "https://blog.naver.com/jungyoul_edu",
                 "https://www.youtube.com/@jungyoulTV",
               ],
-            }),
+            }).replace(/</g, "\\u003c"),
           }}
         />
       </head>

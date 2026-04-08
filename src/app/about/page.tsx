@@ -16,6 +16,35 @@ export const metadata: Metadata = {
 export default function AboutPage() {
   return (
     <div className="max-w-[1280px] mx-auto px-4 py-10">
+      {/* AboutPage JSON-LD */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "AboutPage",
+            name: "회사소개 - 정율 교육정보",
+            description:
+              "주식회사정율은 학생 개개인에 맞는 맞춤형 교육을 제공하는 교육 전문 기업입니다.",
+            url: "https://www.jungyoul.net/about",
+            mainEntity: {
+              "@type": "EducationalOrganization",
+              name: "주식회사정율",
+              founder: { "@type": "Person", name: "곽정율" },
+              address: {
+                "@type": "PostalAddress",
+                streetAddress: "길주로91 601호(비잔티움 6층)",
+                addressLocality: "부천시",
+                addressRegion: "경기도",
+                postalCode: "14544",
+                addressCountry: "KR",
+              },
+              telephone: "032-321-9937",
+            },
+          }).replace(/</g, "\\u003c"),
+        }}
+      />
+
       <h1 className="text-2xl md:text-[32px] font-bold text-gray-900 mb-2">
         회사소개
       </h1>
