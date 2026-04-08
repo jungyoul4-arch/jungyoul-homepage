@@ -38,6 +38,15 @@ export const videos = sqliteTable("videos", {
   sortOrder: integer("sort_order").default(0),
 });
 
+export const trackingCodes = sqliteTable("tracking_codes", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  code: text("code").notNull(),
+  position: text("position").notNull(), // "head" | "body-start" | "body-end"
+  enabled: integer("enabled", { mode: "boolean" }).default(true),
+  createdAt: text("created_at").$defaultFn(() => new Date().toISOString()),
+});
+
 export const admin = sqliteTable("admin", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   username: text("username").unique().notNull(),

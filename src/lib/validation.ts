@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { createInsertSchema, createUpdateSchema } from "drizzle-zod";
-import { articles, highlights, teachers, videos } from "@/db/schema";
+import { articles, highlights, teachers, videos, trackingCodes } from "@/db/schema";
 import { NextResponse } from "next/server";
 
 // Articles
@@ -69,6 +69,23 @@ export const updateVideoSchema = createUpdateSchema(videos, {
   youtubeId: (schema) => schema.max(50),
   thumbnail: (schema) => schema.max(500),
 }).omit({ id: true });
+
+// Tracking Codes
+export const insertTrackingCodeSchema = createInsertSchema(trackingCodes, {
+  name: (schema) => schema.min(1).max(100),
+  code: (schema) => schema.min(1).max(50_000),
+  position: (schema) => schema.refine((v) => ["head", "body-start", "body-end"].includes(v), {
+    message: "위치는 head, body-start, body-end 중 하나여야 합니다.",
+  }),
+}).omit({ id: true, createdAt: true });
+
+export const updateTrackingCodeSchema = createUpdateSchema(trackingCodes, {
+  name: (schema) => schema.max(100),
+  code: (schema) => schema.max(50_000),
+  position: (schema) => schema.refine((v) => !v || ["head", "body-start", "body-end"].includes(v), {
+    message: "위치는 head, body-start, body-end 중 하나여야 합니다.",
+  }),
+}).omit({ id: true, createdAt: true });
 
 export function validationError(e: unknown) {
   if (e instanceof z.ZodError) {
