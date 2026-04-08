@@ -1,224 +1,116 @@
-# Admin Dashboard Design — Tracking Codes + Content Manager
+# Admin Dashboard Design — Tracking Codes + OG/Hero Improvements
 
 ## Overview
 
-`/admin` 대시보드에서 마케팅 담당자가 두 가지를 자유롭게 관리:
-1. **추적 코드** — GA, Meta Pixel, 네이버 등 스크립트 추가/삭제
-2. **콘텐츠(기사)** — HTML 에디터로 기사 작성/수정/삭제
+기존 관리자 대시보드(`/admin`)에 **추적 코드 관리** 기능을 추가하고,
+**고정 페이지 hero 이미지 + OG 태그**를 개선한다.
 
-모두 Vercel Blob에 저장. 재배포 없이 즉시 반영.
+## Existing Infrastructure (활용)
 
-## Architecture
+- **DB**: Cloudflare D1 (SQLite) + Drizzle ORM
+- **Storage**: Cloudflare R2 (이미지 업로드 — `/api/admin/upload`)
+- **Auth**: JWT + bcrypt + httpOnly 쿠키 (`requireAdmin()`)
+- **Admin**: `/admin` 대시보드 — 기사/선생님/영상/하이라이트 CRUD 존재
+- **Articles**: DB에 `content` 필드 이미 존재 (HTML 본문)
 
-```
-[마케팅 담당자] → /admin (비밀번호 인증)
-       ↓
-   탭 1: 추적 코드 관리    탭 2: 콘텐츠 관리
-       ↓                       ↓
-   /api/tracking-codes     /api/articles
-       ↓                       ↓
-   Vercel Blob             Vercel Blob
-   (tracking-codes.json)   (articles.json)
-       ↓                       ↓
-   layout.tsx 삽입          articles 페이지에서 렌더링
-```
-
-## Authentication
-
-- **방식**: `ADMIN_PASSWORD` 환경변수 기반 단일 비밀번호
-- **세션**: httpOnly + secure 쿠키 (24시간 만료)
-- **적용 범위**: `/admin` 페이지 + 모든 변경 API (POST/PUT/DELETE)
-
----
-
-## Feature 1: Tracking Code Manager
+## Feature 1: Tracking Code Manager (신규)
 
 ### Data Model
 
-```typescript
-interface TrackingCode {
-  id: string;                                    // nanoid
-  name: string;                                  // "Google Analytics", "카카오 픽셀" 등
-  code: string;                                  // 실제 스크립트 코드
-  position: "head" | "body-start" | "body-end";  // 삽입 위치
-  enabled: boolean;                              // 활성/비활성 토글
-  createdAt: string;                             // ISO 8601
-}
-```
+DB 테이블 추가 (`src/db/schema.ts`):
 
-Vercel Blob에 `tracking-codes.json`으로 저장. 배열 형태: `TrackingCode[]`.
+```typescript
+export const trackingCodes = sqliteTable("tracking_codes", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  code: text("code").notNull(),
+  position: text("position").notNull(),          // "head" | "body-start" | "body-end"
+  enabled: integer("enabled", { mode: "boolean" }).default(true),
+  createdAt: text("created_at").$defaultFn(() => new Date().toISOString()),
+});
+```
 
 ### API Routes
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/api/tracking-codes` | 전체 목록 조회 |
-| POST | `/api/tracking-codes` | 새 코드 추가 |
-| PUT | `/api/tracking-codes/[id]` | 수정 |
-| DELETE | `/api/tracking-codes/[id]` | 삭제 |
+| GET | `/api/tracking-codes` | 전체 목록 조회 (인증 불필요) |
+| POST | `/api/admin/tracking-codes` | 새 코드 추가 |
+| PUT | `/api/admin/tracking-codes/[id]` | 수정 |
+| DELETE | `/api/admin/tracking-codes/[id]` | 삭제 |
 
-### Admin UI (탭 1)
+기존 `requireAdmin()` 미들웨어 재사용.
 
-- 카드 리스트: 이름, 위치 배지, 활성 토글, 수정/삭제 버튼
+### Admin UI
+
+`/admin` 대시보드에 "추적 코드" 카드 추가 → `/admin/tracking-codes` 페이지:
+- 카드 리스트: 이름, 위치 배지, 활성 토글, 수정/삭제
 - 추가/수정 폼: 이름(input), 코드(textarea), 위치(select), 활성(toggle)
+- async/defer 권장 안내 표시
 - 삭제 시 확인 다이얼로그
 
 ### Frontend Injection
 
-`layout.tsx`에서 서버 컴포넌트로 Blob fetch → position별 삽입:
+`layout.tsx`에서 서버 사이드로 DB에서 활성 코드 fetch → position별 삽입:
 - `head` → `<head>` 안에 `dangerouslySetInnerHTML`
 - `body-start` → `<body>` 여는 태그 직후
 - `body-end` → `<body>` 닫는 태그 직전
 
-전체 페이지 공통 삽입 (페이지별 분기 없음).
+## Feature 2: OG Tag / Hero Image Improvements
 
----
+### 기사 OG 이미지 개선
 
-## Feature 2: Content Manager (Articles)
+`articles/[slug]/page.tsx`의 `generateMetadata()`에서:
+- `og:image` = 기사 `thumbnail` (현재 `/og-image.png` 고정 → 기사별 대표 이미지로 변경)
+- `og:title` = meta title (이미 동일)
+- `og:description` = meta description (이미 동일)
+- thumbnail이 비어있으면 fallback으로 `/og-image.png`
 
-### Data Model
+### 고정 페이지 hero 이미지 + OG
 
-기존 Article 인터페이스를 확장하여 HTML 본문 추가:
+6개 고정 페이지(about, articles, contact, faq, location, teachers)에:
+1. 상단 hero/banner 이미지 섹션 추가
+2. metadata의 `og:image`를 해당 hero 이미지로 설정
 
-```typescript
-interface Article {
-  id: string;                  // nanoid
-  title: string;               // 기사 제목
-  excerpt: string;             // 요약 (목록/SEO용)
-  content: string;             // HTML 본문 (신규 필드)
-  category: Category;          // "strategy" | "column" | "success" | "news"
-  categoryLabel: string;       // "입시전략" | "교육칼럼" | "합격스토리" | "공지사항"
-  thumbnail: string;           // 대표 이미지 URL (목록 + OG image로 사용)
-  date: string;                // "2026/03/27" 형식
-  slug: string;                // URL slug
-  featured?: boolean;          // 홈 featured 여부
-  createdAt: string;           // ISO 8601
-  updatedAt: string;           // ISO 8601
-}
-```
+| 페이지 | hero 이미지 | OG image |
+|--------|------------|----------|
+| 회사소개 | `/images/hero-about.jpg` | 동일 |
+| 교육정보 | `/images/hero-articles.jpg` | 동일 |
+| 상담신청 | `/images/hero-contact.jpg` | 동일 |
+| FAQ | `/images/hero-faq.jpg` | 동일 |
+| 찾아오는 길 | `/images/hero-location.jpg` | 동일 |
+| 선생님 소개 | `/images/hero-teachers.jpg` | 동일 |
 
-Vercel Blob에 `articles.json`으로 저장. 기존 `data.ts`의 12개 기사를 초기 시드 데이터로 마이그레이션.
-
-### API Routes
-
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/api/articles` | 전체 목록 조회 |
-| GET | `/api/articles/[slug]` | 단건 조회 |
-| POST | `/api/articles` | 새 기사 추가 |
-| PUT | `/api/articles/[slug]` | 수정 |
-| DELETE | `/api/articles/[slug]` | 삭제 |
-
-### Admin UI (탭 2)
-
-- **목록**: 기사 테이블 (제목, 카테고리, 날짜, featured 배지, 수정/삭제)
-- **작성/수정 폼**:
-  - 제목 (input)
-  - 요약 (textarea, SEO description용)
-  - 본문 (HTML textarea — raw HTML 입력)
-  - 카테고리 (select)
-  - 슬러그 (input, 자동 생성 + 수동 편집 가능)
-  - 썸네일 URL (input)
-  - Featured 토글
-  - 날짜 (date picker)
-- **미리보기**: 본문 HTML을 실시간 렌더링하여 확인
-- **삭제**: 확인 다이얼로그
-
-### Frontend Changes
-
-- `data.ts`에서 하드코딩된 articles 배열 제거 → Blob에서 런타임 fetch
-- `articles/page.tsx`: Blob에서 기사 목록 fetch
-- `articles/[slug]/page.tsx`: Blob에서 개별 기사 fetch, `content` 필드를 `dangerouslySetInnerHTML`로 본문 렌더링
-- `generateStaticParams` → 동적 렌더링으로 전환 (Blob 기반)
-- 홈페이지의 hero, latest articles 등도 Blob에서 fetch
-- `data.ts`의 highlights, videos, teachers 데이터는 현재 scope에서 그대로 유지
-
-### OG Tag / Meta Tag 전략
-
-**기사(누적 콘텐츠)**:
-- `og:title` = 기사 title
-- `og:description` = 기사 excerpt
-- `og:image` = 기사 thumbnail (대표 이미지) — 기사별 고유 이미지
-- `meta description` = 기사 excerpt
-- 관리자 UI에서 대표 이미지(thumbnail)를 필수 입력으로 설정
-
-**고정 페이지 (about, contact, faq, location, teachers)**:
-- 각 고정 페이지 상단에 hero/banner 이미지 섹션 추가
-- `og:image` = 해당 페이지의 hero 이미지
-- `og:title` = 페이지 meta title과 동일
-- `og:description` = 페이지 meta description과 동일
-- hero 이미지는 `/public/images/hero-{page}.jpg` 형태로 저장 (1200x630 이상, OG 호환 비율)
-
-**고정 페이지 hero 이미지 목록**:
-| 페이지 | 이미지 파일 | 설명 |
-|--------|------------|------|
-| 홈 | 기존 HeroCarousel 유지 | OG는 `/og-image.png` 유지 |
-| 회사소개 | `/images/hero-about.jpg` | 학원 외관 또는 브랜드 이미지 |
-| 교육정보 | `/images/hero-articles.jpg` | 교육 콘텐츠 대표 이미지 |
-| 상담신청 | `/images/hero-contact.jpg` | 상담 안내 이미지 |
-| FAQ | `/images/hero-faq.jpg` | FAQ 대표 이미지 |
-| 찾아오는 길 | `/images/hero-location.jpg` | 학원 위치/건물 사진 |
-| 선생님 소개 | `/images/hero-teachers.jpg` | 강사진 단체 또는 대표 이미지 |
-
-### Migration (초기 시드)
-
-기존 `data.ts`의 12개 기사에 `content` 필드(기존 placeholder 본문)를 추가하여 Blob에 업로드하는 시드 스크립트 작성.
-
----
-
-## Security
-
-- **인증**: `ADMIN_PASSWORD` 환경변수 기반
-- **세션**: httpOnly + secure 쿠키
-- **추적 코드 XSS**: 관리자 신뢰 — sanitize 불필요
-- **기사 HTML XSS**: 관리자 신뢰 — `dangerouslySetInnerHTML` 사용
-- **API 보호**: 변경 API는 쿠키 검증 필수, GET은 인증 불필요
-
-## Dependencies (추가)
-
-- `@vercel/blob` — 파일 스토리지
-- `nanoid` — URL-safe ID 생성
+hero 이미지는 `/public/images/`에 정적 배치. placeholder 이미지로 시작, 실제 사진은 나중에 교체.
 
 ## Potential Issues & Mitigations
 
-### 치명적 — 반드시 구현에 반영
+### 치명적
 
 | # | 문제 | 대응 |
 |---|------|------|
-| 1 | sitemap.ts Blob fetch 실패 시 빈 사이트맵 → 구글 인덱스 삭제 위험 | fetch 실패 시 에러 throw (빈 배열 반환 금지) |
-| 2 | 기사 필수 필드 미검증 → JSON-LD 불완전 → 리치 결과 탈락 | API에서 title, excerpt, date, slug 필수 유효성 검증 |
-| 3 | 기사 삭제 → 404 누적 → 사이트 신뢰도 하락 | 삭제 시 카테고리 목록으로 301 리다이렉트 옵션 |
-| 4 | 기존 12개 기사 slug 변경 → 인덱싱된 URL 404 | 시드 스크립트에서 기존 slug 100% 보존 |
-| 5 | 기사 슬러그 충돌 → URL 중복/404 | 저장 시 슬러그 중복 체크, 중복이면 거부 |
+| 1 | sitemap Blob→DB 전환 시 fetch 실패 → 빈 사이트맵 | sitemap.ts는 이미 DB 기반. 변경 불필요 |
+| 2 | 기사 필수 필드 미검증 → JSON-LD 불완전 | 기존 `insertArticleSchema` (drizzle-zod) 활용. 이미 검증 중 |
+| 3 | 추적 코드 삽입으로 렌더링 블로킹 | admin UI에 async/defer 안내 표시 |
 
-### 중요 — 구현 시 반영
+### 중요
 
 | # | 문제 | 대응 |
 |---|------|------|
-| 6 | Blob 런타임 fetch → TTFB 증가 → Core Web Vitals 감점 | layout.tsx, articles 페이지에 ISR `revalidate: 60` 적용 |
-| 7 | HTML 본문에 시맨틱 태그 없이 작성 → AEO 효과 없음 | 관리자 UI에 시맨틱 HTML 템플릿 제공 (`<h2>`, `<p>`, `<ul>`) |
-| 8 | 추적 코드 렌더링 블로킹 → FCP/LCP 저하 | 삽입 시 `async`/`defer` 권장 안내 표시 |
-| 9 | 모든 기사 OG 이미지 동일 → SNS/AI 인용 시 구분 불가 | 기사: thumbnail → og:image, 고정 페이지: hero 이미지 → og:image (해결됨) |
-| 10 | HTML 본문 깨짐 (닫히지 않은 태그) → 페이지 레이아웃 파괴 | 미리보기 기능 + 본문을 격리된 `<div>`로 감싸기 |
-| 11 | articles.json 비대화 (수백 개 기사) | 초기엔 단일 파일, 50개 이상 시 목록/상세 분리 저장 |
-| 12 | JSON 데이터 백업 부재 → Blob 장애 시 복구 불가 | 관리자 UI에 JSON 내보내기/가져오기 버튼 |
-| 13 | 로그인 브루트포스 공격 | 5회 실패 시 1분 대기 + 쿠키 서명(위조 방지) |
+| 4 | 추적 코드 DB fetch → TTFB 증가 | `unstable_cache` 또는 revalidate 적용 |
+| 5 | hero 이미지 미제공 시 OG 깨짐 | placeholder 이미지 기본 제공 + fallback `/og-image.png` |
+| 6 | 추적 코드 5개 이상 → 성능 저하 | 개수 경고 UI |
 
-### 권장 — 운영 단계 개선
+### 권장
 
 | # | 문제 | 대응 |
 |---|------|------|
-| 14 | 동시 편집 race condition → 데이터 덮어쓰기 | `updatedAt` 타임스탬프 비교로 충돌 감지 |
-| 15 | 추적 코드 5개 이상 → 성능 저하 | 개수 경고 UI |
-| 16 | GTM + 개별 GA 이중 삽입 → 데이터 왜곡 | "GTM 사용 시 개별 코드는 GTM에서 관리" 안내 |
-| 17 | 관리자 계정 탈취 → 악성 스크립트 전체 삽입 | 비밀번호 강도 가이드 + 변경 시 이메일 알림 (향후) |
-| 18 | AI 봇 크롤링 빈도 낮음 → 새 기사 AI 검색 반영 지연 | `revalidate` 300초 이내 유지 |
-| 19 | 본문 내 이미지가 `<img>` → LCP 최적화 누락 | 향후 이미지 업로드 + next/image 변환 고려 |
+| 7 | GTM + 개별 GA 이중 삽입 | 안내 문구 표시 |
+| 8 | 관리자 계정 탈취 → 악성 스크립트 삽입 | 기존 JWT + bcrypt 인증으로 보호 |
 
 ## Scope
 
-- 추적 코드: 전체 페이지 공통 삽입만
-- 콘텐츠: 기사(articles)만 관리. highlights, videos, teachers는 현재 scope 외
-- 이미지 업로드: 현재 scope 외 (URL 직접 입력). 단, 고정 페이지 hero 이미지는 `/public/images/`에 정적 배치
-- OG 태그: 기사별 대표 이미지 + 고정 페이지 hero 이미지 적용 (scope 내)
-- sitemap.ts: Blob 기반으로 업데이트 (scope 내)
+- 추적 코드: DB 테이블 + CRUD API + 관리자 UI + layout.tsx 삽입
+- OG 태그: 기사별 thumbnail → og:image, 고정 페이지 hero → og:image
+- 고정 페이지: hero 이미지 섹션 추가 (placeholder로 시작)
+- 기존 기사 관리 기능: 변경 없음 (이미 완성됨)
