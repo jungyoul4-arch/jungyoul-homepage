@@ -9,6 +9,7 @@ import {
   Video,
   LayoutDashboard,
   LogOut,
+  Code,
 } from "lucide-react";
 
 const sidebarItems = [
@@ -17,6 +18,7 @@ const sidebarItems = [
   { label: "하이라이트", href: "/admin/highlights", icon: Star },
   { label: "강사 관리", href: "/admin/teachers", icon: Users },
   { label: "영상 관리", href: "/admin/videos", icon: Video },
+  { label: "추적 코드", href: "/admin/tracking-codes", icon: Code },
 ];
 
 export default function AdminLayout({
