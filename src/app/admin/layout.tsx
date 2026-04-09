@@ -10,7 +10,9 @@ import {
   LayoutDashboard,
   LogOut,
   Code,
+  Settings,
 } from "lucide-react";
+import { SiteLogo } from "@/components/site-logo";
 
 const sidebarItems = [
   { label: "대시보드", href: "/admin", icon: LayoutDashboard },
@@ -19,6 +21,7 @@ const sidebarItems = [
   { label: "강사 관리", href: "/admin/teachers", icon: Users },
   { label: "영상 관리", href: "/admin/videos", icon: Video },
   { label: "추적 코드", href: "/admin/tracking-codes", icon: Code },
+  { label: "웹사이트 로고 설정", href: "/admin/settings", icon: Settings },
 ];
 
 export default function AdminLayout({
@@ -44,9 +47,7 @@ export default function AdminLayout({
       <aside className="w-60 bg-white border-r border-gray-200 flex flex-col shrink-0">
         <div className="h-16 flex items-center px-5 border-b border-gray-200">
           <Link href="/admin" className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-blue-600 rounded-sm flex items-center justify-center">
-              <span className="text-white font-bold text-xs">JY</span>
-            </div>
+            <SiteLogo size="sm" />
             <span className="font-bold text-gray-900 text-sm">관리자</span>
           </Link>
         </div>

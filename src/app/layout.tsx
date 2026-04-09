@@ -50,18 +50,21 @@ export const metadata: Metadata = {
   formatDetection: {
     telephone: false,
   },
-  metadataBase: new URL("https://www.jungyoul.net"),
+  metadataBase: new URL("https://news.jung-youl.com"),
   alternates: {
     canonical: "/",
     languages: {
-      ko: "https://www.jungyoul.net",
-      "x-default": "https://www.jungyoul.net",
+      ko: "https://news.jung-youl.com",
+      "x-default": "https://news.jung-youl.com",
     },
+  },
+  icons: {
+    icon: { url: "/api/admin/upload/favicon/favicon-32x32.png", type: "image/png", sizes: "32x32" },
   },
   openGraph: {
     type: "website",
     locale: "ko_KR",
-    url: "https://www.jungyoul.net",
+    url: "https://news.jung-youl.com",
     siteName: "정율 교육정보",
     title: "정율 교육정보 — 입시·교육 전문 미디어",
     description:
@@ -115,8 +118,8 @@ export default function RootLayout({
               "@type": "EducationalOrganization",
               name: "정율 교육정보",
               alternateName: "정율사관학원",
-              url: "https://www.jungyoul.net",
-              logo: "https://www.jungyoul.net/logo.png",
+              url: "https://news.jung-youl.com",
+              logo: "https://news.jung-youl.com/logo.png",
               description:
                 "대입 입시, 수능, 내신, 논술 등 교육 정보를 전문적으로 제공하는 미디어",
               address: {

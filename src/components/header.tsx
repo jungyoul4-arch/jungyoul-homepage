@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { Search, X, Menu, Lock, LayoutDashboard } from "lucide-react";
 import { useAuth } from "./auth-provider";
+import { SiteLogo } from "./site-logo";
 
 const navItems = [
   { label: "교육정보", href: "/articles" },
@@ -28,9 +29,7 @@ export function Header() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 shrink-0">
-            <div className="w-8 h-8 bg-blue-600 rounded-sm flex items-center justify-center">
-              <span className="text-white font-bold text-sm">JY</span>
-            </div>
+            <SiteLogo size="md" />
             <div className="flex flex-col">
               <span className="text-lg font-extrabold text-gray-900 leading-tight">
                 정율 교육정보

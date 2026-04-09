@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { SiteLogo } from "@/components/site-logo";
 
 export default function AdminLoginPage() {
   const [username, setUsername] = useState("");
@@ -38,8 +39,8 @@ export default function AdminLoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="w-full max-w-sm p-8 bg-white rounded-lg shadow-sm border border-gray-200">
         <div className="text-center mb-8">
-          <div className="w-12 h-12 bg-blue-600 rounded-sm flex items-center justify-center mx-auto mb-3">
-            <span className="text-white font-bold text-lg">JY</span>
+          <div className="flex justify-center mb-3">
+            <SiteLogo size="lg" />
           </div>
           <h1 className="text-xl font-bold text-gray-900">관리자 로그인</h1>
           <p className="text-sm text-gray-500 mt-1">정율 교육정보 관리 시스템</p>

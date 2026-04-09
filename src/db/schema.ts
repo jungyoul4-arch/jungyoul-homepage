@@ -52,3 +52,9 @@ export const admin = sqliteTable("admin", {
   username: text("username").unique().notNull(),
   passwordHash: text("password_hash").notNull(),
 });
+
+export const siteSettings = sqliteTable("site_settings", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+  updatedAt: text("updated_at").$defaultFn(() => new Date().toISOString()),
+});
