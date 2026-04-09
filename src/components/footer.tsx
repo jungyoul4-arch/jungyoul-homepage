@@ -119,6 +119,8 @@ export function Footer() {
           </div>
           <p className="text-xs">
             Copyright &copy; {new Date().getFullYear()} Jungyoul Co., Ltd. All rights reserved.
+            {" · "}
+            <span className="text-gray-600">v0.1.1</span>
           </p>
         </div>
       </div>
