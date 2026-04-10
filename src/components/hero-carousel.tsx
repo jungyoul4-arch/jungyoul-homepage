@@ -106,25 +106,25 @@ export function HeroCarousel({ slides }: HeroCarouselProps) {
         {/* Hover arrows (desktop only, fade in/out) */}
         {totalSlides > 1 && (
           <div
-            className={`hidden lg:block transition-opacity duration-200 ${
+            className={`hidden md:block transition-opacity duration-200 ${
               isHovered ? "opacity-100" : "opacity-0 pointer-events-none"
             }`}
           >
             <button
               onClick={prev}
-              className="absolute z-20 -translate-y-1/2 rounded-full bg-white/80 shadow-lg hover:bg-white transition-colors"
-              style={{ top: "calc(50% - 40px)", left: "-72px", width: "72px", height: "72px" }}
+              className="absolute z-20 rounded-full bg-white/80 shadow-lg hover:bg-white transition-colors"
+              style={{ top: "calc(50% - 36px)", left: "16px", width: "56px", height: "56px" }}
               aria-label="이전 슬라이드"
             >
-              <ChevronLeft className="mx-auto" size={32} strokeWidth={1.5} />
+              <ChevronLeft className="mx-auto" size={28} strokeWidth={1.5} />
             </button>
             <button
               onClick={next}
-              className="absolute z-20 -translate-y-1/2 rounded-full bg-white/80 shadow-lg hover:bg-white transition-colors"
-              style={{ top: "calc(50% - 40px)", right: "-72px", width: "72px", height: "72px" }}
+              className="absolute z-20 rounded-full bg-white/80 shadow-lg hover:bg-white transition-colors"
+              style={{ top: "calc(50% - 36px)", right: "16px", width: "56px", height: "56px" }}
               aria-label="다음 슬라이드"
             >
-              <ChevronRight className="mx-auto" size={32} strokeWidth={1.5} />
+              <ChevronRight className="mx-auto" size={28} strokeWidth={1.5} />
             </button>
           </div>
         )}
@@ -392,7 +392,7 @@ function SubCard({ article, tall }: { article: { id: string; title: string; exce
           {article.title}
         </p>
         <p
-          className="text-white/0 group-hover:text-white/90 mt-2 overflow-hidden transition-colors duration-100 group-hover:duration-300 group-hover:delay-100 text-sm"
+          className="text-white/90 mt-2 overflow-hidden text-sm hidden group-hover:block"
           style={{
             fontWeight: 400,
             lineHeight: 1.5,
@@ -539,7 +539,7 @@ function ContentOverlay({
         {title}
       </p>
       <p
-        className="text-white/0 group-hover:text-white/90 mt-3 overflow-hidden transition-colors duration-100 group-hover:duration-300 group-hover:delay-100 hidden md:block"
+        className="text-white/90 mt-3 overflow-hidden hidden md:group-hover:block"
         style={{
           fontSize: "1rem",
           fontWeight: 400,
