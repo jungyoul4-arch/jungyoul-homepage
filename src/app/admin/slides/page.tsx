@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef, useCallback } from "react";
-import { Plus, Trash2, Save, GripVertical, X, ChevronDown } from "lucide-react";
+import { Plus, Trash2, Save, GripVertical, X, ChevronDown, FileText } from "lucide-react";
 
 interface RawArticle {
   id: string;
@@ -24,6 +24,13 @@ interface Slide {
   sortOrder: number;
 }
 
+const categoryOptions = [
+  { value: "strategy", label: "입시전략" },
+  { value: "column", label: "교육칼럼" },
+  { value: "success", label: "합격스토리" },
+  { value: "news", label: "공지사항" },
+];
+
 const roleLabels: Record<string, string> = {
   main: "메인",
   "sub-image": "서브이미지",
@@ -44,6 +51,11 @@ export default function AdminSlidesPage() {
   const [loading, setLoading] = useState(true);
   const [orderChanged, setOrderChanged] = useState(false);
   const [savingOrder, setSavingOrder] = useState(false);
+
+  // Quick create article state: key = "slideId-itemIndex", value = form data
+  const [quickCreate, setQuickCreate] = useState<string | null>(null);
+  const [qcForm, setQcForm] = useState({ title: "", excerpt: "", category: "strategy", thumbnail: "" });
+  const [qcSaving, setQcSaving] = useState(false);
 
   // Drag state
   const dragItem = useRef<number | null>(null);
@@ -154,6 +166,51 @@ export default function AdminSlidesPage() {
       role: i.role,
     }));
     saveSlideItems(slideId, newItems);
+  }
+
+  function openQuickCreate(slideId: string, itemIndex: number) {
+    setQuickCreate(`${slideId}-${itemIndex}`);
+    setQcForm({ title: "", excerpt: "", category: "strategy", thumbnail: "" });
+  }
+
+  async function handleQuickCreate(slideId: string, itemIndex: number) {
+    if (!qcForm.title.trim()) {
+      alert("제목을 입력하세요.");
+      return;
+    }
+    setQcSaving(true);
+    try {
+      const catLabel = categoryOptions.find((c) => c.value === qcForm.category)?.label || "";
+      const res = await fetch("/api/admin/articles", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: qcForm.title,
+          excerpt: qcForm.excerpt || qcForm.title,
+          category: qcForm.category,
+          categoryLabel: catLabel,
+          thumbnail: qcForm.thumbnail,
+          date: new Date().toISOString().slice(0, 10).replace(/-/g, "/"),
+          slug: "",
+          featured: false,
+        }),
+      });
+      if (!res.ok) {
+        alert("기사 생성에 실패했습니다.");
+        return;
+      }
+      const { id: newArticleId } = await res.json();
+      // 슬롯에 새 기사 배정
+      const current = getSlideItems(slideId);
+      const newItems = current.map((i, idx) => ({
+        articleId: idx === itemIndex ? newArticleId : i.articleId,
+        role: i.role,
+      }));
+      await saveSlideItems(slideId, newItems);
+      setQuickCreate(null);
+    } finally {
+      setQcSaving(false);
+    }
   }
 
   function handleChangeRole(slideId: string, itemIndex: number, role: string) {
@@ -364,27 +421,93 @@ export default function AdminSlidesPage() {
                               />
                             </div>
 
-                            {/* Article selector */}
-                            <select
-                              value={item.articleId}
-                              onChange={(e) =>
-                                handleChangeArticle(slide.id, itemIdx, e.target.value)
-                              }
-                              className={`flex-1 h-8 px-2 text-sm border rounded bg-white appearance-none truncate focus:outline-none focus:border-blue-600 ${
-                                missing ? "border-red-300" : "border-gray-300"
-                              }`}
-                            >
-                              {missing && (
-                                <option value={item.articleId}>
-                                  ⚠ 삭제된 기사
-                                </option>
+                            {/* Article selector + quick create */}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex gap-1.5">
+                                <select
+                                  value={item.articleId}
+                                  onChange={(e) =>
+                                    handleChangeArticle(slide.id, itemIdx, e.target.value)
+                                  }
+                                  className={`flex-1 h-8 px-2 text-sm border rounded bg-white appearance-none truncate focus:outline-none focus:border-blue-600 ${
+                                    missing ? "border-red-300" : "border-gray-300"
+                                  }`}
+                                >
+                                  {missing && (
+                                    <option value={item.articleId}>
+                                      ⚠ 삭제된 기사
+                                    </option>
+                                  )}
+                                  {articles.map((a) => (
+                                    <option key={a.id} value={a.id}>
+                                      [{a.categoryLabel}] {a.title} ({a.date})
+                                    </option>
+                                  ))}
+                                </select>
+                                <button
+                                  onClick={() => openQuickCreate(slide.id, itemIdx)}
+                                  className="shrink-0 h-8 px-2 text-xs text-green-700 border border-green-300 rounded bg-green-50 hover:bg-green-100 transition-colors flex items-center gap-1"
+                                  title="새 기사 만들기"
+                                >
+                                  <FileText size={12} />
+                                  새 기사
+                                </button>
+                              </div>
+
+                              {/* Quick create inline form */}
+                              {quickCreate === `${slide.id}-${itemIdx}` && (
+                                <div className="mt-2 p-3 border border-green-200 rounded-lg bg-green-50/50 space-y-2">
+                                  <p className="text-xs font-bold text-green-800">새 기사 빠른 생성</p>
+                                  <input
+                                    type="text"
+                                    placeholder="제목 (필수)"
+                                    value={qcForm.title}
+                                    onChange={(e) => setQcForm({ ...qcForm, title: e.target.value })}
+                                    className="w-full h-8 px-2 text-sm border border-gray-300 rounded focus:outline-none focus:border-blue-600"
+                                  />
+                                  <textarea
+                                    placeholder="요약 (비워두면 제목과 동일)"
+                                    value={qcForm.excerpt}
+                                    onChange={(e) => setQcForm({ ...qcForm, excerpt: e.target.value })}
+                                    rows={2}
+                                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:border-blue-600 resize-none"
+                                  />
+                                  <div className="flex gap-2">
+                                    <select
+                                      value={qcForm.category}
+                                      onChange={(e) => setQcForm({ ...qcForm, category: e.target.value })}
+                                      className="h-8 px-2 text-sm border border-gray-300 rounded bg-white focus:outline-none focus:border-blue-600"
+                                    >
+                                      {categoryOptions.map((c) => (
+                                        <option key={c.value} value={c.value}>{c.label}</option>
+                                      ))}
+                                    </select>
+                                    <input
+                                      type="text"
+                                      placeholder="썸네일 URL (선택)"
+                                      value={qcForm.thumbnail}
+                                      onChange={(e) => setQcForm({ ...qcForm, thumbnail: e.target.value })}
+                                      className="flex-1 h-8 px-2 text-sm border border-gray-300 rounded focus:outline-none focus:border-blue-600"
+                                    />
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={() => handleQuickCreate(slide.id, itemIdx)}
+                                      disabled={qcSaving}
+                                      className="h-8 px-3 text-xs font-medium bg-green-600 text-white rounded hover:bg-green-700 transition-colors disabled:opacity-50"
+                                    >
+                                      {qcSaving ? "생성 중..." : "생성 및 배정"}
+                                    </button>
+                                    <button
+                                      onClick={() => setQuickCreate(null)}
+                                      className="h-8 px-3 text-xs text-gray-600 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+                                    >
+                                      취소
+                                    </button>
+                                  </div>
+                                </div>
                               )}
-                              {articles.map((a) => (
-                                <option key={a.id} value={a.id}>
-                                  [{a.categoryLabel}] {a.title} ({a.date})
-                                </option>
-                              ))}
-                            </select>
+                            </div>
 
                             {/* Remove button */}
                             <button
