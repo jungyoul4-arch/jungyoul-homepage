@@ -377,7 +377,7 @@ function SubCard({ article, tall }: { article: { id: string; title: string; exce
       </div>
       <GradientOverlay />
       <AdminBtn article={article} small />
-      <div className="absolute left-0 right-0 bottom-0 p-4 lg:p-5 transition-all duration-300 group-hover:top-0 group-hover:flex group-hover:flex-col group-hover:justify-end z-[3]">
+      <div className="absolute left-0 right-0 bottom-0 p-4 lg:p-5 transition-all duration-300 group-hover:top-0 group-hover:flex group-hover:flex-col group-hover:justify-start group-hover:pt-6 z-[3]">
         <p className="text-xs font-semibold mb-1" style={{ color: "#89b4fa" }}>
           {article.categoryLabel}
         </p>
@@ -516,7 +516,7 @@ function ContentOverlay({
   large?: boolean;
 }) {
   return (
-    <div className="absolute left-0 right-0 bottom-0 p-6 md:p-8 lg:p-10 transition-all duration-300 group-hover:top-0 group-hover:flex group-hover:flex-col group-hover:justify-end z-[3]">
+    <div className="absolute left-0 right-0 bottom-0 p-6 md:p-8 lg:p-10 transition-all duration-300 group-hover:top-0 group-hover:flex group-hover:flex-col group-hover:justify-start group-hover:pt-10 z-[3]">
       <p className="text-xs font-semibold mb-2" style={{ color: "#89b4fa" }}>
         {category}
       </p>
