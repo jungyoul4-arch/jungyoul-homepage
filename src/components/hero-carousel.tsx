@@ -392,13 +392,10 @@ function SubCard({ article, tall }: { article: { id: string; title: string; exce
           {article.title}
         </p>
         <p
-          className="text-white/90 mt-2 overflow-hidden text-sm hidden group-hover:block"
+          className="text-white/90 mt-2 overflow-hidden text-sm hidden group-hover:block line-clamp-2"
           style={{
             fontWeight: 400,
             lineHeight: 1.5,
-            display: "-webkit-box",
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: "vertical",
           }}
         >
           {article.excerpt}
@@ -539,14 +536,11 @@ function ContentOverlay({
         {title}
       </p>
       <p
-        className="text-white/90 mt-3 overflow-hidden hidden md:group-hover:block"
+        className="text-white/90 mt-3 overflow-hidden hidden md:group-hover:block line-clamp-3"
         style={{
           fontSize: "1rem",
           fontWeight: 400,
           lineHeight: 1.6,
-          display: "-webkit-box",
-          WebkitLineClamp: 3,
-          WebkitBoxOrient: "vertical",
         }}
       >
         {desc}
