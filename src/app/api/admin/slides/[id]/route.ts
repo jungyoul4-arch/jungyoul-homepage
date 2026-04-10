@@ -33,6 +33,16 @@ export async function PUT(
       );
     }
 
+    const validRoles = ["main", "sub-image", "sub-text"];
+    for (const item of items) {
+      if (!item.articleId || !validRoles.includes(item.role)) {
+        return NextResponse.json(
+          { error: "잘못된 슬롯 데이터입니다." },
+          { status: 400 },
+        );
+      }
+    }
+
     const db = await getDb();
 
     // 기존 아이템 삭제 후 새로 삽입

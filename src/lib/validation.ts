@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { createInsertSchema, createUpdateSchema } from "drizzle-zod";
-import { articles, highlights, teachers, videos, trackingCodes, heroSlides, heroSlideItems } from "@/db/schema";
+import { articles, highlights, teachers, videos, trackingCodes } from "@/db/schema";
 import { NextResponse } from "next/server";
 
 // Articles
@@ -87,19 +87,6 @@ export const updateTrackingCodeSchema = createUpdateSchema(trackingCodes, {
   }),
 }).omit({ id: true, createdAt: true });
 
-// Hero Slides
-export const insertHeroSlideSchema = createInsertSchema(heroSlides).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertHeroSlideItemSchema = createInsertSchema(heroSlideItems, {
-  role: (schema) =>
-    schema.refine((v) => ["main", "sub-image", "sub-text"].includes(v), {
-      message: "role은 main, sub-image, sub-text 중 하나여야 합니다.",
-    }),
-}).omit({ id: true });
 
 export function validationError(e: unknown) {
   if (e instanceof z.ZodError) {

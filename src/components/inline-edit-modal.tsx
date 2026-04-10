@@ -299,18 +299,6 @@ function ArticleForm({
           onChange={(url) => update("thumbnail", url)}
         />
       </Field>
-      <div className="flex items-center gap-2">
-        <input
-          type="checkbox"
-          id="inline-featured"
-          checked={!!form.featured}
-          onChange={(e) => update("featured", e.target.checked)}
-          className="w-4 h-4"
-        />
-        <label htmlFor="inline-featured" className="text-sm text-gray-700">
-          주요 기사로 표시
-        </label>
-      </div>
     </>
   );
 }

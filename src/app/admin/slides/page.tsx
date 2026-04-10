@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState, useRef, useCallback } from "react";
-import { Plus, Trash2, Save, GripVertical, X, ChevronDown, FileText } from "lucide-react";
+import { Plus, Trash2, Save, GripVertical, X, ChevronDown, FileText, Eye, EyeOff } from "lucide-react";
+import Image from "next/image";
 
 interface RawArticle {
   id: string;
@@ -56,6 +57,9 @@ export default function AdminSlidesPage() {
   const [quickCreate, setQuickCreate] = useState<string | null>(null);
   const [qcForm, setQcForm] = useState({ title: "", excerpt: "", category: "strategy", thumbnail: "" });
   const [qcSaving, setQcSaving] = useState(false);
+
+  // Preview state
+  const [previewSlide, setPreviewSlide] = useState<string | null>(null);
 
   // Drag state
   const dragItem = useRef<number | null>(null);
@@ -529,15 +533,34 @@ export default function AdminSlidesPage() {
                       </p>
                     )}
 
-                    {/* Add slot button */}
-                    {canAddSlot(slide.id) && (
+                    {/* Add slot + Preview toggle */}
+                    <div className="flex items-center gap-2 mt-3">
+                      {canAddSlot(slide.id) && (
+                        <button
+                          onClick={() => handleAddSlot(slide.id)}
+                          className="flex items-center gap-1 px-3 py-1.5 text-xs text-blue-600 border border-blue-200 rounded hover:bg-blue-50 transition-colors"
+                        >
+                          <Plus size={12} />
+                          슬롯 추가
+                        </button>
+                      )}
                       <button
-                        onClick={() => handleAddSlot(slide.id)}
-                        className="flex items-center gap-1 mt-3 px-3 py-1.5 text-xs text-blue-600 border border-blue-200 rounded hover:bg-blue-50 transition-colors"
+                        onClick={() =>
+                          setPreviewSlide(previewSlide === slide.id ? null : slide.id)
+                        }
+                        className="flex items-center gap-1 px-3 py-1.5 text-xs text-gray-600 border border-gray-300 rounded hover:bg-gray-50 transition-colors ml-auto"
                       >
-                        <Plus size={12} />
-                        슬롯 추가
+                        {previewSlide === slide.id ? (
+                          <><EyeOff size={12} /> 미리보기 닫기</>
+                        ) : (
+                          <><Eye size={12} /> 미리보기</>
+                        )}
                       </button>
+                    </div>
+
+                    {/* Layout Preview */}
+                    {previewSlide === slide.id && (
+                      <SlidePreview items={slideItems} getArticle={getArticle} />
                     )}
                   </div>
                 </div>
@@ -552,6 +575,107 @@ export default function AdminSlidesPage() {
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+/* ─── Slide Layout Preview ─── */
+function SlidePreview({
+  items,
+  getArticle,
+}: {
+  items: SlideItem[];
+  getArticle: (id: string) => RawArticle | undefined;
+}) {
+  const count = items.length;
+  const main = items.find((i) => i.role === "main") ?? items[0];
+  const subImage = items.find((i) => i.role === "sub-image");
+  const subTexts = items.filter((i) => i.role === "sub-text");
+
+  const mainArt = main ? getArticle(main.articleId) : undefined;
+  const subArt = subImage ? getArticle(subImage.articleId) : undefined;
+
+  return (
+    <div className="mt-3 p-3 bg-gray-900 rounded-lg">
+      <p className="text-[10px] text-gray-400 mb-2">레이아웃 미리보기</p>
+
+      {count === 1 && (
+        /* Case05: Full-width */
+        <div className="relative rounded-lg overflow-hidden" style={{ paddingTop: "37.428%" }}>
+          <PreviewCard article={mainArt} label="메인" />
+        </div>
+      )}
+
+      {count === 2 && (
+        /* Case03: 2-column */
+        <div className="grid gap-2" style={{ gridTemplateColumns: "77.573% 1fr" }}>
+          <div className="relative rounded-lg overflow-hidden" style={{ paddingTop: "48.251%" }}>
+            <PreviewCard article={mainArt} label="메인" />
+          </div>
+          <div className="relative rounded-lg overflow-hidden" style={{ height: "100%", minHeight: "60px" }}>
+            <PreviewCard article={subArt} label="서브" />
+          </div>
+        </div>
+      )}
+
+      {count >= 3 && (
+        /* Case01: 4-column */
+        <div className="grid gap-2" style={{ gridTemplateColumns: "66.5719% 1fr" }}>
+          <div className="relative rounded-lg overflow-hidden" style={{ paddingTop: "56.2232%" }}>
+            <PreviewCard article={mainArt} label="메인" />
+          </div>
+          <div className="flex flex-col gap-2">
+            {subImage && (
+              <div className="relative rounded-lg overflow-hidden flex-1 min-h-[40px]">
+                <PreviewCard article={subArt} label="서브이미지" />
+              </div>
+            )}
+            {subTexts.map((t, idx) => {
+              const art = getArticle(t.articleId);
+              return (
+                <div
+                  key={t.id}
+                  className="rounded-lg px-2 py-1.5 flex items-center min-h-[32px]"
+                  style={{ backgroundColor: "#e0e9fe" }}
+                >
+                  <p className="text-[10px] text-gray-800 font-medium truncate">
+                    {art?.title || `텍스트 ${idx + 1}`}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PreviewCard({
+  article,
+  label,
+}: {
+  article?: RawArticle;
+  label: string;
+}) {
+  const hasThumb = article?.thumbnail && article.thumbnail.length > 0;
+  return (
+    <div className="absolute inset-0 bg-gray-700 flex flex-col justify-end">
+      {hasThumb && (
+        <Image
+          src={article.thumbnail}
+          alt={article.title || ""}
+          fill
+          className="object-cover opacity-60"
+          unoptimized
+        />
+      )}
+      <div className="relative p-2 z-10">
+        <p className="text-[9px] text-blue-300 font-semibold">{label}</p>
+        <p className="text-[11px] text-white font-bold leading-tight truncate">
+          {article?.title || "기사 없음"}
+        </p>
+      </div>
     </div>
   );
 }

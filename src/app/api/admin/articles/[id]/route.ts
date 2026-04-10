@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
 import { articles, heroSlides, heroSlideItems } from "@/db/schema";
-import { eq, inArray, sql } from "drizzle-orm";
+import { eq, inArray, isNull } from "drizzle-orm";
 import { requireAdmin } from "@/lib/admin-auth";
 import { updateArticleSchema, errorResponse } from "@/lib/validation";
 import { generateSlug } from "@/lib/utils";
@@ -89,9 +89,8 @@ export async function DELETE(
       const emptySlides = await db
         .select({ id: heroSlides.id })
         .from(heroSlides)
-        .where(
-          sql`${heroSlides.id} NOT IN (SELECT DISTINCT ${heroSlideItems.slideId} FROM ${heroSlideItems})`
-        );
+        .leftJoin(heroSlideItems, eq(heroSlides.id, heroSlideItems.slideId))
+        .where(isNull(heroSlideItems.id));
       if (emptySlides.length > 0) {
         await db
           .delete(heroSlides)

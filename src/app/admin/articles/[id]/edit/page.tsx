@@ -157,17 +157,6 @@ export default function EditArticlePage() {
           />
         </div>
 
-        <div className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            id="featured"
-            checked={form.featured}
-            onChange={(e) => update("featured", e.target.checked)}
-            className="w-4 h-4"
-          />
-          <label htmlFor="featured" className="text-sm text-gray-700">주요 기사로 표시</label>
-        </div>
-
         <div className="flex gap-3 pt-2">
           <button
             type="submit"

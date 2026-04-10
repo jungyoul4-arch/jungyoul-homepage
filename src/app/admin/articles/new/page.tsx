@@ -23,7 +23,6 @@ export default function NewArticlePage() {
     slug: "",
     thumbnail: "",
     date: new Date().toISOString().slice(0, 10).replace(/-/g, "/"),
-    featured: false,
   });
 
   function update(field: string, value: string | boolean) {
@@ -127,17 +126,6 @@ export default function NewArticlePage() {
             value={form.thumbnail}
             onChange={(url) => update("thumbnail", url)}
           />
-        </div>
-
-        <div className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            id="featured"
-            checked={form.featured}
-            onChange={(e) => update("featured", e.target.checked)}
-            className="w-4 h-4"
-          />
-          <label htmlFor="featured" className="text-sm text-gray-700">주요 기사로 표시</label>
         </div>
 
         <div className="flex gap-3 pt-2">

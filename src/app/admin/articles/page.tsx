@@ -61,7 +61,6 @@ export default function AdminArticlesPage() {
                 <th className="text-left px-4 py-3 font-medium text-gray-600">제목</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600 w-24">카테고리</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600 w-28">날짜</th>
-                <th className="text-center px-4 py-3 font-medium text-gray-600 w-16">주요</th>
                 <th className="text-right px-4 py-3 font-medium text-gray-600 w-24">작업</th>
               </tr>
             </thead>
@@ -77,9 +76,6 @@ export default function AdminArticlesPage() {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-gray-500">{article.date}</td>
-                  <td className="px-4 py-3 text-center">
-                    {article.featured ? "★" : ""}
-                  </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-1">
                       <Link
