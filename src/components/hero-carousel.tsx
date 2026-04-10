@@ -14,12 +14,19 @@ interface HeroCarouselProps {
 }
 
 export function HeroCarousel({ slides }: HeroCarouselProps) {
-  const totalSlides = slides.length || 1;
+  const totalSlides = slides.length;
+  const hasMultiple = totalSlides > 1;
 
-  const [currentSlide, setCurrentSlide] = useState(0);
+  // Clone: [cloneLast, ...slides, cloneFirst]
+  const extendedSlides = hasMultiple
+    ? [slides[totalSlides - 1], ...slides, slides[0]]
+    : slides;
+
+  const [currentSlide, setCurrentSlide] = useState(hasMultiple ? 1 : 0);
   const [isPaused, setIsPaused] = useState(false);
   const [progress, setProgress] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
+  const [noTransition, setNoTransition] = useState(false);
   const progressRef = useRef<number | null>(null);
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
@@ -29,21 +36,47 @@ export function HeroCarousel({ slides }: HeroCarouselProps) {
 
   const intervalDuration = 10000;
 
-  const goTo = useCallback(
-    (index: number) => {
-      const next = ((index % totalSlides) + totalSlides) % totalSlides;
-      setCurrentSlide(next);
-      setProgress(0);
-    },
-    [totalSlides],
-  );
+  // Display index (1-based, real slides only)
+  const displayIndex = !hasMultiple
+    ? 1
+    : currentSlide <= 0
+      ? totalSlides
+      : currentSlide > totalSlides
+        ? 1
+        : currentSlide;
 
-  const next = useCallback(() => goTo(currentSlide + 1), [currentSlide, goTo]);
-  const prev = useCallback(() => goTo(currentSlide - 1), [currentSlide, goTo]);
+  const next = useCallback(() => {
+    setCurrentSlide((prev) => prev + 1);
+    setProgress(0);
+  }, []);
+
+  const prev = useCallback(() => {
+    setCurrentSlide((prev) => prev - 1);
+    setProgress(0);
+  }, []);
+
+  // Clone boundary: snap to real position after transition
+  const handleTransitionEnd = useCallback(() => {
+    if (!hasMultiple) return;
+    if (currentSlide === 0) {
+      setNoTransition(true);
+      setCurrentSlide(totalSlides);
+    } else if (currentSlide === totalSlides + 1) {
+      setNoTransition(true);
+      setCurrentSlide(1);
+    }
+  }, [currentSlide, totalSlides, hasMultiple]);
+
+  // Restore transition after instant jump
+  useEffect(() => {
+    if (noTransition) {
+      requestAnimationFrame(() => setNoTransition(false));
+    }
+  }, [noTransition]);
 
   // Auto-play + progress
   useEffect(() => {
-    if (isPaused || totalSlides <= 1) {
+    if (isPaused || !hasMultiple) {
       if (progressRef.current) cancelAnimationFrame(progressRef.current);
       return;
     }
@@ -62,7 +95,7 @@ export function HeroCarousel({ slides }: HeroCarouselProps) {
     return () => {
       if (progressRef.current) cancelAnimationFrame(progressRef.current);
     };
-  }, [isPaused, currentSlide, next, totalSlides]);
+  }, [isPaused, currentSlide, next, hasMultiple]);
 
   // Touch handlers
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
@@ -104,7 +137,7 @@ export function HeroCarousel({ slides }: HeroCarouselProps) {
         onMouseLeave={() => setIsHovered(false)}
       >
         {/* Hover arrows (desktop only, fade in/out) */}
-        {totalSlides > 1 && (
+        {hasMultiple && (
           <div
             className={`hidden md:block transition-opacity duration-200 ${
               isHovered ? "opacity-100" : "opacity-0 pointer-events-none"
@@ -132,15 +165,16 @@ export function HeroCarousel({ slides }: HeroCarouselProps) {
         {/* Slide area */}
         <div className="relative overflow-hidden">
           <div
-            className="flex transition-transform ease-out"
+            className={`flex ${noTransition ? "" : "transition-transform ease-out"}`}
             style={{
               transform: `translateX(-${currentSlide * 100}%)`,
-              transitionDuration: "350ms",
+              transitionDuration: noTransition ? "0ms" : "350ms",
             }}
+            onTransitionEnd={handleTransitionEnd}
           >
-            {slides.map((slide, slideIdx) => (
-              <div key={slide.id} className="w-full flex-shrink-0">
-                <SlideContent slide={slide} priority={slideIdx === 0} />
+            {extendedSlides.map((slide, slideIdx) => (
+              <div key={`${slide.id}-${slideIdx}`} className="w-full flex-shrink-0">
+                <SlideContent slide={slide} priority={slideIdx === (hasMultiple ? 1 : 0)} />
               </div>
             ))}
           </div>
@@ -151,7 +185,7 @@ export function HeroCarousel({ slides }: HeroCarouselProps) {
           {/* Page counter */}
           <div className="flex items-center gap-1.5 text-sm font-medium tabular-nums select-none">
             <span className="text-gray-900 font-bold">
-              {String(currentSlide + 1).padStart(2, "0")}
+              {String(displayIndex).padStart(2, "0")}
             </span>
             <span
               className="inline-block mx-0.5"
