@@ -5,21 +5,29 @@ import { LatestArticles } from "@/components/latest-articles";
 import { HighlightsCarousel } from "@/components/highlights-carousel";
 import { MediaLibrary } from "@/components/media-library";
 import { getDb } from "@/db";
-import { articles as articlesTable, highlights as highlightsTable, videos as videosTable } from "@/db/schema";
+import {
+  articles as articlesTable,
+  highlights as highlightsTable,
+  videos as videosTable,
+  heroSlides as heroSlidesTable,
+  heroSlideItems as heroSlideItemsTable,
+} from "@/db/schema";
 import { desc, asc } from "drizzle-orm";
-import { toArticle, toHighlight, toVideo } from "@/lib/mappers";
+import { toArticle, toHighlight, toVideo, resolveSlides } from "@/lib/mappers";
 
 export default async function Home() {
   const db = await getDb();
 
-  const [rawArticles, rawHighlights, rawVideos] = await Promise.all([
+  const [rawArticles, rawHighlights, rawVideos, rawSlides, rawSlideItems] = await Promise.all([
     db.select().from(articlesTable).orderBy(desc(articlesTable.date)),
     db.select().from(highlightsTable),
     db.select().from(videosTable).orderBy(asc(videosTable.sortOrder)),
+    db.select().from(heroSlidesTable).orderBy(asc(heroSlidesTable.sortOrder)),
+    db.select().from(heroSlideItemsTable).orderBy(asc(heroSlideItemsTable.sortOrder)),
   ]);
 
   const allArticles = rawArticles.map(toArticle);
-  const featuredArticles = allArticles.filter((a) => a.featured);
+  const heroSlides = resolveSlides(rawSlides, rawSlideItems, allArticles);
 
   return (
     <>
@@ -105,7 +113,7 @@ export default async function Home() {
       </h1>
 
       {/* Hero Carousel — 삼성 뉴스룸 메인 슬라이더 */}
-      <HeroCarousel articles={featuredArticles} />
+      <HeroCarousel slides={heroSlides} />
       <LatestArticles articles={allArticles} />
       <HighlightsCarousel highlights={rawHighlights.map(toHighlight)} />
       <MediaLibrary videos={rawVideos.map(toVideo)} />

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
-import { articles } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { articles, heroSlides, heroSlideItems } from "@/db/schema";
+import { eq, inArray, sql } from "drizzle-orm";
 import { requireAdmin } from "@/lib/admin-auth";
 import { updateArticleSchema, errorResponse } from "@/lib/validation";
 import { generateSlug } from "@/lib/utils";
@@ -54,6 +54,50 @@ export async function DELETE(
   try {
     const { id } = await params;
     const db = await getDb();
+
+    // 방어 1: 이 기사를 참조하는 슬라이드 아이템 조회
+    const refs = await db
+      .select({
+        id: heroSlideItems.id,
+        slideId: heroSlideItems.slideId,
+        role: heroSlideItems.role,
+      })
+      .from(heroSlideItems)
+      .where(eq(heroSlideItems.articleId, id));
+
+    if (refs.length > 0) {
+      // main이 삭제되는 슬라이드 → 슬라이드 자체 삭제
+      const mainDeletedSlideIds = refs
+        .filter((r) => r.role === "main")
+        .map((r) => r.slideId);
+
+      // 참조 아이템 삭제
+      await db.delete(heroSlideItems).where(eq(heroSlideItems.articleId, id));
+
+      if (mainDeletedSlideIds.length > 0) {
+        // 해당 슬라이드의 나머지 아이템도 삭제
+        await db
+          .delete(heroSlideItems)
+          .where(inArray(heroSlideItems.slideId, mainDeletedSlideIds));
+        // 슬라이드 삭제
+        await db
+          .delete(heroSlides)
+          .where(inArray(heroSlides.id, mainDeletedSlideIds));
+      }
+
+      // 아이템이 0개가 된 빈 슬라이드 정리
+      const emptySlides = await db
+        .select({ id: heroSlides.id })
+        .from(heroSlides)
+        .where(
+          sql`${heroSlides.id} NOT IN (SELECT DISTINCT ${heroSlideItems.slideId} FROM ${heroSlideItems})`
+        );
+      if (emptySlides.length > 0) {
+        await db
+          .delete(heroSlides)
+          .where(inArray(heroSlides.id, emptySlides.map((s) => s.id)));
+      }
+    }
 
     await db.delete(articles).where(eq(articles.id, id));
 

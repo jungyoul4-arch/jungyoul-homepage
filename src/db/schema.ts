@@ -53,6 +53,21 @@ export const admin = sqliteTable("admin", {
   passwordHash: text("password_hash").notNull(),
 });
 
+export const heroSlides = sqliteTable("hero_slides", {
+  id: text("id").primaryKey(),
+  sortOrder: integer("sort_order").default(0),
+  createdAt: text("created_at").$defaultFn(() => new Date().toISOString()),
+  updatedAt: text("updated_at").$defaultFn(() => new Date().toISOString()),
+});
+
+export const heroSlideItems = sqliteTable("hero_slide_items", {
+  id: text("id").primaryKey(),
+  slideId: text("slide_id").notNull(),
+  articleId: text("article_id").notNull(),
+  role: text("role").notNull(), // "main" | "sub-image" | "sub-text"
+  sortOrder: integer("sort_order").default(0),
+});
+
 export const siteSettings = sqliteTable("site_settings", {
   key: text("key").primaryKey(),
   value: text("value").notNull(),

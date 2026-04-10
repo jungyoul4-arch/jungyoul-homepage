@@ -4,26 +4,22 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight, Pause, Play } from "lucide-react";
-import type { Article } from "@/lib/data";
+import type { HeroSlide, HeroSlideItem } from "@/lib/data";
 import { AdminEditButton } from "./admin-edit-button";
 import { isValidThumbnail } from "@/lib/thumbnail";
 import { placeholderGradient } from "@/lib/utils";
 
 interface HeroCarouselProps {
-  articles: Article[];
+  slides: HeroSlide[];
 }
 
-export function HeroCarousel({ articles }: HeroCarouselProps) {
-  // Group articles into slides of 4
-  const slides: Article[][] = [];
-  for (let i = 0; i < articles.length; i += 4) {
-    slides.push(articles.slice(i, i + 4));
-  }
+export function HeroCarousel({ slides }: HeroCarouselProps) {
   const totalSlides = slides.length || 1;
 
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [isHovered, setIsHovered] = useState(false);
   const progressRef = useRef<number | null>(null);
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
@@ -31,7 +27,7 @@ export function HeroCarousel({ articles }: HeroCarouselProps) {
   const isSwiping = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const intervalDuration = 10000; // 10 seconds
+  const intervalDuration = 10000;
 
   const goTo = useCallback(
     (index: number) => {
@@ -39,45 +35,36 @@ export function HeroCarousel({ articles }: HeroCarouselProps) {
       setCurrentSlide(next);
       setProgress(0);
     },
-    [totalSlides]
+    [totalSlides],
   );
 
-  const next = useCallback(() => {
-    goTo(currentSlide + 1);
-  }, [currentSlide, goTo]);
+  const next = useCallback(() => goTo(currentSlide + 1), [currentSlide, goTo]);
+  const prev = useCallback(() => goTo(currentSlide - 1), [currentSlide, goTo]);
 
-  const prev = useCallback(() => {
-    goTo(currentSlide - 1);
-  }, [currentSlide, goTo]);
-
-  // Auto-play + progress bar
+  // Auto-play + progress
   useEffect(() => {
     if (isPaused || totalSlides <= 1) {
       if (progressRef.current) cancelAnimationFrame(progressRef.current);
       return;
     }
-
     let start: number | null = null;
     const animate = (timestamp: number) => {
       if (!start) start = timestamp;
-      const elapsed = timestamp - start;
-      const pct = Math.min((elapsed / intervalDuration) * 100, 100);
+      const pct = Math.min(((timestamp - start) / intervalDuration) * 100, 100);
       setProgress(pct);
-
       if (pct >= 100) {
         next();
         return;
       }
       progressRef.current = requestAnimationFrame(animate);
     };
-
     progressRef.current = requestAnimationFrame(animate);
     return () => {
       if (progressRef.current) cancelAnimationFrame(progressRef.current);
     };
   }, [isPaused, currentSlide, next, totalSlides]);
 
-  // Touch handlers for mobile swipe
+  // Touch handlers
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
     touchStartY.current = e.touches[0].clientY;
@@ -88,34 +75,22 @@ export function HeroCarousel({ articles }: HeroCarouselProps) {
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
     const dx = e.touches[0].clientX - touchStartX.current;
     const dy = e.touches[0].clientY - touchStartY.current;
-    // Only consider horizontal swipe if it's more horizontal than vertical
     if (!isSwiping.current && Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 10) {
       isSwiping.current = true;
     }
-    if (isSwiping.current) {
-      touchDeltaX.current = dx;
-    }
+    if (isSwiping.current) touchDeltaX.current = dx;
   }, []);
 
   const handleTouchEnd = useCallback(() => {
     if (isSwiping.current) {
-      if (touchDeltaX.current < -50) {
-        next();
-      } else if (touchDeltaX.current > 50) {
-        prev();
-      }
+      if (touchDeltaX.current < -50) next();
+      else if (touchDeltaX.current > 50) prev();
     }
     isSwiping.current = false;
     touchDeltaX.current = 0;
   }, [next, prev]);
 
-  const currentArticles = slides[currentSlide] || [];
-  const mainArticle = currentArticles[0];
-  const subImageArticle = currentArticles[1];
-  const textArticle1 = currentArticles[2];
-  const textArticle2 = currentArticles[3];
-
-  if (!mainArticle) return null;
+  if (slides.length === 0) return null;
 
   return (
     <section className="relative bg-white pt-6 pb-2" aria-label="주요 교육정보">
@@ -125,85 +100,76 @@ export function HeroCarousel({ articles }: HeroCarouselProps) {
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
       >
-        {/* Slide transition wrapper */}
+        {/* Hover arrows (desktop only) */}
+        {isHovered && totalSlides > 1 && (
+          <div className="hidden md:block">
+            <button
+              onClick={prev}
+              className="absolute top-1/2 z-20 -translate-y-1/2 rounded-full bg-white/80 shadow-lg hover:bg-white transition-colors"
+              style={{ left: "-36px", width: "54px", height: "54px" }}
+              aria-label="이전 슬라이드"
+            >
+              <ChevronLeft className="mx-auto" size={28} strokeWidth={1.5} />
+            </button>
+            <button
+              onClick={next}
+              className="absolute top-1/2 z-20 -translate-y-1/2 rounded-full bg-white/80 shadow-lg hover:bg-white transition-colors"
+              style={{ right: "-36px", width: "54px", height: "54px" }}
+              aria-label="다음 슬라이드"
+            >
+              <ChevronRight className="mx-auto" size={28} strokeWidth={1.5} />
+            </button>
+          </div>
+        )}
+
+        {/* Slide area */}
         <div className="relative overflow-hidden">
           <div
             className="flex transition-transform ease-out"
             style={{
               transform: `translateX(-${currentSlide * 100}%)`,
-              transitionDuration: "250ms",
+              transitionDuration: "350ms",
             }}
           >
-            {slides.map((slideArticles, slideIdx) => {
-              const main = slideArticles[0];
-              const subImg = slideArticles[1];
-              const txt1 = slideArticles[2];
-              const txt2 = slideArticles[3];
-              if (!main) return null;
-
-              return (
-                <div
-                  key={slideIdx}
-                  className="w-full flex-shrink-0"
-                >
-                  {/* Desktop: grid layout */}
-                  <div
-                    className="hidden md:grid gap-5"
-                    style={{ gridTemplateColumns: "66.57% 1fr" }}
-                  >
-                    {/* Main card */}
-                    <MainImageCard article={main} priority={slideIdx === 0} />
-
-                    {/* Right sub area */}
-                    <div className="flex flex-col gap-5">
-                      {subImg && (
-                        <SubImageCard article={subImg} />
-                      )}
-                      {txt1 && (
-                        <TextCard article={txt1} />
-                      )}
-                      {txt2 && (
-                        <TextCard article={txt2} />
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Mobile: single card with peek effect */}
-                  <div className="md:hidden">
-                    <MobileCard article={main} />
-                  </div>
-                </div>
-              );
-            })}
+            {slides.map((slide, slideIdx) => (
+              <div key={slide.id} className="w-full flex-shrink-0">
+                <SlideContent slide={slide} priority={slideIdx === 0} />
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* Controls Bar */}
-        <div className="flex items-center gap-3 mt-3">
-          {/* Page Counter */}
+        {/* Controls */}
+        <div className="flex items-center gap-3 mt-6">
+          {/* Page counter */}
           <div className="flex items-center gap-1.5 text-sm font-medium tabular-nums select-none">
             <span className="text-gray-900 font-bold">
               {String(currentSlide + 1).padStart(2, "0")}
             </span>
-            <span className="text-gray-400 text-xs">/</span>
+            <span
+              className="inline-block mx-0.5"
+              style={{ width: "1px", height: "9px", background: "#ddd" }}
+            />
             <span className="text-gray-400 text-xs">
               {String(totalSlides).padStart(2, "0")}
             </span>
           </div>
 
-          {/* Progress Bar */}
-          <div className="flex-1 h-[2px] bg-gray-200 rounded-full max-w-[300px]">
+          {/* Progress bar */}
+          <div
+            className="h-[2px] bg-gray-200 rounded-full"
+            style={{ width: "320px", maxWidth: "100%" }}
+          >
             <div
               className="h-full bg-gray-900 rounded-full"
-              style={{
-                width: `${progress}%`,
-                transition: "none",
-              }}
+              style={{ width: `${progress}%`, transition: "none" }}
             />
           </div>
 
-          {/* Prev / Next Arrows */}
+          {/* Prev / Next */}
           <button
             onClick={prev}
             className="text-gray-500 hover:text-gray-900 transition-colors p-1"
@@ -219,17 +185,17 @@ export function HeroCarousel({ articles }: HeroCarouselProps) {
             <ChevronRight size={18} strokeWidth={2} />
           </button>
 
-          {/* Play / Pause */}
+          {/* Divider + Play/Pause */}
+          <span
+            className="inline-block"
+            style={{ width: "1px", height: "16px", background: "#ddd" }}
+          />
           <button
             onClick={() => setIsPaused(!isPaused)}
             className="text-gray-500 hover:text-gray-900 transition-colors p-1"
             aria-label={isPaused ? "슬라이드 재생" : "슬라이드 일시정지"}
           >
-            {isPaused ? (
-              <Play size={16} strokeWidth={2} />
-            ) : (
-              <Pause size={16} strokeWidth={2} />
-            )}
+            {isPaused ? <Play size={16} strokeWidth={2} /> : <Pause size={16} strokeWidth={2} />}
           </button>
         </div>
       </div>
@@ -237,130 +203,182 @@ export function HeroCarousel({ articles }: HeroCarouselProps) {
   );
 }
 
-/* ─── Image Card (Main) ─── */
-function MainImageCard({
-  article,
-  priority = false,
-}: {
-  article: Article;
-  priority?: boolean;
-}) {
-  const hasImage = isValidThumbnail(article.thumbnail);
+/* ─── Layout Router (방어 3: 자동 축소) ─── */
+function SlideContent({ slide, priority }: { slide: HeroSlide; priority: boolean }) {
+  const items = slide.items;
+  const count = items.length;
+  const main = items.find((i) => i.role === "main") ?? items[0];
+  const subImage = items.find((i) => i.role === "sub-image");
+  const subTexts = items.filter((i) => i.role === "sub-text");
+
+  if (count === 1) return <Case05 main={main} priority={priority} />;
+  if (count === 2) return <Case03 main={main} sub={subImage || subTexts[0]} priority={priority} />;
+  return <Case01 main={main} subImage={subImage} texts={subTexts} priority={priority} />;
+}
+
+/* ─── Case05: Full-width (1 article) ─── */
+function Case05({ main, priority }: { main: HeroSlideItem; priority: boolean }) {
+  const a = main.article;
+  const hasImage = isValidThumbnail(a.thumbnail);
   return (
-    <Link
-      href={`/articles/${article.slug}`}
-      className="group relative block rounded-xl overflow-hidden"
-      style={{ aspectRatio: "16 / 9" }}
-    >
-      {/* Background */}
-      <div
-        className="absolute inset-0"
-        style={{
-          background: hasImage
-            ? undefined
-            : placeholderGradient(article.id, "article"),
-        }}
-      />
-      {hasImage && (
-        <Image
-          src={article.thumbnail}
-          alt={article.title}
-          fill
-          className="object-cover transition-transform duration-[350ms] ease-out group-hover:scale-110"
-          priority={priority}
-          unoptimized
-        />
-      )}
-
-      {/* Overlay: gradient by default, solid on hover */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent transition-all duration-300 group-hover:from-black/50 group-hover:via-black/50 group-hover:to-black/50" />
-
-      {/* Admin edit button */}
-      <div className="absolute top-4 right-4 z-10">
-        <AdminEditButton type="article" data={article} />
-      </div>
-
-      {/* Content area */}
-      <div className="absolute left-0 right-0 bottom-0 p-6 md:p-8 lg:p-10 transition-all duration-300 group-hover:top-0 group-hover:flex group-hover:flex-col group-hover:justify-end">
-        {/* Category */}
-        <p
-          className="text-xs font-semibold mb-2"
-          style={{ color: "#89b4fa", fontSize: "12px", fontWeight: 600 }}
-        >
-          {article.categoryLabel}
-        </p>
-        {/* Title */}
-        <p
-          className="text-white leading-tight"
-          style={{
-            fontWeight: 700,
-            letterSpacing: "-0.04em",
-            fontSize: "clamp(1.5rem, 2vw, 1.75rem)",
-          }}
-        >
-          {article.title}
-        </p>
-        {/* Description: hidden normally, shown on hover with line-clamp */}
-        <p
-          className="text-white/0 group-hover:text-white/90 mt-3 overflow-hidden transition-colors duration-300"
-          style={{
-            fontSize: "1rem",
-            fontWeight: 400,
-            lineHeight: 1.6,
-            display: "-webkit-box",
-            WebkitLineClamp: 3,
-            WebkitBoxOrient: "vertical",
-          }}
-        >
-          {article.excerpt}
-        </p>
-      </div>
-    </Link>
+    <>
+      {/* Desktop */}
+      <Link
+        href={`/articles/${a.slug}`}
+        className="group relative block rounded-xl overflow-hidden hidden md:block"
+        style={{ paddingTop: "37.428%" }}
+      >
+        <ImageBg src={a.thumbnail} alt={a.title} hasImage={hasImage} id={a.id} priority={priority} />
+        <GradientOverlay />
+        <AdminBtn article={a} />
+        <ContentOverlay title={a.title} desc={a.excerpt} category={a.categoryLabel} large />
+      </Link>
+      {/* Mobile */}
+      <Link
+        href={`/articles/${a.slug}`}
+        className="group relative block rounded-xl overflow-hidden md:hidden"
+        style={{ paddingTop: "139.144%" }}
+      >
+        <ImageBg src={a.thumbnail} alt={a.title} hasImage={hasImage} id={a.id} priority={priority} />
+        <GradientOverlay />
+        <AdminBtn article={a} />
+        <MobileContent title={a.title} category={a.categoryLabel} />
+      </Link>
+    </>
   );
 }
 
-/* ─── Image Card (Sub) ─── */
-function SubImageCard({ article }: { article: Article }) {
+/* ─── Case03: 2-column (2 articles) ─── */
+function Case03({
+  main,
+  sub,
+  priority,
+}: {
+  main: HeroSlideItem;
+  sub?: HeroSlideItem;
+  priority: boolean;
+}) {
+  const a = main.article;
+  const b = sub?.article;
+  const hasA = isValidThumbnail(a.thumbnail);
+
+  return (
+    <>
+      {/* Desktop */}
+      <div
+        className="hidden md:grid gap-5"
+        style={{ gridTemplateColumns: "77.573% 1fr" }}
+      >
+        <Link
+          href={`/articles/${a.slug}`}
+          className="group relative block rounded-xl overflow-hidden"
+          style={{ paddingTop: "48.251%" }}
+        >
+          <ImageBg src={a.thumbnail} alt={a.title} hasImage={hasA} id={a.id} priority={priority} />
+          <GradientOverlay />
+          <AdminBtn article={a} />
+          <ContentOverlay title={a.title} desc={a.excerpt} category={a.categoryLabel} large />
+        </Link>
+        {b && <SubCard article={b} tall />}
+      </div>
+      {/* Mobile */}
+      <Link
+        href={`/articles/${a.slug}`}
+        className="group relative block rounded-xl overflow-hidden md:hidden"
+        style={{ paddingTop: "139.144%" }}
+      >
+        <ImageBg src={a.thumbnail} alt={a.title} hasImage={hasA} id={a.id} priority={priority} />
+        <GradientOverlay />
+        <AdminBtn article={a} />
+        <MobileContent title={a.title} category={a.categoryLabel} />
+      </Link>
+    </>
+  );
+}
+
+/* ─── Case01: 4-column (3-4 articles) ─── */
+function Case01({
+  main,
+  subImage,
+  texts,
+  priority,
+}: {
+  main: HeroSlideItem;
+  subImage?: HeroSlideItem;
+  texts: HeroSlideItem[];
+  priority: boolean;
+}) {
+  const a = main.article;
+  const hasA = isValidThumbnail(a.thumbnail);
+
+  return (
+    <>
+      {/* Desktop */}
+      <div
+        className="hidden md:grid gap-5"
+        style={{ gridTemplateColumns: "66.5719% 1fr" }}
+      >
+        <Link
+          href={`/articles/${a.slug}`}
+          className="group relative block rounded-xl overflow-hidden"
+          style={{ paddingTop: "56.2232%" }}
+        >
+          <ImageBg src={a.thumbnail} alt={a.title} hasImage={hasA} id={a.id} priority={priority} />
+          <GradientOverlay />
+          <AdminBtn article={a} />
+          <ContentOverlay title={a.title} desc={a.excerpt} category={a.categoryLabel} large />
+        </Link>
+        <div className="flex flex-col gap-5">
+          {subImage && <SubCard article={subImage.article} />}
+          {texts.map((t) => (
+            <TextCard key={t.id} article={t.article} />
+          ))}
+        </div>
+      </div>
+      {/* Mobile */}
+      <Link
+        href={`/articles/${a.slug}`}
+        className="group relative block rounded-xl overflow-hidden md:hidden"
+        style={{ paddingTop: "139.144%" }}
+      >
+        <ImageBg src={a.thumbnail} alt={a.title} hasImage={hasA} id={a.id} priority={priority} />
+        <GradientOverlay />
+        <AdminBtn article={a} />
+        <MobileContent title={a.title} category={a.categoryLabel} />
+      </Link>
+    </>
+  );
+}
+
+/* ─── Shared: Sub Image Card ─── */
+function SubCard({ article, tall }: { article: { id: string; title: string; excerpt: string; slug: string; thumbnail: string; categoryLabel: string }; tall?: boolean }) {
   const hasImage = isValidThumbnail(article.thumbnail);
   return (
     <Link
       href={`/articles/${article.slug}`}
       className="group relative block rounded-xl overflow-hidden flex-1 min-h-0"
-      style={{ aspectRatio: "16 / 9" }}
+      style={tall ? { height: "100%" } : { aspectRatio: "16 / 9" }}
     >
-      {/* Background */}
-      <div
-        className="absolute inset-0"
-        style={{
-          background: hasImage
-            ? undefined
-            : placeholderGradient(article.id, "article"),
-        }}
-      />
-      {hasImage && (
-        <Image
-          src={article.thumbnail}
-          alt={article.title}
-          fill
-          className="object-cover transition-transform duration-[350ms] ease-out group-hover:scale-110"
-          unoptimized
-        />
-      )}
-
-      {/* Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent transition-all duration-300 group-hover:from-black/50 group-hover:via-black/50 group-hover:to-black/50" />
-
-      {/* Admin edit button */}
-      <div className="absolute top-3 right-3 z-10">
-        <AdminEditButton type="article" data={article} />
+      <div className="absolute inset-0">
+        {hasImage ? (
+          <Image
+            src={article.thumbnail}
+            alt={article.title}
+            fill
+            className="object-cover transition-transform duration-300 ease-out group-hover:scale-110"
+            unoptimized
+          />
+        ) : (
+          <div
+            className="w-full h-full"
+            style={{ background: placeholderGradient(article.id, "article") }}
+          />
+        )}
       </div>
-
-      {/* Content */}
-      <div className="absolute left-0 right-0 bottom-0 p-4 transition-all duration-300 group-hover:top-0 group-hover:flex group-hover:flex-col group-hover:justify-end">
-        <p
-          className="text-xs font-semibold mb-1"
-          style={{ color: "#89b4fa", fontSize: "12px", fontWeight: 600 }}
-        >
+      <GradientOverlay />
+      <AdminBtn article={article} small />
+      <div className="absolute left-0 right-0 bottom-0 p-4 lg:p-5 transition-all duration-300 group-hover:top-0 group-hover:flex group-hover:flex-col group-hover:justify-end z-[3]">
+        <p className="text-xs font-semibold mb-1" style={{ color: "#89b4fa" }}>
           {article.categoryLabel}
         </p>
         <p
@@ -386,13 +404,13 @@ function SubImageCard({ article }: { article: Article }) {
   );
 }
 
-/* ─── Text-Only Card ─── */
-function TextCard({ article }: { article: Article }) {
+/* ─── Shared: Text-only Card ─── */
+function TextCard({ article }: { article: { id: string; title: string; slug: string; categoryLabel: string } }) {
   return (
     <Link
       href={`/articles/${article.slug}`}
-      className="group relative block rounded-xl overflow-hidden flex-1 min-h-0 p-4 transition-colors duration-200"
-      style={{ backgroundColor: "#e0e9fe" }}
+      className="group relative block rounded-xl overflow-hidden p-4 transition-colors duration-200"
+      style={{ backgroundColor: "#e0e9fe", height: "25%", minHeight: "64px" }}
       onMouseEnter={(e) => {
         e.currentTarget.style.backgroundColor = "#c7d5fa";
       }}
@@ -400,93 +418,159 @@ function TextCard({ article }: { article: Article }) {
         e.currentTarget.style.backgroundColor = "#e0e9fe";
       }}
     >
-      {/* Admin edit button */}
-      <div className="absolute top-3 right-3 z-10">
-        <AdminEditButton type="article" data={article} />
-      </div>
-
-      <p
-        className="mb-1 transition-colors duration-200 group-hover:text-[#0e41ad]"
-        style={{
-          fontSize: "12px",
-          fontWeight: 600,
-          color: "#1428a0",
-        }}
-      >
-        {article.categoryLabel}
-      </p>
-      <p
-        className="leading-snug transition-colors duration-200 group-hover:text-[#0e41ad]"
-        style={{
-          fontWeight: 700,
-          letterSpacing: "-0.04em",
-          fontSize: "0.95rem",
-          color: "#1a1a1a",
-        }}
-      >
-        {article.title}
-      </p>
-    </Link>
-  );
-}
-
-/* ─── Mobile Card ─── */
-function MobileCard({ article }: { article: Article }) {
-  const hasImage = isValidThumbnail(article.thumbnail);
-  return (
-    <Link
-      href={`/articles/${article.slug}`}
-      className="group relative block rounded-xl overflow-hidden w-[85%]"
-    >
-      {/* Taller card for mobile: 130% padding-top */}
-      <div className="relative" style={{ paddingTop: "130%" }}>
-        {/* Background */}
-        <div
-          className="absolute inset-0"
-          style={{
-            background: hasImage
-              ? undefined
-              : placeholderGradient(article.id, "article"),
-          }}
-        />
-        {hasImage && (
-          <Image
-            src={article.thumbnail}
-            alt={article.title}
-            fill
-            className="object-cover"
-            unoptimized
-          />
-        )}
-
-        {/* Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
-
-        {/* Admin edit button */}
-        <div className="absolute top-3 right-3 z-10">
-          <AdminEditButton type="article" data={article} />
-        </div>
-
-        {/* Content */}
-        <div className="absolute left-0 right-0 bottom-0 p-5">
+      <AdminBtn article={article} small />
+      <div className="flex items-center h-full pr-8">
+        <div>
           <p
-            className="text-xs font-semibold mb-2"
-            style={{ color: "#89b4fa", fontSize: "12px", fontWeight: 600 }}
+            className="text-xs font-semibold mb-1 transition-colors duration-200 group-hover:text-[#0e41ad]"
+            style={{ color: "#1428a0" }}
           >
             {article.categoryLabel}
           </p>
           <p
-            className="text-white leading-tight"
+            className="leading-snug transition-colors duration-200 group-hover:text-[#0e41ad]"
             style={{
               fontWeight: 700,
               letterSpacing: "-0.04em",
-              fontSize: "1.25rem",
+              fontSize: "0.95rem",
+              color: "#1a1a1a",
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
             }}
           >
             {article.title}
           </p>
         </div>
       </div>
+      {/* Arrow icon */}
+      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 group-hover:text-[#0e41ad] transition-colors">
+        <ChevronRight size={16} />
+      </span>
     </Link>
+  );
+}
+
+/* ─── Shared micro-components ─── */
+function ImageBg({
+  src,
+  alt,
+  hasImage,
+  id,
+  priority,
+}: {
+  src: string;
+  alt: string;
+  hasImage: boolean;
+  id: string;
+  priority: boolean;
+}) {
+  return (
+    <div className="absolute inset-0">
+      {hasImage ? (
+        <Image
+          src={src}
+          alt={alt}
+          fill
+          className="object-cover transition-transform duration-300 ease-out group-hover:scale-110"
+          priority={priority}
+          unoptimized
+        />
+      ) : (
+        <div
+          className="w-full h-full"
+          style={{ background: placeholderGradient(id, "article") }}
+        />
+      )}
+    </div>
+  );
+}
+
+function GradientOverlay() {
+  return (
+    <>
+      {/* Bottom gradient (always) */}
+      <div
+        className="absolute left-0 bottom-0 w-full z-[1] pointer-events-none"
+        style={{
+          height: "50%",
+          background: "linear-gradient(0deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%)",
+        }}
+      />
+      {/* Hover overlay */}
+      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-colors duration-300 z-[2] pointer-events-none" />
+    </>
+  );
+}
+
+function ContentOverlay({
+  title,
+  desc,
+  category,
+  large,
+}: {
+  title: string;
+  desc: string;
+  category: string;
+  large?: boolean;
+}) {
+  return (
+    <div className="absolute left-0 right-0 bottom-0 p-6 md:p-8 lg:p-10 transition-all duration-300 group-hover:top-0 group-hover:flex group-hover:flex-col group-hover:justify-end z-[3]">
+      <p className="text-xs font-semibold mb-2" style={{ color: "#89b4fa" }}>
+        {category}
+      </p>
+      <p
+        className="text-white leading-tight"
+        style={{
+          fontWeight: 700,
+          letterSpacing: "-0.04em",
+          fontSize: large ? "clamp(1.375rem, 2vw, 1.875rem)" : "clamp(1rem, 1.5vw, 1.375rem)",
+          display: "-webkit-box",
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: "vertical",
+          overflow: "hidden",
+        }}
+      >
+        {title}
+      </p>
+      <p
+        className="text-white/0 group-hover:text-white/90 mt-3 overflow-hidden transition-colors duration-300 hidden md:block"
+        style={{
+          fontSize: "1rem",
+          fontWeight: 400,
+          lineHeight: 1.6,
+          display: "-webkit-box",
+          WebkitLineClamp: 3,
+          WebkitBoxOrient: "vertical",
+        }}
+      >
+        {desc}
+      </p>
+    </div>
+  );
+}
+
+function MobileContent({ title, category }: { title: string; category: string }) {
+  return (
+    <div className="absolute left-0 right-0 bottom-0 p-5 z-[3]">
+      <p className="text-xs font-semibold mb-2" style={{ color: "#89b4fa" }}>
+        {category}
+      </p>
+      <p
+        className="text-white leading-tight"
+        style={{ fontWeight: 700, letterSpacing: "-0.04em", fontSize: "1.375rem" }}
+      >
+        {title}
+      </p>
+    </div>
+  );
+}
+
+function AdminBtn({ article, small }: { article: object; small?: boolean }) {
+  return (
+    <div className={`absolute ${small ? "top-3 right-3" : "top-4 right-4"} z-10`}>
+      <AdminEditButton type="article" data={article} />
+    </div>
   );
 }

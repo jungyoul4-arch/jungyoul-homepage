@@ -37,6 +37,20 @@ export interface Video {
   sortOrder: number;
 }
 
+export type SlideRole = "main" | "sub-image" | "sub-text";
+
+export interface HeroSlideItem {
+  id: string;
+  role: SlideRole;
+  article: Article;
+}
+
+export interface HeroSlide {
+  id: string;
+  sortOrder: number;
+  items: HeroSlideItem[];
+}
+
 export const categories: { value: Category; label: string }[] = [
   { value: "all", label: "전체" },
   { value: "strategy", label: "입시전략" },

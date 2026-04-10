@@ -1,4 +1,4 @@
-import type { Article, Highlight, Teacher, Video, Category } from "./data";
+import type { Article, Highlight, Teacher, Video, Category, SlideRole, HeroSlideItem, HeroSlide } from "./data";
 
 type DbArticle = {
   id: string;
@@ -70,6 +70,56 @@ export function toTeacher(row: DbTeacher): Teacher {
     photo: row.photo ?? "",
     slug: row.slug,
   };
+}
+
+type DbHeroSlide = {
+  id: string;
+  sortOrder: number | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+};
+
+type DbHeroSlideItem = {
+  id: string;
+  slideId: string;
+  articleId: string;
+  role: string;
+  sortOrder: number | null;
+};
+
+export function resolveSlides(
+  rawSlides: DbHeroSlide[],
+  rawItems: DbHeroSlideItem[],
+  allArticles: Article[],
+): HeroSlide[] {
+  const articleMap = new Map(allArticles.map((a) => [a.id, a]));
+
+  return rawSlides
+    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+    .map((slide) => {
+      const items = rawItems
+        .filter((item) => item.slideId === slide.id)
+        .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+        .map((item) => {
+          const article = articleMap.get(item.articleId);
+          if (!article) return null;
+          return {
+            id: item.id,
+            role: item.role as SlideRole,
+            article,
+          };
+        })
+        .filter((item): item is HeroSlideItem => item !== null);
+
+      if (!items.some((item) => item.role === "main")) return null;
+
+      return {
+        id: slide.id,
+        sortOrder: slide.sortOrder ?? 0,
+        items,
+      };
+    })
+    .filter((s): s is HeroSlide => s !== null);
 }
 
 export function toVideo(row: DbVideo): Video {
