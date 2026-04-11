@@ -52,17 +52,17 @@ export default async function TeacherPage({ params }: Props) {
 
   return (
     <div className="max-w-[1280px] mx-auto px-4 py-10">
-      <nav className="pb-6 text-sm text-gray-500" aria-label="breadcrumb">
+      <nav className="pb-6 text-[1rem] text-[#666666]" aria-label="breadcrumb">
         <ol className="flex items-center gap-1">
           <li>
-            <Link href="/" className="hover:text-blue-600 transition-colors">홈</Link>
+            <Link href="/" className="hover:text-[#1E64FA] transition-colors">홈</Link>
           </li>
-          <li><ChevronRight size={14} className="text-gray-400" /></li>
+          <li><ChevronRight size={14} className="text-[#666666]" /></li>
           <li>
-            <Link href="/teachers" className="hover:text-blue-600 transition-colors">선생님 소개</Link>
+            <Link href="/teachers" className="hover:text-[#1E64FA] transition-colors">선생님 소개</Link>
           </li>
-          <li><ChevronRight size={14} className="text-gray-400" /></li>
-          <li className="text-gray-900 font-medium">{teacher.name} 선생님</li>
+          <li><ChevronRight size={14} className="text-[#666666]" /></li>
+          <li className="text-[#1A1A1A] font-bold">{teacher.name} 선생님</li>
         </ol>
       </nav>
 
@@ -87,10 +87,10 @@ export default async function TeacherPage({ params }: Props) {
         </div>
 
         <div>
-          <span className="inline-block px-2.5 py-1 bg-blue-50 text-blue-600 text-xs font-medium rounded mb-3">
+          <span className="inline-block px-2.5 py-1 bg-blue-50 text-[#1E64FA] text-[1rem] font-bold rounded mb-3">
             {teacher.subject}
           </span>
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+          <h1 className="text-[1.5rem] md:text-[2.75rem] font-bold text-[#1A1A1A]">
             {teacher.name} 선생님
           </h1>
         </div>

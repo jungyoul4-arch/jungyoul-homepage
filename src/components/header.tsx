@@ -31,7 +31,7 @@ export function Header() {
           <Link href="/" className="flex items-center gap-2 shrink-0">
             <SiteLogo size="md" />
             <div className="flex flex-col">
-              <span className="text-lg font-extrabold text-gray-900 leading-tight">
+              <span className="text-[1.125rem] font-bold text-[#1A1A1A] leading-6">
                 정율 교육정보
               </span>
             </div>
@@ -43,10 +43,10 @@ export function Header() {
               <Link
                 key={item.label}
                 href={item.href}
-                className="relative text-[15px] font-medium text-gray-700 hover:text-[#1428a0] transition-colors group"
+                className="relative text-[1.125rem] font-bold text-[#1A1A1A] hover:text-[#1E64FA] transition-colors group"
               >
                 {item.label}
-                <span className="absolute bottom-0 left-0 h-[2px] w-0 bg-[#1428a0] transition-all duration-[250ms] group-hover:w-full" />
+                <span className="absolute bottom-0 left-0 h-[2px] w-0 bg-[#1E64FA] transition-all duration-[250ms] group-hover:w-full" />
               </Link>
             ))}
           </nav>
@@ -63,7 +63,7 @@ export function Header() {
             {isAdmin ? (
               <Link
                 href="/admin"
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-full hover:bg-blue-700 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1E64FA] text-white text-xs font-medium rounded-full hover:bg-[#0E41AD] transition-colors"
                 aria-label="관리자 대시보드"
               >
                 <LayoutDashboard size={14} />
@@ -100,7 +100,7 @@ export function Header() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="검색어를 입력하세요"
-                  className="w-full h-12 px-4 pr-12 border border-gray-300 rounded-sm text-[15px] focus:outline-none focus:border-blue-600"
+                  className="w-full h-12 px-4 pr-12 border border-gray-300 rounded-sm text-[15px] focus:outline-none focus:border-[#1E64FA]"
                   autoFocus
                 />
                 <button className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -122,7 +122,7 @@ export function Header() {
                     <Link
                       key={item.label}
                       href={item.href}
-                      className="px-3 py-1.5 bg-white border border-gray-200 rounded-sm text-sm text-gray-600 hover:border-[#1428a0] hover:text-[#1428a0] transition-colors"
+                      className="px-3 py-1.5 bg-white border border-gray-200 rounded-sm text-sm text-gray-600 hover:border-[#1E64FA] hover:text-[#1E64FA] transition-colors"
                     >
                       {item.label}
                     </Link>
@@ -141,7 +141,7 @@ export function Header() {
               <Link
                 key={item.label}
                 href={item.href}
-                className="block py-3 text-[15px] font-medium text-gray-700 border-b border-gray-100 last:border-0"
+                className="block py-3 text-[1.125rem] font-bold text-[#1A1A1A] border-b border-gray-100 last:border-0"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 {item.label}

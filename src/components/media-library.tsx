@@ -36,7 +36,7 @@ export function MediaLibrary({ videos }: MediaLibraryProps) {
       <div className="max-w-[1280px] mx-auto px-4">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl md:text-[28px] font-bold text-gray-900">
+          <h2 className="text-[1.25rem] md:text-[1.5rem] font-bold text-[#1A1A1A]">
             정율TV
           </h2>
           <div className="flex items-center gap-2">
@@ -58,7 +58,7 @@ export function MediaLibrary({ videos }: MediaLibraryProps) {
               href="https://www.youtube.com/@jungyoulTV"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-sm text-gray-500 hover:text-gray-900 ml-2 transition-colors"
+              className="text-[1.125rem] font-bold text-[#1A1A1A] hover:text-[#0E41AD] ml-2 transition-colors"
             >
               더보기
             </a>
@@ -112,7 +112,7 @@ export function MediaLibrary({ videos }: MediaLibraryProps) {
                     </div>
                     {/* Title overlay */}
                     <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/70 to-transparent">
-                      <p className="text-white text-sm font-medium line-clamp-2">
+                      <p className="text-white text-[1rem] font-bold line-clamp-2">
                         {video.title}
                       </p>
                     </div>

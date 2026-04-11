@@ -47,10 +47,10 @@ export default function LocationPage() {
         }}
       />
 
-      <h1 className="text-2xl md:text-[32px] font-bold text-gray-900 mb-2">
+      <h1 className="text-[1.5rem] md:text-[2.75rem] font-bold text-[#1A1A1A] mb-2">
         찾아오는 길
       </h1>
-      <p className="text-gray-500 mb-10">
+      <p className="text-[1.25rem] font-medium text-[#666666] mb-10">
         정율사관학원은 부천역에서 도보 5분 거리에 위치해 있습니다.
       </p>
 
@@ -72,9 +72,9 @@ export default function LocationPage() {
           {/* Address Card */}
           <div className="border border-gray-200 p-6">
             <div className="flex items-start gap-3 mb-4">
-              <MapPin size={20} className="text-blue-600 shrink-0 mt-0.5" />
+              <MapPin size={20} className="text-[#1E64FA] shrink-0 mt-0.5" />
               <div>
-                <h2 className="font-bold text-gray-900 mb-1">주소</h2>
+                <h2 className="font-bold text-[#1A1A1A] mb-1">주소</h2>
                 <p className="text-sm text-gray-600">
                   경기도 부천시 원미구 길주로91
                 </p>
@@ -91,7 +91,7 @@ export default function LocationPage() {
               <p className="text-sm font-medium text-gray-900 mb-1">고객센터</p>
               <a
                 href="tel:032-321-9937"
-                className="text-blue-600 font-bold text-lg hover:underline"
+                className="text-[#1E64FA] font-bold text-lg hover:underline"
               >
                 032-321-9937
               </a>
@@ -103,7 +103,7 @@ export default function LocationPage() {
 
           {/* Transportation */}
           <div className="border border-gray-200 p-6 space-y-5">
-            <h2 className="font-bold text-gray-900">교통 안내</h2>
+            <h2 className="font-bold text-[#1A1A1A]">교통 안내</h2>
 
             <div className="flex items-start gap-3">
               <Train size={18} className="text-green-600 shrink-0 mt-0.5" />
@@ -116,7 +116,7 @@ export default function LocationPage() {
             </div>
 
             <div className="flex items-start gap-3">
-              <Bus size={18} className="text-blue-600 shrink-0 mt-0.5" />
+              <Bus size={18} className="text-[#1E64FA] shrink-0 mt-0.5" />
               <div>
                 <p className="text-sm font-medium text-gray-900">버스</p>
                 <p className="text-xs text-gray-500 mt-0.5">

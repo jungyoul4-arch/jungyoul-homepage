@@ -421,7 +421,7 @@ function SubCard({ article, tall }: { article: { id: string; title: string; exce
         </p>
         <p
           className="text-white text-sm leading-snug"
-          style={{ fontWeight: 700, letterSpacing: "-0.04em" }}
+          style={{ fontWeight: 700, letterSpacing: "-0.03em" }}
         >
           {article.title}
         </p>
@@ -457,18 +457,18 @@ function TextCard({ article }: { article: { id: string; title: string; slug: str
       <div className="flex items-center h-full pr-8">
         <div>
           <p
-            className="text-xs font-semibold mb-1 transition-colors duration-200 group-hover:text-[#0e41ad]"
-            style={{ color: "#1428a0" }}
+            className="text-xs font-semibold mb-1 transition-colors duration-200 group-hover:text-[#0E41AD]"
+            style={{ color: "#1E64FA" }}
           >
             {article.categoryLabel}
           </p>
           <p
-            className="leading-snug transition-colors duration-200 group-hover:text-[#0e41ad]"
+            className="leading-snug transition-colors duration-200 group-hover:text-[#0E41AD]"
             style={{
               fontWeight: 700,
-              letterSpacing: "-0.04em",
+              letterSpacing: "-0.03em",
               fontSize: "0.95rem",
-              color: "#1a1a1a",
+              color: "#1A1A1A",
               display: "-webkit-box",
               WebkitLineClamp: 2,
               WebkitBoxOrient: "vertical",
@@ -480,7 +480,7 @@ function TextCard({ article }: { article: { id: string; title: string; slug: str
         </div>
       </div>
       {/* Arrow icon */}
-      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 group-hover:text-[#0e41ad] transition-colors">
+      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 group-hover:text-[#0E41AD] transition-colors">
         <ChevronRight size={16} />
       </span>
     </Link>
@@ -559,7 +559,7 @@ function ContentOverlay({
         className="text-white leading-tight"
         style={{
           fontWeight: 700,
-          letterSpacing: "-0.04em",
+          letterSpacing: "-0.03em",
           fontSize: large ? "clamp(1.375rem, 2vw, 1.875rem)" : "clamp(1rem, 1.5vw, 1.375rem)",
           display: "-webkit-box",
           WebkitLineClamp: 2,
@@ -591,7 +591,7 @@ function MobileContent({ title, category }: { title: string; category: string })
       </p>
       <p
         className="text-white leading-tight"
-        style={{ fontWeight: 700, letterSpacing: "-0.04em", fontSize: "1.375rem" }}
+        style={{ fontWeight: 700, letterSpacing: "-0.03em", fontSize: "1.375rem" }}
       >
         {title}
       </p>

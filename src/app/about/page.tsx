@@ -49,25 +49,25 @@ export default function AboutPage() {
         }}
       />
 
-      <h1 className="text-2xl md:text-[32px] font-bold text-gray-900 mb-2">
+      <h1 className="text-[1.5rem] md:text-[2.75rem] font-bold text-[#1A1A1A] mb-2">
         회사소개
       </h1>
-      <p className="text-gray-500 mb-10">
+      <p className="text-[1.25rem] font-medium text-[#666666] mb-10">
         학생의 가능성을 이끌어내는 교육, 정율이 함께합니다.
       </p>
 
       {/* Company Vision */}
       <div className="max-w-3xl">
         <section className="mb-12">
-          <h2 className="text-xl font-bold text-gray-900 mb-4 pb-3 border-b border-gray-200">
+          <h2 className="text-[1.375rem] font-bold text-[#1A1A1A] mb-4 pb-3 border-b border-gray-200">
             교육 철학
           </h2>
-          <p className="text-gray-600 leading-relaxed mb-4">
+          <p className="text-[#000000] text-[1.25rem] leading-[30px] font-normal mb-4">
             정율사관학원은 &ldquo;학생 한 명 한 명에게 최적화된 교육&rdquo;을 핵심 가치로 삼고 있습니다.
             획일화된 교육이 아닌, 학생의 현재 위치와 목표에 맞는 개인 맞춤형 학습 전략을
             설계하고 실행합니다.
           </p>
-          <p className="text-gray-600 leading-relaxed">
+          <p className="text-[#000000] text-[1.25rem] leading-[30px] font-normal">
             내신 관리부터 수능 대비, 논술 특강, 고교학점제 대비까지 — 입시의 모든 영역을
             아우르는 종합 교육 프로그램을 운영하며, AI 기반 진로 설계 도구를 도입하여
             과학적이고 체계적인 교육을 제공합니다.
@@ -75,7 +75,7 @@ export default function AboutPage() {
         </section>
 
         <section className="mb-12">
-          <h2 className="text-xl font-bold text-gray-900 mb-4 pb-3 border-b border-gray-200">
+          <h2 className="text-[1.375rem] font-bold text-[#1A1A1A] mb-4 pb-3 border-b border-gray-200">
             정율의 차별점
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -98,15 +98,15 @@ export default function AboutPage() {
               },
             ].map((item) => (
               <div key={item.title} className="border border-gray-200 p-5">
-                <h3 className="font-bold text-gray-900 mb-2">{item.title}</h3>
-                <p className="text-sm text-gray-500 leading-relaxed">{item.desc}</p>
+                <h3 className="font-bold text-[#1A1A1A] mb-2">{item.title}</h3>
+                <p className="text-[0.875rem] text-[#666666] leading-relaxed">{item.desc}</p>
               </div>
             ))}
           </div>
         </section>
 
         <section className="mb-12">
-          <h2 className="text-xl font-bold text-gray-900 mb-4 pb-3 border-b border-gray-200">
+          <h2 className="text-[1.375rem] font-bold text-[#1A1A1A] mb-4 pb-3 border-b border-gray-200">
             회사 정보
           </h2>
           <table className="w-full text-sm">

@@ -15,17 +15,17 @@ export const metadata: Metadata = {
 export default function PrivacyPage() {
   return (
     <div className="max-w-[1280px] mx-auto px-4 py-10">
-      <h1 className="text-2xl md:text-[32px] font-bold text-gray-900 mb-8">
+      <h1 className="text-[1.5rem] md:text-[2.75rem] font-bold text-[#1A1A1A] mb-8">
         개인정보처리방침
       </h1>
 
-      <div className="max-w-3xl prose prose-sm prose-gray">
+      <div className="max-w-3xl prose-newsroom">
         <p className="text-gray-500 text-sm mb-8">
           시행일: 2024년 1월 1일
         </p>
 
         <section className="mb-8">
-          <h2 className="text-lg font-bold text-gray-900 mb-3">
+          <h2 className="text-[1.375rem] font-bold text-[#000080] mb-3">
             제1조 (개인정보의 처리 목적)
           </h2>
           <p className="text-sm text-gray-600 leading-relaxed">
@@ -41,7 +41,7 @@ export default function PrivacyPage() {
         </section>
 
         <section className="mb-8">
-          <h2 className="text-lg font-bold text-gray-900 mb-3">
+          <h2 className="text-[1.375rem] font-bold text-[#000080] mb-3">
             제2조 (개인정보의 처리 및 보유기간)
           </h2>
           <p className="text-sm text-gray-600 leading-relaxed">
@@ -55,7 +55,7 @@ export default function PrivacyPage() {
         </section>
 
         <section className="mb-8">
-          <h2 className="text-lg font-bold text-gray-900 mb-3">
+          <h2 className="text-[1.375rem] font-bold text-[#000080] mb-3">
             제3조 (처리하는 개인정보의 항목)
           </h2>
           <p className="text-sm text-gray-600 leading-relaxed">
@@ -68,7 +68,7 @@ export default function PrivacyPage() {
         </section>
 
         <section className="mb-8">
-          <h2 className="text-lg font-bold text-gray-900 mb-3">
+          <h2 className="text-[1.375rem] font-bold text-[#000080] mb-3">
             제4조 (개인정보의 파기)
           </h2>
           <p className="text-sm text-gray-600 leading-relaxed">
@@ -79,7 +79,7 @@ export default function PrivacyPage() {
         </section>
 
         <section className="mb-8">
-          <h2 className="text-lg font-bold text-gray-900 mb-3">
+          <h2 className="text-[1.375rem] font-bold text-[#000080] mb-3">
             제5조 (정보주체의 권리·의무)
           </h2>
           <p className="text-sm text-gray-600 leading-relaxed">
@@ -94,7 +94,7 @@ export default function PrivacyPage() {
         </section>
 
         <section className="mb-8">
-          <h2 className="text-lg font-bold text-gray-900 mb-3">
+          <h2 className="text-[1.375rem] font-bold text-[#000080] mb-3">
             제6조 (개인정보 보호책임자)
           </h2>
           <div className="text-sm text-gray-600 leading-relaxed">

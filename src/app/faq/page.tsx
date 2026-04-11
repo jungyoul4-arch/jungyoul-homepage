@@ -100,10 +100,10 @@ export default function FAQPage() {
         }}
       />
 
-      <h1 className="text-2xl md:text-[32px] font-bold text-gray-900 mb-2">
+      <h1 className="text-[1.5rem] md:text-[2.75rem] font-bold text-[#1A1A1A] mb-2">
         자주 묻는 질문
       </h1>
-      <p className="text-gray-500 mb-10">
+      <p className="text-[1.25rem] font-medium text-[#666666] mb-10">
         정율사관학원과 입시 준비에 대해 궁금한 점을 확인하세요.
       </p>
 
@@ -111,13 +111,13 @@ export default function FAQPage() {
         {faqs.map((faq, index) => (
           <details
             key={index}
-            className="group border border-gray-200 open:border-blue-200 transition-colors"
+            className="group border border-gray-200 open:border-[#1E64FA] transition-colors"
           >
             <summary className="flex items-start gap-3 px-6 py-5 cursor-pointer list-none select-none hover:bg-gray-50 transition-colors">
-              <span className="text-blue-600 font-bold text-lg mt-0.5 shrink-0">
+              <span className="text-[#1E64FA] font-bold text-lg mt-0.5 shrink-0">
                 Q
               </span>
-              <span className="text-[15px] font-bold text-gray-900 leading-relaxed">
+              <span className="text-[1.25rem] font-bold text-[#1A1A1A] leading-relaxed">
                 {faq.question}
               </span>
               <span className="ml-auto shrink-0 text-gray-400 group-open:rotate-180 transition-transform duration-200">
@@ -142,7 +142,7 @@ export default function FAQPage() {
                 <span className="text-gray-400 font-bold text-lg mt-0.5 shrink-0">
                   A
                 </span>
-                <p className="text-sm text-gray-600 leading-relaxed">
+                <p className="text-[1.25rem] font-normal text-[#000000] leading-[30px]">
                   {faq.answer}
                 </p>
               </div>

@@ -24,7 +24,7 @@ export function LatestArticles({ articles }: LatestArticlesProps) {
     <section className="py-12 md:py-16" aria-label="최신 교육정보">
       <div className="max-w-[1280px] mx-auto px-4">
         {/* Section Header — 삼성 뉴스룸 "최신기사" 헤더 스타일 */}
-        <h2 className="text-2xl md:text-[28px] font-bold text-gray-900 mb-6">
+        <h2 className="text-[1.25rem] md:text-[1.5rem] font-bold text-[#1A1A1A] mb-6">
           최신 교육정보
         </h2>
 
@@ -34,15 +34,15 @@ export function LatestArticles({ articles }: LatestArticlesProps) {
             <button
               key={cat.value}
               onClick={() => setActiveTab(cat.value)}
-              className={`px-4 py-3 text-sm font-medium transition-colors relative whitespace-nowrap shrink-0 ${
+              className={`px-4 py-3 text-[1.125rem] transition-colors relative whitespace-nowrap shrink-0 ${
                 activeTab === cat.value
-                  ? "text-[#1428a0]"
-                  : "text-gray-500 hover:text-gray-900"
+                  ? "text-[#1E64FA] font-bold"
+                  : "text-[#666666] hover:text-[#1A1A1A] font-medium"
               }`}
             >
               {cat.label}
               {activeTab === cat.value && (
-                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#1428a0]" />
+                <span className="absolute bottom-0 left-0 right-0 h-1 bg-[#1E64FA]" />
               )}
             </button>
           ))}
@@ -59,7 +59,7 @@ export function LatestArticles({ articles }: LatestArticlesProps) {
         <div className="mt-10 text-center">
           <Link
             href="/articles"
-            className="inline-flex items-center gap-2 px-6 py-3 border border-gray-300 text-sm font-medium text-gray-700 hover:border-gray-900 hover:text-gray-900 transition-colors"
+            className="inline-flex items-center justify-center h-16 px-10 bg-[#1E64FA] text-[1.375rem] font-bold text-white rounded-full hover:bg-[#0E41AD] transition-colors"
           >
             교육정보 더보기
           </Link>
@@ -99,16 +99,16 @@ function ArticleCard({ article }: { article: Article }) {
 
           {/* Category + Title — 삼성 뉴스룸 기사 카드 텍스트 스타일 */}
           <div>
-            <span className="text-[12px] font-semibold text-[#1428a0] mb-1.5 block">
+            <span className="text-[1rem] font-bold text-[#1E64FA] mb-1.5 block">
               {article.categoryLabel}
             </span>
-            <h3 className="text-[15px] font-semibold text-gray-900 leading-[1.55] tracking-[-0.04em] line-clamp-2 group-hover:text-[#1428a0] transition-colors">
+            <h3 className="text-[0.875rem] md:text-[1.125rem] lg:text-[1.375rem] font-bold text-[#1A1A1A] leading-7 line-clamp-2 group-hover:text-[#1E64FA] transition-colors">
               {article.title}
             </h3>
-            <p className="text-sm text-gray-500 mt-2 line-clamp-2">
+            <p className="text-[0.875rem] text-[#666666] mt-2 line-clamp-2">
               {article.excerpt}
             </p>
-            <time className="text-xs text-gray-400 mt-2 block">{article.date}</time>
+            <time className="text-[1rem] font-medium text-[#666666] mt-2 block">{article.date}</time>
           </div>
         </div>
 
@@ -132,13 +132,13 @@ function ArticleCard({ article }: { article: Article }) {
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <span className="text-xs font-semibold text-[#1428a0]">
+            <span className="text-[0.75rem] font-bold text-[#1E64FA]">
               {article.categoryLabel}
             </span>
-            <h3 className="text-[15px] font-semibold text-gray-900 leading-[1.55] tracking-[-0.04em] line-clamp-2 mt-1">
+            <h3 className="text-[0.875rem] font-medium text-[#1A1A1A] leading-snug line-clamp-2 mt-1">
               {article.title}
             </h3>
-            <time className="text-xs text-gray-400 mt-1 block">{article.date}</time>
+            <time className="text-[0.75rem] font-medium text-[#767676] mt-1 block">{article.date}</time>
           </div>
         </div>
       </Link>

@@ -15,17 +15,17 @@ export const metadata: Metadata = {
 export default function TermsPage() {
   return (
     <div className="max-w-[1280px] mx-auto px-4 py-10">
-      <h1 className="text-2xl md:text-[32px] font-bold text-gray-900 mb-8">
+      <h1 className="text-[1.5rem] md:text-[2.75rem] font-bold text-[#1A1A1A] mb-8">
         이용약관
       </h1>
 
-      <div className="max-w-3xl prose prose-sm prose-gray">
+      <div className="max-w-3xl prose-newsroom">
         <p className="text-gray-500 text-sm mb-8">
           시행일: 2024년 1월 1일
         </p>
 
         <section className="mb-8">
-          <h2 className="text-lg font-bold text-gray-900 mb-3">
+          <h2 className="text-[1.375rem] font-bold text-[#000080] mb-3">
             제1조 (목적)
           </h2>
           <p className="text-sm text-gray-600 leading-relaxed">
@@ -35,7 +35,7 @@ export default function TermsPage() {
         </section>
 
         <section className="mb-8">
-          <h2 className="text-lg font-bold text-gray-900 mb-3">
+          <h2 className="text-[1.375rem] font-bold text-[#000080] mb-3">
             제2조 (정의)
           </h2>
           <ul className="text-sm text-gray-600 space-y-2 list-disc list-inside">
@@ -45,7 +45,7 @@ export default function TermsPage() {
         </section>
 
         <section className="mb-8">
-          <h2 className="text-lg font-bold text-gray-900 mb-3">
+          <h2 className="text-[1.375rem] font-bold text-[#000080] mb-3">
             제3조 (약관의 효력 및 변경)
           </h2>
           <p className="text-sm text-gray-600 leading-relaxed">
@@ -56,7 +56,7 @@ export default function TermsPage() {
         </section>
 
         <section className="mb-8">
-          <h2 className="text-lg font-bold text-gray-900 mb-3">
+          <h2 className="text-[1.375rem] font-bold text-[#000080] mb-3">
             제4조 (서비스의 제공)
           </h2>
           <p className="text-sm text-gray-600 leading-relaxed mb-3">
@@ -70,7 +70,7 @@ export default function TermsPage() {
         </section>
 
         <section className="mb-8">
-          <h2 className="text-lg font-bold text-gray-900 mb-3">
+          <h2 className="text-[1.375rem] font-bold text-[#000080] mb-3">
             제5조 (이용자의 의무)
           </h2>
           <p className="text-sm text-gray-600 leading-relaxed">
@@ -80,7 +80,7 @@ export default function TermsPage() {
         </section>
 
         <section className="mb-8">
-          <h2 className="text-lg font-bold text-gray-900 mb-3">
+          <h2 className="text-[1.375rem] font-bold text-[#000080] mb-3">
             제6조 (면책 조항)
           </h2>
           <p className="text-sm text-gray-600 leading-relaxed">
@@ -91,7 +91,7 @@ export default function TermsPage() {
         </section>
 
         <section className="mb-8">
-          <h2 className="text-lg font-bold text-gray-900 mb-3">
+          <h2 className="text-[1.375rem] font-bold text-[#000080] mb-3">
             제7조 (분쟁 해결)
           </h2>
           <p className="text-sm text-gray-600 leading-relaxed">
@@ -101,7 +101,7 @@ export default function TermsPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-bold text-gray-900 mb-3">
+          <h2 className="text-[1.375rem] font-bold text-[#000080] mb-3">
             부칙
           </h2>
           <p className="text-sm text-gray-600 leading-relaxed">

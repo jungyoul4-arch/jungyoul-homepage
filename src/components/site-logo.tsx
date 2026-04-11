@@ -17,7 +17,7 @@ interface SiteLogoProps {
 function JYFallback({ size }: { size: "sm" | "md" | "lg" }) {
   const s = sizeMap[size];
   return (
-    <div className={`${s.box} bg-blue-600 rounded-sm flex items-center justify-center`}>
+    <div className={`${s.box} bg-[#1E64FA] rounded-sm flex items-center justify-center`}>
       <span className={`text-white font-bold ${s.text}`}>JY</span>
     </div>
   );

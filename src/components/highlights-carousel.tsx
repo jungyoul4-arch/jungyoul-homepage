@@ -30,7 +30,7 @@ export function HighlightsCarousel({ highlights }: HighlightsCarouselProps) {
       <div className="max-w-[1280px] mx-auto px-4">
         {/* Header — 삼성 뉴스룸 "하이라이트" 스타일 */}
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl md:text-[28px] font-bold text-gray-900">
+          <h2 className="text-[1.25rem] md:text-[1.5rem] font-bold text-[#1A1A1A]">
             하이라이트
           </h2>
           <div className="flex items-center gap-2">
@@ -50,7 +50,7 @@ export function HighlightsCarousel({ highlights }: HighlightsCarouselProps) {
             </button>
             <Link
               href="/highlights"
-              className="text-sm text-gray-500 hover:text-gray-900 ml-2 transition-colors"
+              className="text-[1.125rem] font-bold text-[#1A1A1A] hover:text-[#0E41AD] ml-2 transition-colors"
             >
               더보기
             </Link>
@@ -91,7 +91,7 @@ export function HighlightsCarousel({ highlights }: HighlightsCarouselProps) {
                 )}
                 {/* Overlay with title */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-4">
-                  <span className="text-white font-bold text-lg">
+                  <span className="text-white font-bold text-[1.375rem] leading-7">
                     {item.title}
                   </span>
                 </div>

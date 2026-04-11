@@ -42,15 +42,15 @@ export function ArticleList({ articles }: ArticleListProps) {
           <button
             key={cat.value}
             onClick={() => handleTab(cat.value)}
-            className={`px-4 py-3 text-sm font-medium transition-colors relative ${
+            className={`px-4 py-3 text-[1.125rem] transition-colors relative ${
               activeTab === cat.value
-                ? "text-blue-600"
-                : "text-gray-500 hover:text-gray-900"
+                ? "text-[#1E64FA] font-bold"
+                : "text-[#666666] hover:text-[#1A1A1A] font-medium"
             }`}
           >
             {cat.label}
             {activeTab === cat.value && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600" />
+              <span className="absolute bottom-0 left-0 right-0 h-1 bg-[#1E64FA]" />
             )}
           </button>
         ))}
@@ -100,16 +100,16 @@ function ArticleRow({ article }: { article: Article }) {
 
         {/* Text Content */}
         <div className="flex-1 min-w-0">
-          <span className="text-xs font-medium text-blue-600 mb-1.5 block">
+          <span className="text-[1rem] font-bold text-[#1E64FA] mb-1.5 block">
             {article.categoryLabel}
           </span>
-          <h2 className="text-base md:text-lg font-bold text-gray-900 leading-snug line-clamp-2 group-hover:text-blue-600 transition-colors mb-2">
+          <h2 className="text-[1rem] md:text-[1.375rem] font-bold text-[#1A1A1A] leading-snug line-clamp-2 group-hover:text-[#1E64FA] transition-colors mb-2">
             {article.title}
           </h2>
-          <p className="text-sm text-gray-500 line-clamp-2 mb-2 hidden md:block">
+          <p className="text-[0.875rem] text-[#666666] line-clamp-2 mb-2 hidden md:block">
             {article.excerpt}
           </p>
-          <time className="text-xs text-gray-400">{article.date}</time>
+          <time className="text-[1rem] font-medium text-[#666666]">{article.date}</time>
         </div>
       </Link>
     </article>

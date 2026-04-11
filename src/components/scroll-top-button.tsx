@@ -23,7 +23,7 @@ export function ScrollTopButton() {
   return (
     <button
       onClick={scrollToTop}
-      className="fixed bottom-6 right-6 z-40 w-11 h-11 rounded-full bg-white border border-gray-300 shadow-sm flex items-center justify-center text-gray-600 hover:text-[#1428a0] hover:border-[#1428a0] transition-colors"
+      className="fixed bottom-6 right-6 z-40 w-11 h-11 rounded-full bg-white border border-gray-300 shadow-sm flex items-center justify-center text-gray-600 hover:text-[#1E64FA] hover:border-[#1E64FA] transition-colors"
       aria-label="맨 위로"
     >
       <ChevronUp size={20} strokeWidth={2} />

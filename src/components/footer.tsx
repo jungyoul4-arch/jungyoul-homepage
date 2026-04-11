@@ -47,7 +47,7 @@ export function Footer() {
           {/* Company Info */}
           <div className="space-y-2">
             <p className="text-white font-bold text-sm">주식회사정율</p>
-            <div className="text-xs leading-relaxed space-y-1">
+            <div className="text-[0.875rem] leading-relaxed space-y-1">
               <p>대표이사: 곽정율</p>
               <p>주소: 경기도 부천시 원미구 길주로91 601호(비잔티움 6층)</p>
               <p>사업자등록번호: 392-88-00208 | 통신판매업: 제2023-경기부천-4355호</p>
@@ -103,7 +103,7 @@ export function Footer() {
 
         {/* Bottom Links */}
         <div className="mt-8 pt-6 border-t border-gray-700 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div className="flex flex-wrap gap-4 text-xs">
+          <div className="flex flex-wrap gap-4 text-[0.875rem]">
             <Link href="/faq" className="hover:text-white transition-colors">
               자주 묻는 질문
             </Link>
@@ -117,7 +117,7 @@ export function Footer() {
               이용약관
             </Link>
           </div>
-          <p className="text-xs">
+          <p className="text-[0.875rem] font-medium">
             Copyright &copy; {new Date().getFullYear()} Jungyoul Co., Ltd. All rights reserved.
             {" · "}
             <span className="text-gray-600">v0.1.1</span>

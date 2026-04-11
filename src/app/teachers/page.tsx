@@ -55,10 +55,10 @@ export default async function TeachersPage() {
       />
 
       {/* Page Header — 삼성 뉴스룸 서브페이지 헤더 스타일 */}
-      <h1 className="text-2xl md:text-[32px] font-bold text-gray-900 mb-2">
+      <h1 className="text-[1.5rem] md:text-[2.75rem] font-bold text-[#1A1A1A] mb-2">
         선생님 소개
       </h1>
-      <p className="text-gray-500 mb-10">
+      <p className="text-[1.25rem] font-medium text-[#666666] mb-10">
         학생 한 명 한 명에게 최적화된 교육을 제공하는 정율의 전문 강사진입니다.
       </p>
 
@@ -69,7 +69,7 @@ export default async function TeachersPage() {
 
         return (
           <section key={subject} className="mb-12">
-            <h2 className="text-lg font-bold text-gray-900 mb-6 pb-3 border-b border-gray-200">
+            <h2 className="text-[1.5rem] font-bold text-[#1A1A1A] mb-6 pb-3 border-b border-gray-200">
               {subject}
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -102,10 +102,10 @@ export default async function TeachersPage() {
                     </div>
 
                     {/* Info */}
-                    <p className="text-xs text-blue-600 font-medium mb-1">
+                    <p className="text-[1rem] text-[#1E64FA] font-bold mb-1">
                       {teacher.subject}
                     </p>
-                    <p className="text-sm font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
+                    <p className="text-[1rem] font-bold text-[#1A1A1A] group-hover:text-[#1E64FA] transition-colors">
                       {teacher.name} 선생님
                     </p>
                   </Link>
