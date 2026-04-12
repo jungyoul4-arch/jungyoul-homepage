@@ -52,3 +52,8 @@ next-env.d.ts
 
 # Drizzle
 /drizzle/meta/
+
+# Worktree tooling
+.queue
+.serena/
+.claude/
