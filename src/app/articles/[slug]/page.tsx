@@ -205,7 +205,7 @@ export default async function ArticlePage({ params }: Props) {
           </div>
         </div>
 
-        <div className="prose-newsroom mb-16">
+        <div className="article-content mb-16">
           {article.content ? (
             <div dangerouslySetInnerHTML={{ __html: sanitizeContent(article.content) }} />
           ) : (

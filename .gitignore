@@ -57,3 +57,6 @@ next-env.d.ts
 .queue
 .serena/
 .claude/
+
+# Editor set
+/samsung-newsroom-feature-ui

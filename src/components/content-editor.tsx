@@ -1,7 +1,18 @@
 "use client";
 
 import { useRef, useState, useCallback, useEffect } from "react";
-import { Bold, Italic, ImageIcon, Video } from "lucide-react";
+import {
+  Bold,
+  Italic,
+  ImageIcon,
+  Video,
+  Heading2,
+  Heading3,
+  Pilcrow,
+  Quote,
+  List,
+  ListOrdered,
+} from "lucide-react";
 
 interface ContentEditorProps {
   value: string;
@@ -41,7 +52,7 @@ function buildEmbedHtml(embed: VideoEmbed): string {
       : `https://player.vimeo.com/video/${embed.id}`;
 
   return (
-    `<div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;margin:12px 0;border-radius:8px;" contenteditable="false">` +
+    `<div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;margin:0;border-radius:0;" contenteditable="false">` +
     `<iframe src="${src}" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;" ` +
     `allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" ` +
     `allowfullscreen></iframe>` +
@@ -58,10 +69,16 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
   const [uploading, setUploading] = useState(false);
   const initializedRef = useRef(false);
 
+  // 기본 단락 구분자를 <p>로 설정 (브라우저 기본 <div> 방지)
+  useEffect(() => {
+    document.execCommand("defaultParagraphSeparator", false, "p");
+  }, []);
+
   // 초기 HTML 설정 (한 번만)
   useEffect(() => {
     if (editorRef.current && !initializedRef.current) {
-      editorRef.current.innerHTML = value;
+      // 빈 콘텐츠면 <p> 태그로 시작
+      editorRef.current.innerHTML = value || "<p><br></p>";
       initializedRef.current = true;
     }
   }, [value]);
@@ -143,14 +160,16 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
       const placeholder = document.getElementById(placeholderId);
 
       if (url && placeholder) {
+        const figure = document.createElement("figure");
         const img = document.createElement("img");
         img.src = url;
         img.alt = file.name;
-        img.style.maxWidth = "100%";
-        img.style.height = "auto";
-        img.style.margin = "8px 0";
-        img.style.borderRadius = "4px";
-        placeholder.replaceWith(img);
+        const figcaption = document.createElement("figcaption");
+        figcaption.textContent = "\u25b2 ";
+        figcaption.setAttribute("contenteditable", "true");
+        figure.appendChild(img);
+        figure.appendChild(figcaption);
+        placeholder.replaceWith(figure);
       } else if (placeholder) {
         placeholder.remove();
       }
@@ -243,6 +262,12 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
     syncToParent();
   }
 
+  function execFormatBlock(tag: string) {
+    document.execCommand("formatBlock", false, tag);
+    editorRef.current?.focus();
+    syncToParent();
+  }
+
   function handleImageButton() {
     fileInputRef.current?.click();
   }
@@ -278,6 +303,56 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
         <div className="w-px h-5 bg-gray-300 mx-1" />
         <button
           type="button"
+          onClick={() => execFormatBlock("p")}
+          className="p-1.5 hover:bg-gray-200 rounded transition-colors"
+          title="본문 단락"
+        >
+          <Pilcrow size={15} />
+        </button>
+        <button
+          type="button"
+          onClick={() => execFormatBlock("h2")}
+          className="p-1.5 hover:bg-gray-200 rounded transition-colors"
+          title="소제목 H2"
+        >
+          <Heading2 size={15} />
+        </button>
+        <button
+          type="button"
+          onClick={() => execFormatBlock("h3")}
+          className="p-1.5 hover:bg-gray-200 rounded transition-colors"
+          title="소제목 H3"
+        >
+          <Heading3 size={15} />
+        </button>
+        <div className="w-px h-5 bg-gray-300 mx-1" />
+        <button
+          type="button"
+          onClick={() => execCommand("insertUnorderedList")}
+          className="p-1.5 hover:bg-gray-200 rounded transition-colors"
+          title="순서없는 목록"
+        >
+          <List size={15} />
+        </button>
+        <button
+          type="button"
+          onClick={() => execCommand("insertOrderedList")}
+          className="p-1.5 hover:bg-gray-200 rounded transition-colors"
+          title="순서있는 목록"
+        >
+          <ListOrdered size={15} />
+        </button>
+        <button
+          type="button"
+          onClick={() => execFormatBlock("blockquote")}
+          className="p-1.5 hover:bg-gray-200 rounded transition-colors"
+          title="인용구"
+        >
+          <Quote size={15} />
+        </button>
+        <div className="w-px h-5 bg-gray-300 mx-1" />
+        <button
+          type="button"
           onClick={handleImageButton}
           className="p-1.5 hover:bg-gray-200 rounded transition-colors flex items-center gap-1 text-xs text-gray-600"
           title="이미지 삽입"
@@ -304,7 +379,7 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
         <div
           ref={editorRef}
           contentEditable
-          className="min-h-[200px] max-h-[400px] overflow-y-auto px-3 py-2 text-sm focus:outline-none prose prose-sm max-w-none"
+          className="min-h-[200px] max-h-[400px] overflow-y-auto px-5 py-3 focus:outline-none article-content-preview"
           onInput={syncToParent}
           onBlur={syncToParent}
           onDragOver={handleDragOver}

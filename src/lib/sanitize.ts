@@ -8,10 +8,12 @@ export function sanitizeContent(html: string): string {
       "h1",
       "h2",
       "h3",
+      "h4",
       "figure",
       "figcaption",
       "br",
       "span",
+      "video",
     ]),
     allowedAttributes: {
       ...sanitizeHtml.defaults.allowedAttributes,

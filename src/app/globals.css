@@ -92,98 +92,216 @@
   }
 }
 
-/* ── Samsung Newsroom Typography: Article Prose ── */
-.prose-newsroom {
-  max-width: 48rem;
-  margin-left: auto;
-  margin-right: auto;
-}
-.prose-newsroom p {
-  font-size: 1.25rem;
-  font-weight: 400;
-  line-height: 30px;
-  color: #000000;
-  margin-top: 1.25em;
-  margin-bottom: 1.25em;
-}
-.prose-newsroom h2,
-.prose-newsroom h3 {
-  font-size: 1.375rem;
-  font-weight: 700;
-  color: #000080;
-  margin-top: 2em;
-  margin-bottom: 0.75em;
-}
-.prose-newsroom h4 {
-  font-size: 1rem;
-  font-weight: 400;
-  color: #000080;
-  margin-top: 1.5em;
-  margin-bottom: 0.5em;
-}
-.prose-newsroom a {
-  color: #1E64FA;
-  text-decoration: none;
-}
-.prose-newsroom a:hover {
-  color: #0E41AD;
-}
-.prose-newsroom strong {
-  font-weight: 700;
-  color: #000000;
-}
-.prose-newsroom blockquote {
-  font-size: 1.5rem;
-  font-weight: 700;
-  line-height: 32px;
-  color: #1A1A1A;
-  font-style: italic;
-  text-align: center;
-  border-left: none;
-  padding-left: 0;
-  margin-top: 2em;
-  margin-bottom: 2em;
-}
-.prose-newsroom ul,
-.prose-newsroom ol {
-  font-size: 1.25rem;
-  font-weight: 400;
-  line-height: 30px;
-  color: #000000;
-  padding-left: 1.5em;
-  margin-top: 1em;
-  margin-bottom: 1em;
-}
-.prose-newsroom li {
-  margin-top: 0.25em;
-  margin-bottom: 0.25em;
-}
-.prose-newsroom img {
-  margin-top: 2em;
-  margin-bottom: 0.5em;
-  border-radius: 0.125rem;
-}
-.prose-newsroom figcaption,
-.prose-newsroom .caption {
-  font-size: 1rem;
-  font-weight: 400;
-  color: #666666;
-  text-align: center;
-  margin-bottom: 2em;
-}
-.prose-newsroom table {
-  font-size: 1.25rem;
-  width: 100%;
-  margin-top: 1.5em;
-  margin-bottom: 1.5em;
+/* ══════════════════════════════════════════════════════════
+   기사 본문 스타일 — 삼성 뉴스룸 기획기사 UI 레퍼런스 기반
+   samsung-newsroom-feature-ui/ 실측값 적용
+   ══════════════════════════════════════════════════════════ */
+
+/* ── 컨테이너 ── */
+.article-content {
+  max-width: 1080px;
+  padding: 0 40px;
+  margin: 0 auto;
 }
 
+/* ── 본문 단락 (<p> 및 기존 <div> 폴백) ── */
+.article-content p,
+.article-content > div:not([style]) {
+  padding-top: 32px;
+  font-size: 1.25rem;
+  line-height: 30px;
+  letter-spacing: -0.6px;
+  font-weight: 400;
+  color: #000;
+}
+
+/* ── 소제목 H2/H3 ── */
+.article-content h2,
+.article-content h3 {
+  padding-top: 32px;
+  font-size: 1.375rem;
+  letter-spacing: -0.66px;
+  color: #000080;
+  font-weight: 700;
+}
+
+/* ── H4 ── */
+.article-content h4 {
+  padding-top: 32px;
+  font-size: 1rem;
+  letter-spacing: -0.48px;
+  font-weight: 400;
+}
+
+/* ── 링크 ── */
+.article-content a {
+  color: #1e64fa;
+  border-bottom: 1px solid #1e64fa;
+}
+
+/* ── 볼드/이탤릭 ── */
+.article-content strong,
+.article-content b {
+  font-weight: 700;
+}
+.article-content em,
+.article-content i {
+  font-style: italic;
+}
+
+/* ── 이미지 — 새 구조 (figure + figcaption) ── */
+.article-content figure {
+  padding-top: 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.article-content figure img {
+  width: 100%;
+  height: auto;
+  border-radius: 0;
+}
+.article-content figcaption {
+  font-size: 1rem;
+  letter-spacing: -0.48px;
+  text-align: center;
+  margin-top: 8px;
+  color: #666;
+}
+
+/* ── 이미지 — 기존 구조 (figure 없는 직접 img) ── */
+.article-content > img,
+.article-content > div > img {
+  width: 100%;
+  height: auto;
+  border-radius: 0 !important;
+  margin: 32px 0 0 0 !important;
+}
+
+/* ── 동영상 임베드 (기존 inline style 덮어쓰기) ── */
+.article-content > div[style*="padding-bottom"] {
+  border-radius: 0 !important;
+  margin: 32px 0 0 0 !important;
+}
+
+/* ── 인용구 ── */
+.article-content blockquote {
+  border: 1px solid #ddd;
+  background: none;
+  padding: 24px 60px;
+  margin-top: 32px;
+}
+.article-content blockquote > p {
+  padding-top: 0;
+}
+
+/* ── 리스트 ── */
+.article-content ul,
+.article-content ol {
+  padding-top: 32px;
+}
+.article-content ul li {
+  list-style: disc;
+  margin-left: 20px;
+  padding-top: 20px;
+  font-size: 1.125rem;
+  letter-spacing: -0.54px;
+}
+.article-content ol li {
+  margin-left: 20px;
+  padding-top: 20px;
+  font-size: 1.125rem;
+  letter-spacing: -0.54px;
+}
+
+/* ── 첫 번째 자식 상단 간격 제거 ── */
+.article-content > *:first-child {
+  padding-top: 0;
+}
+
+/* ── 반응형 (≤768px) ── */
 @media (max-width: 768px) {
-  .prose-newsroom p,
-  .prose-newsroom ul,
-  .prose-newsroom ol,
-  .prose-newsroom table {
-    font-size: 1.125rem;
-    line-height: 28px;
+  .article-content {
+    padding: 0 20px;
   }
+  .article-content p,
+  .article-content > div:not([style]) {
+    font-size: 1.125rem;
+    padding-top: 24px;
+  }
+  .article-content figcaption {
+    font-size: 0.875rem;
+    letter-spacing: -0.42px;
+  }
+  .article-content blockquote {
+    padding: 16px 20px;
+  }
+  .article-content ul,
+  .article-content ol {
+    padding-top: 24px;
+  }
+  .article-content ul li,
+  .article-content ol li {
+    font-size: 1rem;
+    padding-top: 12px;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   편집기 프리뷰 스타일 (article-content 축소 버전)
+   ══════════════════════════════════════════════════════════ */
+
+.article-content-preview p,
+.article-content-preview > div:not([style]) {
+  padding-top: 16px;
+  line-height: 1.6;
+  color: #000;
+}
+.article-content-preview h2,
+.article-content-preview h3 {
+  padding-top: 16px;
+  color: #000080;
+  font-weight: 700;
+  font-size: 1.1em;
+}
+.article-content-preview h4 {
+  padding-top: 16px;
+  font-weight: 400;
+}
+.article-content-preview figure {
+  padding-top: 16px;
+}
+.article-content-preview figure img {
+  width: 100%;
+  height: auto;
+  border-radius: 0;
+}
+.article-content-preview figcaption {
+  font-size: 0.75rem;
+  text-align: center;
+  margin-top: 4px;
+  color: #666;
+}
+.article-content-preview a {
+  color: #1e64fa;
+}
+.article-content-preview blockquote {
+  border: 1px solid #ddd;
+  padding: 12px 20px;
+  margin-top: 16px;
+}
+.article-content-preview blockquote > p {
+  padding-top: 0;
+}
+.article-content-preview ul,
+.article-content-preview ol {
+  padding-top: 16px;
+  padding-left: 20px;
+}
+.article-content-preview li {
+  padding-top: 8px;
+  list-style: disc;
+}
+.article-content-preview > *:first-child {
+  padding-top: 0;
 }
