@@ -63,6 +63,9 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
   const [uploading, setUploading] = useState(false);
   const [activeBlock, setActiveBlock] = useState<string>("p");
   const [isBold, setIsBold] = useState(false);
+  const [isItalic, setIsItalic] = useState(false);
+  const [listType, setListType] = useState<string>("");
+  const [isInColumn, setIsInColumn] = useState(false);
   const initializedRef = useRef(false);
 
   // 기본 단락 구분자를 <p>로 설정 (브라우저 기본 <div> 방지)
@@ -81,6 +84,9 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
       let node: Node | null = selection.anchorNode;
       let tag = "p";
       let bold = false;
+      let italic = false;
+      let list = "";
+      let inCol = false;
 
       while (node && node !== editor) {
         if (node.nodeType === Node.ELEMENT_NODE) {
@@ -92,12 +98,26 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
           if (name === "b" || name === "strong" || el.style.fontWeight === "bold" || el.style.fontWeight === "700") {
             bold = true;
           }
+          if (name === "i" || name === "em" || el.style.fontStyle === "italic") {
+            italic = true;
+          }
+          if (name === "li") {
+            const parentTag = el.parentElement?.tagName.toLowerCase();
+            if (parentTag === "ol") list = "ol";
+            else if (parentTag === "ul") list = "ul";
+          }
+          if (el.style.columnCount === "2") {
+            inCol = true;
+          }
         }
         node = node.parentNode;
       }
 
       setActiveBlock(tag);
       setIsBold(bold);
+      setIsItalic(italic);
+      setListType(list);
+      setIsInColumn(inCol);
     }
 
     document.addEventListener("selectionchange", detectBlock);
@@ -302,9 +322,31 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
     syncToParent();
   }
 
+  // 커서/선택 위치의 가장 가까운 블록 요소를 찾는 헬퍼
+  function findParentBlock(node: Node | null): HTMLElement | null {
+    const editor = editorRef.current;
+    if (!editor) return null;
+    while (node && node !== editor) {
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        const el = node as HTMLElement;
+        const name = el.tagName.toLowerCase();
+        if (["p", "h2", "h3", "h4", "div", "blockquote", "li", "ul", "ol"].includes(name)) {
+          return el;
+        }
+      }
+      node = node.parentNode;
+    }
+    return null;
+  }
+
   function execFormatBlock(tag: string) {
     const editor = editorRef.current;
     if (!editor) return;
+
+    // 토글: 현재 블록이 이미 같은 태그이면 <p>로 되돌림
+    if (activeBlock === tag && tag !== "p") {
+      tag = "p";
+    }
 
     const selection = window.getSelection();
     if (!selection || selection.rangeCount === 0) {
@@ -315,27 +357,24 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
     }
 
     const range = selection.getRangeAt(0);
+    const startBlock = findParentBlock(range.startContainer);
+    const endBlock = findParentBlock(range.endContainer);
 
-    // 선택 범위가 한 블록 내에 있으면 기본 동작
-    if (range.collapsed || range.startContainer === range.endContainer) {
+    // 단일 블록 (커서만 있거나 같은 블록 내 선택)
+    if (range.collapsed || startBlock === endBlock) {
       document.execCommand("formatBlock", false, tag);
       editor.focus();
       syncToParent();
       return;
     }
 
-    // 선택 범위 내 모든 최상위 블록 요소를 수집
-    const blocks: Element[] = [];
-    const walker = document.createTreeWalker(editor, NodeFilter.SHOW_ELEMENT, {
-      acceptNode(node) {
-        const el = node as Element;
-        if (el.parentElement !== editor) return NodeFilter.FILTER_SKIP;
-        if (!range.intersectsNode(el)) return NodeFilter.FILTER_SKIP;
-        return NodeFilter.FILTER_ACCEPT;
-      },
-    });
-    while (walker.nextNode()) {
-      blocks.push(walker.currentNode as Element);
+    // 다중 블록: 선택 범위 내 모든 최상위 블록 수집
+    const blocks: HTMLElement[] = [];
+    for (let i = 0; i < editor.children.length; i++) {
+      const child = editor.children[i] as HTMLElement;
+      if (range.intersectsNode(child)) {
+        blocks.push(child);
+      }
     }
 
     if (blocks.length === 0) {
@@ -350,6 +389,63 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
       const newEl = document.createElement(tag);
       newEl.innerHTML = block.innerHTML;
       block.replaceWith(newEl);
+    }
+
+    editor.focus();
+    syncToParent();
+  }
+
+  // 2단 나눠쓰기 토글
+  function handleColumnToggle() {
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return;
+
+    // 이미 2단 안에 있으면 해제 (unwrap)
+    let node: Node | null = selection.anchorNode;
+    while (node && node !== editor) {
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        const el = node as HTMLElement;
+        if (el.style.columnCount === "2") {
+          // 2단 wrapper의 자식들을 꺼내서 wrapper 자리에 삽입
+          const parent = el.parentNode;
+          if (parent) {
+            while (el.firstChild) {
+              parent.insertBefore(el.firstChild, el);
+            }
+            parent.removeChild(el);
+          }
+          editor.focus();
+          syncToParent();
+          return;
+        }
+      }
+      node = node.parentNode;
+    }
+
+    // 선택 범위의 블록들을 2단 div로 감싸기
+    const range = selection.getRangeAt(0);
+    const blocks: Node[] = [];
+    for (let i = 0; i < editor.childNodes.length; i++) {
+      const child = editor.childNodes[i];
+      if (range.intersectsNode(child)) {
+        blocks.push(child);
+      }
+    }
+
+    if (blocks.length === 0) return;
+
+    const wrapper = document.createElement("div");
+    wrapper.style.columnCount = "2";
+    wrapper.style.columnGap = "32px";
+
+    // 첫 번째 블록 앞에 wrapper 삽입
+    blocks[0].parentNode?.insertBefore(wrapper, blocks[0]);
+    // 선택된 블록들을 wrapper 안으로 이동
+    for (const block of blocks) {
+      wrapper.appendChild(block);
     }
 
     editor.focus();
@@ -375,7 +471,7 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
         <button type="button" onClick={() => execCommand("bold")} className={isBold ? tbtnOn : tbtnOff} title="굵게">
           굵게
         </button>
-        <button type="button" onClick={() => execCommand("italic")} className={tbtnOff} title="기울임">
+        <button type="button" onClick={() => execCommand("italic")} className={isItalic ? tbtnOn : tbtnOff} title="기울임">
           기울임
         </button>
         <div className="w-px h-5 bg-gray-300 mx-0.5" />
@@ -392,14 +488,17 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
           질문
         </button>
         <div className="w-px h-5 bg-gray-300 mx-0.5" />
-        <button type="button" onClick={() => execCommand("insertUnorderedList")} className={activeBlock === "li" ? tbtnOn : tbtnOff} title="목록">
+        <button type="button" onClick={() => execCommand("insertUnorderedList")} className={listType === "ul" ? tbtnOn : tbtnOff} title="목록">
           목록
         </button>
-        <button type="button" onClick={() => execCommand("insertOrderedList")} className={tbtnOff} title="번호목록">
+        <button type="button" onClick={() => execCommand("insertOrderedList")} className={listType === "ol" ? tbtnOn : tbtnOff} title="번호목록">
           번호목록
         </button>
         <button type="button" onClick={() => execFormatBlock("blockquote")} className={activeBlock === "blockquote" ? tbtnOn : tbtnOff} title="인용구">
           인용
+        </button>
+        <button type="button" onClick={handleColumnToggle} className={isInColumn ? tbtnOn : tbtnOff} title="2단 나눠쓰기">
+          2단
         </button>
         <div className="w-px h-5 bg-gray-300 mx-0.5" />
         <button type="button" onClick={handleImageButton} className={`${tbtnOff} flex items-center gap-1`} title="이미지 삽입">
