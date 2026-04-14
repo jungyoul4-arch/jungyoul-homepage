@@ -65,6 +65,7 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
   const [isBold, setIsBold] = useState(false);
   const [isItalic, setIsItalic] = useState(false);
   const [listType, setListType] = useState<string>("");
+  const [alignType, setAlignType] = useState<string>("left");
   const [isInColumn, setIsInColumn] = useState(false);
   const initializedRef = useRef(false);
 
@@ -86,6 +87,7 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
       let bold = false;
       let italic = false;
       let list = "";
+      let align = "left";
       let inCol = false;
 
       while (node && node !== editor) {
@@ -106,6 +108,9 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
             if (parentTag === "ol") list = "ol";
             else if (parentTag === "ul") list = "ul";
           }
+          if (el.style.textAlign && ["left", "center", "right"].includes(el.style.textAlign)) {
+            align = el.style.textAlign;
+          }
           if (el.style.columnCount === "2") {
             inCol = true;
           }
@@ -117,6 +122,7 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
       setIsBold(bold);
       setIsItalic(italic);
       setListType(list);
+      setAlignType(align);
       setIsInColumn(inCol);
     }
 
@@ -395,6 +401,18 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
     syncToParent();
   }
 
+  // 정렬 토글 (같은 정렬 다시 클릭 시 왼쪽으로 복귀)
+  function execAlign(align: "left" | "center" | "right") {
+    if (alignType === align && align !== "left") {
+      document.execCommand("justifyLeft", false);
+    } else {
+      const cmd = align === "left" ? "justifyLeft" : align === "center" ? "justifyCenter" : "justifyRight";
+      document.execCommand(cmd, false);
+    }
+    editorRef.current?.focus();
+    syncToParent();
+  }
+
   // 2단 나눠쓰기 토글
   function handleColumnToggle() {
     const editor = editorRef.current;
@@ -466,8 +484,8 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
 
   return (
     <div className="border border-gray-300 rounded-sm overflow-hidden focus-within:border-blue-600 transition-colors">
-      {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-0.5 px-2 py-1.5 bg-gray-50 border-b border-gray-200 text-xs">
+      {/* Toolbar Row 1 */}
+      <div className="flex flex-wrap items-center gap-0.5 px-2 pt-1.5 pb-1 bg-gray-50 border-b border-gray-100 text-xs">
         <button type="button" onClick={() => execCommand("bold")} className={isBold ? tbtnOn : tbtnOff} title="굵게">
           굵게
         </button>
@@ -499,6 +517,18 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
         </button>
         <button type="button" onClick={handleColumnToggle} className={isInColumn ? tbtnOn : tbtnOff} title="2단 나눠쓰기">
           2단
+        </button>
+      </div>
+      {/* Toolbar Row 2 */}
+      <div className="flex flex-wrap items-center gap-0.5 px-2 pb-1.5 pt-1 bg-gray-50 border-b border-gray-200 text-xs">
+        <button type="button" onClick={() => execAlign("left")} className={alignType === "left" ? tbtnOn : tbtnOff} title="왼쪽 정렬">
+          왼쪽
+        </button>
+        <button type="button" onClick={() => execAlign("center")} className={alignType === "center" ? tbtnOn : tbtnOff} title="가운데 정렬">
+          가운데
+        </button>
+        <button type="button" onClick={() => execAlign("right")} className={alignType === "right" ? tbtnOn : tbtnOff} title="오른쪽 정렬">
+          오른쪽
         </button>
         <div className="w-px h-5 bg-gray-300 mx-0.5" />
         <button type="button" onClick={handleImageButton} className={`${tbtnOff} flex items-center gap-1`} title="이미지 삽입">
