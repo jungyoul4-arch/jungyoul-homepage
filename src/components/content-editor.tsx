@@ -1,18 +1,7 @@
 "use client";
 
 import { useRef, useState, useCallback, useEffect } from "react";
-import {
-  Bold,
-  Italic,
-  ImageIcon,
-  Video,
-  Heading2,
-  Heading3,
-  Pilcrow,
-  Quote,
-  List,
-  ListOrdered,
-} from "lucide-react";
+import { ImageIcon, Video } from "lucide-react";
 
 interface ContentEditorProps {
   value: string;
@@ -60,6 +49,11 @@ function buildEmbedHtml(embed: VideoEmbed): string {
   );
 }
 
+const tbtnBase =
+  "px-2 py-1 rounded transition-colors font-medium";
+const tbtnOff = `${tbtnBase} text-gray-700 hover:bg-gray-200`;
+const tbtnOn = `${tbtnBase} text-blue-600 bg-blue-50`;
+
 /* ── ContentEditor ── */
 
 export function ContentEditor({ value, onChange }: ContentEditorProps) {
@@ -67,11 +61,47 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [activeBlock, setActiveBlock] = useState<string>("p");
+  const [isBold, setIsBold] = useState(false);
   const initializedRef = useRef(false);
 
   // 기본 단락 구분자를 <p>로 설정 (브라우저 기본 <div> 방지)
   useEffect(() => {
     document.execCommand("defaultParagraphSeparator", false, "p");
+  }, []);
+
+  // 커서 위치의 블록 태그를 감지하여 활성 상태 업데이트
+  useEffect(() => {
+    function detectBlock() {
+      const editor = editorRef.current;
+      if (!editor) return;
+      const selection = window.getSelection();
+      if (!selection || selection.rangeCount === 0) return;
+
+      let node: Node | null = selection.anchorNode;
+      let tag = "p";
+      let bold = false;
+
+      while (node && node !== editor) {
+        if (node.nodeType === Node.ELEMENT_NODE) {
+          const el = node as HTMLElement;
+          const name = el.tagName.toLowerCase();
+          if (["p", "h2", "h3", "h4", "blockquote", "li"].includes(name)) {
+            tag = name;
+          }
+          if (name === "b" || name === "strong" || el.style.fontWeight === "bold" || el.style.fontWeight === "700") {
+            bold = true;
+          }
+        }
+        node = node.parentNode;
+      }
+
+      setActiveBlock(tag);
+      setIsBold(bold);
+    }
+
+    document.addEventListener("selectionchange", detectBlock);
+    return () => document.removeEventListener("selectionchange", detectBlock);
   }, []);
 
   // 초기 HTML 설정 (한 번만)
@@ -239,7 +269,17 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
       }
     }
 
-    // 3. 일반 텍스트는 기본 동작 유지
+    // 3. 일반 텍스트: 외부 서식 제거 후 <p> 태그로 정규화
+    const plain = e.clipboardData.getData("text/plain");
+    if (plain) {
+      e.preventDefault();
+      const paragraphs = plain
+        .split(/\r?\n/)
+        .filter((line) => line.trim() !== "");
+      const html = paragraphs.map((line) => `<p>${line}</p>`).join("");
+      document.execCommand("insertHTML", false, html);
+      syncToParent();
+    }
   }
 
   // 툴바: 동영상 URL 직접 입력
@@ -263,8 +303,56 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
   }
 
   function execFormatBlock(tag: string) {
-    document.execCommand("formatBlock", false, tag);
-    editorRef.current?.focus();
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) {
+      document.execCommand("formatBlock", false, tag);
+      editor.focus();
+      syncToParent();
+      return;
+    }
+
+    const range = selection.getRangeAt(0);
+
+    // 선택 범위가 한 블록 내에 있으면 기본 동작
+    if (range.collapsed || range.startContainer === range.endContainer) {
+      document.execCommand("formatBlock", false, tag);
+      editor.focus();
+      syncToParent();
+      return;
+    }
+
+    // 선택 범위 내 모든 최상위 블록 요소를 수집
+    const blocks: Element[] = [];
+    const walker = document.createTreeWalker(editor, NodeFilter.SHOW_ELEMENT, {
+      acceptNode(node) {
+        const el = node as Element;
+        if (el.parentElement !== editor) return NodeFilter.FILTER_SKIP;
+        if (!range.intersectsNode(el)) return NodeFilter.FILTER_SKIP;
+        return NodeFilter.FILTER_ACCEPT;
+      },
+    });
+    while (walker.nextNode()) {
+      blocks.push(walker.currentNode as Element);
+    }
+
+    if (blocks.length === 0) {
+      document.execCommand("formatBlock", false, tag);
+      editor.focus();
+      syncToParent();
+      return;
+    }
+
+    // 각 블록을 지정 태그로 변환
+    for (const block of blocks) {
+      const newEl = document.createElement(tag);
+      newEl.innerHTML = block.innerHTML;
+      block.replaceWith(newEl);
+    }
+
+    editor.focus();
     syncToParent();
   }
 
@@ -283,91 +371,44 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
   return (
     <div className="border border-gray-300 rounded-sm overflow-hidden focus-within:border-blue-600 transition-colors">
       {/* Toolbar */}
-      <div className="flex items-center gap-0.5 px-2 py-1.5 bg-gray-50 border-b border-gray-200">
-        <button
-          type="button"
-          onClick={() => execCommand("bold")}
-          className="p-1.5 hover:bg-gray-200 rounded transition-colors"
-          title="굵게"
-        >
-          <Bold size={15} />
+      <div className="flex flex-wrap items-center gap-0.5 px-2 py-1.5 bg-gray-50 border-b border-gray-200 text-xs">
+        <button type="button" onClick={() => execCommand("bold")} className={isBold ? tbtnOn : tbtnOff} title="굵게">
+          굵게
         </button>
-        <button
-          type="button"
-          onClick={() => execCommand("italic")}
-          className="p-1.5 hover:bg-gray-200 rounded transition-colors"
-          title="기울임"
-        >
-          <Italic size={15} />
+        <button type="button" onClick={() => execCommand("italic")} className={tbtnOff} title="기울임">
+          기울임
         </button>
-        <div className="w-px h-5 bg-gray-300 mx-1" />
-        <button
-          type="button"
-          onClick={() => execFormatBlock("p")}
-          className="p-1.5 hover:bg-gray-200 rounded transition-colors"
-          title="본문 단락"
-        >
-          <Pilcrow size={15} />
+        <div className="w-px h-5 bg-gray-300 mx-0.5" />
+        <button type="button" onClick={() => execFormatBlock("p")} className={activeBlock === "p" ? tbtnOn : tbtnOff} title="본문 단락">
+          본문
         </button>
-        <button
-          type="button"
-          onClick={() => execFormatBlock("h2")}
-          className="p-1.5 hover:bg-gray-200 rounded transition-colors"
-          title="소제목 H2"
-        >
-          <Heading2 size={15} />
+        <button type="button" onClick={() => execFormatBlock("h2")} className={activeBlock === "h2" ? tbtnOn : tbtnOff} title="소제목">
+          소제목
         </button>
-        <button
-          type="button"
-          onClick={() => execFormatBlock("h3")}
-          className="p-1.5 hover:bg-gray-200 rounded transition-colors"
-          title="소제목 H3"
-        >
-          <Heading3 size={15} />
+        <button type="button" onClick={() => execFormatBlock("h3")} className={activeBlock === "h3" ? tbtnOn : tbtnOff} title="소제목2">
+          소제목2
         </button>
-        <div className="w-px h-5 bg-gray-300 mx-1" />
-        <button
-          type="button"
-          onClick={() => execCommand("insertUnorderedList")}
-          className="p-1.5 hover:bg-gray-200 rounded transition-colors"
-          title="순서없는 목록"
-        >
-          <List size={15} />
+        <button type="button" onClick={() => execCommand("bold")} className={isBold ? tbtnOn : tbtnOff} title="질문 (굵은 텍스트)">
+          질문
         </button>
-        <button
-          type="button"
-          onClick={() => execCommand("insertOrderedList")}
-          className="p-1.5 hover:bg-gray-200 rounded transition-colors"
-          title="순서있는 목록"
-        >
-          <ListOrdered size={15} />
+        <div className="w-px h-5 bg-gray-300 mx-0.5" />
+        <button type="button" onClick={() => execCommand("insertUnorderedList")} className={activeBlock === "li" ? tbtnOn : tbtnOff} title="목록">
+          목록
         </button>
-        <button
-          type="button"
-          onClick={() => execFormatBlock("blockquote")}
-          className="p-1.5 hover:bg-gray-200 rounded transition-colors"
-          title="인용구"
-        >
-          <Quote size={15} />
+        <button type="button" onClick={() => execCommand("insertOrderedList")} className={tbtnOff} title="번호목록">
+          번호목록
         </button>
-        <div className="w-px h-5 bg-gray-300 mx-1" />
-        <button
-          type="button"
-          onClick={handleImageButton}
-          className="p-1.5 hover:bg-gray-200 rounded transition-colors flex items-center gap-1 text-xs text-gray-600"
-          title="이미지 삽입"
-        >
-          <ImageIcon size={15} />
-          <span>이미지</span>
+        <button type="button" onClick={() => execFormatBlock("blockquote")} className={activeBlock === "blockquote" ? tbtnOn : tbtnOff} title="인용구">
+          인용
         </button>
-        <button
-          type="button"
-          onClick={handleVideoButton}
-          className="p-1.5 hover:bg-gray-200 rounded transition-colors flex items-center gap-1 text-xs text-gray-600"
-          title="동영상 삽입"
-        >
-          <Video size={15} />
-          <span>동영상</span>
+        <div className="w-px h-5 bg-gray-300 mx-0.5" />
+        <button type="button" onClick={handleImageButton} className={`${tbtnOff} flex items-center gap-1`} title="이미지 삽입">
+          <ImageIcon size={14} />
+          이미지
+        </button>
+        <button type="button" onClick={handleVideoButton} className={`${tbtnOff} flex items-center gap-1`} title="동영상 삽입">
+          <Video size={14} />
+          동영상
         </button>
         {uploading && (
           <span className="text-xs text-blue-600 ml-2">업로드 중...</span>
