@@ -186,20 +186,6 @@ export default async function ArticlePage({ params }: Props) {
           </time>
         </header>
 
-        {isValidThumbnail(article.thumbnail) && (
-          <div className="mb-10">
-            <div className="w-full aspect-[16/9] max-w-4xl mx-auto rounded-sm relative overflow-hidden">
-              <Image
-                src={article.thumbnail}
-                alt={article.title}
-                fill
-                unoptimized
-                className="object-cover"
-              />
-            </div>
-          </div>
-        )}
-
         <div className="article-content mb-16">
           {article.content ? (
             <div dangerouslySetInnerHTML={{ __html: sanitizeContent(article.content) }} />
