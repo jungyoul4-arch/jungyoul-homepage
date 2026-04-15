@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { Search, X, Menu, Lock, LayoutDashboard, ChevronDown } from "lucide-react";
+// ChevronDown: 모바일 메뉴에서만 사용
 import { useAuth } from "./auth-provider";
 import { SiteLogo } from "./site-logo";
 
@@ -62,6 +63,8 @@ export function Header() {
   const [searchQuery, setSearchQuery] = useState("");
   const [navGroups, setNavGroups] = useState<NavGroup[]>(fallbackNavItems);
   const [mobileSubmenu, setMobileSubmenu] = useState<string | null>(null);
+  const [hoveredNav, setHoveredNav] = useState<string | null>(null);
+  const hasChildren = navGroups.some((g) => g.children.length > 0);
 
   // DB에서 메뉴 데이터 로드
   useEffect(() => {
@@ -80,7 +83,10 @@ export function Header() {
   }, []);
 
   return (
-    <header className="sticky top-0 z-50 bg-white border-b border-gray-200">
+    <header
+      className="sticky top-0 z-50 bg-white border-b border-gray-200 relative"
+      onMouseLeave={() => setHoveredNav(null)}
+    >
       {/* Top bar */}
       <div className="max-w-[1280px] mx-auto px-4">
         <div className="flex items-center justify-between h-16">
@@ -94,42 +100,48 @@ export function Header() {
             </div>
           </Link>
 
-          {/* Desktop Navigation — 삼성 뉴스룸 스타일 드롭다운 */}
+          {/* Desktop Navigation — 삼성 뉴스룸 풀와이드 메가메뉴 */}
           <nav className="hidden lg:flex items-center gap-8">
             {navGroups.map((group) => (
-              <div key={group.parent.id} className="relative group/nav">
-                <Link
-                  href={group.parent.href}
-                  className="relative flex items-center gap-1 text-[1.125rem] font-bold text-[#1A1A1A] hover:text-[#1E64FA] transition-colors"
-                >
-                  {group.parent.label}
-                  {group.children.length > 0 && (
-                    <ChevronDown
-                      size={14}
-                      className="transition-transform duration-200 group-hover/nav:rotate-180"
-                    />
-                  )}
-                  <span className="absolute bottom-0 left-0 h-[2px] w-0 bg-[#1E64FA] transition-all duration-[250ms] group-hover/nav:w-full" />
-                </Link>
-
-                {/* 드롭다운 패널 */}
-                {group.children.length > 0 && (
-                  <div className="absolute top-full left-1/2 -translate-x-1/2 pt-3 opacity-0 invisible group-hover/nav:opacity-100 group-hover/nav:visible transition-all duration-200 pointer-events-none group-hover/nav:pointer-events-auto">
-                    <div className="bg-white border border-gray-200 rounded-lg shadow-lg py-2 px-2 flex gap-1 whitespace-nowrap">
-                      {group.children.map((child) => (
-                        <Link
-                          key={child.id}
-                          href={child.href}
-                          className="px-4 py-2 text-[0.9375rem] font-medium text-[#666666] hover:text-[#1E64FA] hover:bg-blue-50 rounded-md transition-colors"
-                        >
-                          {child.label}
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
+              <Link
+                key={group.parent.id}
+                href={group.parent.href}
+                className="relative text-[1.125rem] font-bold text-[#1A1A1A] hover:text-[#1E64FA] transition-colors py-5"
+                onMouseEnter={() => setHoveredNav(group.parent.id)}
+              >
+                {group.parent.label}
+                <span
+                  className={`absolute bottom-0 left-0 right-0 h-[3px] bg-[#1E64FA] transition-opacity duration-200 ${
+                    hoveredNav === group.parent.id ? "opacity-100" : "opacity-0"
+                  }`}
+                />
+              </Link>
             ))}
+
+            {/* 풀와이드 메가메뉴 패널 — hoveredNav 상태로 제어 */}
+            {hasChildren && hoveredNav && (
+              <div className="absolute left-0 right-0 top-full transition-all duration-200">
+                <div className="border-t border-gray-200 bg-white shadow-md">
+                  <div className="max-w-[1280px] mx-auto px-4 py-6 flex gap-16">
+                    {navGroups
+                      .filter((g) => g.children.length > 0)
+                      .map((group) => (
+                        <div key={group.parent.id}>
+                          {group.children.map((child) => (
+                            <Link
+                              key={child.id}
+                              href={child.href}
+                              className="block py-1.5 text-[0.9375rem] text-[#666666] hover:text-[#1E64FA] transition-colors"
+                            >
+                              {child.label}
+                            </Link>
+                          ))}
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              </div>
+            )}
           </nav>
 
           {/* Search + Admin + Mobile Menu */}
