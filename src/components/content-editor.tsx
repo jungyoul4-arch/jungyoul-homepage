@@ -61,11 +61,13 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [activeBlock, setActiveBlock] = useState<string>("p");
-  const [isBold, setIsBold] = useState(false);
-  const [isItalic, setIsItalic] = useState(false);
-  const [listType, setListType] = useState<string>("");
-  const [alignType, setAlignType] = useState<string>("left");
+  const [toolbar, setToolbar] = useState({
+    activeBlock: "p",
+    isBold: false,
+    isItalic: false,
+    listType: "",
+    alignType: "left",
+  });
   const initializedRef = useRef(false);
 
   // 기본 단락 구분자를 <p>로 설정 (브라우저 기본 <div> 방지)
@@ -112,11 +114,7 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
         node = node.parentNode;
       }
 
-      setActiveBlock(tag);
-      setIsBold(bold);
-      setIsItalic(italic);
-      setListType(list);
-      setAlignType(align);
+      setToolbar({ activeBlock: tag, isBold: bold, isItalic: italic, listType: list, alignType: align });
     }
 
     document.addEventListener("selectionchange", detectBlock);
@@ -343,7 +341,7 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
     if (!editor) return;
 
     // 토글: 현재 블록이 이미 같은 태그이면 <p>로 되돌림
-    if (activeBlock === tag && tag !== "p") {
+    if (toolbar.activeBlock === tag && tag !== "p") {
       tag = "p";
     }
 
@@ -396,7 +394,7 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
 
   // 정렬 토글 (같은 정렬 다시 클릭 시 왼쪽으로 복귀)
   function execAlign(align: "left" | "center" | "right") {
-    if (alignType === align && align !== "left") {
+    if (toolbar.alignType === align && align !== "left") {
       document.execCommand("justifyLeft", false);
     } else {
       const cmd = align === "left" ? "justifyLeft" : align === "center" ? "justifyCenter" : "justifyRight";
@@ -422,45 +420,45 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
     <div className="border border-gray-300 rounded-sm overflow-hidden focus-within:border-blue-600 transition-colors">
       {/* Toolbar Row 1 */}
       <div className="flex flex-wrap items-center gap-0.5 px-2 pt-1.5 pb-1 bg-gray-50 border-b border-gray-100 text-xs">
-        <button type="button" onClick={() => execCommand("bold")} className={isBold ? tbtnOn : tbtnOff} title="굵게">
+        <button type="button" onClick={() => execCommand("bold")} className={toolbar.isBold ? tbtnOn : tbtnOff} title="굵게">
           굵게
         </button>
-        <button type="button" onClick={() => execCommand("italic")} className={isItalic ? tbtnOn : tbtnOff} title="기울임">
+        <button type="button" onClick={() => execCommand("italic")} className={toolbar.isItalic ? tbtnOn : tbtnOff} title="기울임">
           기울임
         </button>
         <div className="w-px h-5 bg-gray-300 mx-0.5" />
-        <button type="button" onClick={() => execFormatBlock("p")} className={activeBlock === "p" ? tbtnOn : tbtnOff} title="본문 단락">
+        <button type="button" onClick={() => execFormatBlock("p")} className={toolbar.activeBlock === "p" ? tbtnOn : tbtnOff} title="본문 단락">
           본문
         </button>
-        <button type="button" onClick={() => execFormatBlock("h2")} className={activeBlock === "h2" ? tbtnOn : tbtnOff} title="소제목">
+        <button type="button" onClick={() => execFormatBlock("h2")} className={toolbar.activeBlock === "h2" ? tbtnOn : tbtnOff} title="소제목">
           소제목
         </button>
-        <button type="button" onClick={() => execFormatBlock("h3")} className={activeBlock === "h3" ? tbtnOn : tbtnOff} title="소제목2">
+        <button type="button" onClick={() => execFormatBlock("h3")} className={toolbar.activeBlock === "h3" ? tbtnOn : tbtnOff} title="소제목2">
           소제목2
         </button>
-        <button type="button" onClick={() => execCommand("bold")} className={isBold ? tbtnOn : tbtnOff} title="질문 (굵은 텍스트)">
+        <button type="button" onClick={() => execCommand("bold")} className={toolbar.isBold ? tbtnOn : tbtnOff} title="질문 (굵은 텍스트)">
           질문
         </button>
         <div className="w-px h-5 bg-gray-300 mx-0.5" />
-        <button type="button" onClick={() => execCommand("insertUnorderedList")} className={listType === "ul" ? tbtnOn : tbtnOff} title="목록">
+        <button type="button" onClick={() => execCommand("insertUnorderedList")} className={toolbar.listType === "ul" ? tbtnOn : tbtnOff} title="목록">
           목록
         </button>
-        <button type="button" onClick={() => execCommand("insertOrderedList")} className={listType === "ol" ? tbtnOn : tbtnOff} title="번호목록">
+        <button type="button" onClick={() => execCommand("insertOrderedList")} className={toolbar.listType === "ol" ? tbtnOn : tbtnOff} title="번호목록">
           번호목록
         </button>
-        <button type="button" onClick={() => execFormatBlock("blockquote")} className={activeBlock === "blockquote" ? tbtnOn : tbtnOff} title="인용구">
+        <button type="button" onClick={() => execFormatBlock("blockquote")} className={toolbar.activeBlock === "blockquote" ? tbtnOn : tbtnOff} title="인용구">
           인용
         </button>
       </div>
       {/* Toolbar Row 2 */}
       <div className="flex flex-wrap items-center gap-0.5 px-2 pb-1.5 pt-1 bg-gray-50 border-b border-gray-200 text-xs">
-        <button type="button" onClick={() => execAlign("left")} className={alignType === "left" ? tbtnOn : tbtnOff} title="왼쪽 정렬">
+        <button type="button" onClick={() => execAlign("left")} className={toolbar.alignType === "left" ? tbtnOn : tbtnOff} title="왼쪽 정렬">
           왼쪽
         </button>
-        <button type="button" onClick={() => execAlign("center")} className={alignType === "center" ? tbtnOn : tbtnOff} title="가운데 정렬">
+        <button type="button" onClick={() => execAlign("center")} className={toolbar.alignType === "center" ? tbtnOn : tbtnOff} title="가운데 정렬">
           가운데
         </button>
-        <button type="button" onClick={() => execAlign("right")} className={alignType === "right" ? tbtnOn : tbtnOff} title="오른쪽 정렬">
+        <button type="button" onClick={() => execAlign("right")} className={toolbar.alignType === "right" ? tbtnOn : tbtnOff} title="오른쪽 정렬">
           오른쪽
         </button>
         <div className="w-px h-5 bg-gray-300 mx-0.5" />

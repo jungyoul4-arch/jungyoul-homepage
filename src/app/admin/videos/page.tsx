@@ -46,7 +46,7 @@ export default function AdminVideosPage() {
   }
 
   useEffect(() => {
-    load();
+    load(); // eslint-disable-line react-hooks/set-state-in-effect -- setState is inside async callback
   }, []);
 
   const parsedId = extractYoutubeId(form.youtubeInput);

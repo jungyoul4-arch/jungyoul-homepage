@@ -40,7 +40,7 @@ export default function AdminTeachersPage() {
   }
 
   useEffect(() => {
-    load();
+    load(); // eslint-disable-line react-hooks/set-state-in-effect -- setState is inside async callback
   }, []);
 
   async function handleAdd(e: React.FormEvent) {

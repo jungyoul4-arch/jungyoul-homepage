@@ -68,6 +68,14 @@ export const heroSlideItems = sqliteTable("hero_slide_items", {
   sortOrder: integer("sort_order").default(0),
 });
 
+export const navMenus = sqliteTable("nav_menus", {
+  id: text("id").primaryKey(),
+  parentId: text("parent_id"),           // null = 최상위, 값 있으면 하위 항목
+  label: text("label").notNull(),
+  href: text("href").notNull(),
+  sortOrder: integer("sort_order").default(0),
+});
+
 export const siteSettings = sqliteTable("site_settings", {
   key: text("key").primaryKey(),
   value: text("value").notNull(),

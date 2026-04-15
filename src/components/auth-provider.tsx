@@ -31,14 +31,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [editModal, setEditModal] = useState<EditModalState | null>(null);
 
   useEffect(() => {
-    fetch("/api/auth/me")
-      .then((res) => setIsAdmin(res.ok))
-      .catch(() => setIsAdmin(false));
-
-    fetch("/api/settings")
-      .then((res) => res.json())
-      .then((data) => setLogoUrl(data.logoUrl ?? null))
-      .catch(() => setLogoUrl(null));
+    async function init() {
+      const [authResult, settingsResult] = await Promise.allSettled([
+        fetch("/api/auth/me"),
+        fetch("/api/settings").then((r) => r.json()),
+      ]);
+      setIsAdmin(authResult.status === "fulfilled" && authResult.value.ok);
+      setLogoUrl(
+        settingsResult.status === "fulfilled"
+          ? (settingsResult.value.logoUrl ?? null)
+          : null
+      );
+    }
+    init();
   }, []);
 
   const openEdit = useCallback((type: EditModalType, data: Record<string, unknown>) => {

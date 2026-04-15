@@ -12,6 +12,7 @@ import {
   Code,
   Settings,
   Layers,
+  Navigation,
 } from "lucide-react";
 import { SiteLogo } from "@/components/site-logo";
 
@@ -22,6 +23,7 @@ const sidebarItems = [
   { label: "하이라이트", href: "/admin/highlights", icon: Star },
   { label: "강사 관리", href: "/admin/teachers", icon: Users },
   { label: "영상 관리", href: "/admin/videos", icon: Video },
+  { label: "메뉴 관리", href: "/admin/nav-menus", icon: Navigation },
   { label: "추적 코드", href: "/admin/tracking-codes", icon: Code },
   { label: "웹사이트 로고 설정", href: "/admin/settings", icon: Settings },
 ];

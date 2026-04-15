@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { createInsertSchema, createUpdateSchema } from "drizzle-zod";
-import { articles, highlights, teachers, videos, trackingCodes } from "@/db/schema";
+import { articles, highlights, teachers, videos, trackingCodes, navMenus } from "@/db/schema";
 import { NextResponse } from "next/server";
 
 // Articles
@@ -87,6 +87,20 @@ export const updateTrackingCodeSchema = createUpdateSchema(trackingCodes, {
   }),
 }).omit({ id: true, createdAt: true });
 
+
+// Nav Menus
+const hrefRefine = (v: string) =>
+  v.startsWith("/") || v.startsWith("https://") || v.startsWith("http://");
+const hrefMsg = { message: "링크는 /로 시작하는 상대경로 또는 http(s):// URL이어야 합니다." };
+
+export const insertNavMenuSchema = createInsertSchema(navMenus, {
+  label: (schema) => schema.min(1).max(100),
+  href: (schema) => schema.min(1).max(300).refine(hrefRefine, hrefMsg),
+}).omit({ id: true });
+export const updateNavMenuSchema = createUpdateSchema(navMenus, {
+  label: (schema) => schema.max(100),
+  href: (schema) => schema.max(300).refine((v) => !v || hrefRefine(v), hrefMsg),
+}).omit({ id: true });
 
 export function validationError(e: unknown) {
   if (e instanceof z.ZodError) {

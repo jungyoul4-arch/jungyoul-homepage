@@ -1,19 +1,58 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { Search, X, Menu, Lock, LayoutDashboard } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Search, X, Menu, Lock, LayoutDashboard, ChevronDown } from "lucide-react";
 import { useAuth } from "./auth-provider";
 import { SiteLogo } from "./site-logo";
 
-const navItems = [
-  { label: "교육정보", href: "/articles" },
-  { label: "입시전략", href: "/articles?category=strategy" },
-  { label: "교육칼럼", href: "/articles?category=column" },
+/* ── 타입 ── */
+interface NavMenuItem {
+  id: string;
+  parentId: string | null;
+  label: string;
+  href: string;
+  sortOrder: number;
+}
+
+interface NavGroup {
+  parent: NavMenuItem;
+  children: NavMenuItem[];
+}
+
+/* ── 하드코딩 폴백 (DB 데이터 없을 때) ── */
+const fallbackNavItems: NavGroup[] = [
+  {
+    parent: { id: "f1", parentId: null, label: "교육정보", href: "/articles", sortOrder: 0 },
+    children: [
+      { id: "f1a", parentId: "f1", label: "전체", href: "/articles", sortOrder: 0 },
+      { id: "f1b", parentId: "f1", label: "입시전략", href: "/articles?category=strategy", sortOrder: 1 },
+      { id: "f1c", parentId: "f1", label: "교육칼럼", href: "/articles?category=column", sortOrder: 2 },
+      { id: "f1d", parentId: "f1", label: "합격스토리", href: "/articles?category=success", sortOrder: 3 },
+      { id: "f1e", parentId: "f1", label: "공지사항", href: "/articles?category=news", sortOrder: 4 },
+    ],
+  },
+  { parent: { id: "f2", parentId: null, label: "선생님", href: "/teachers", sortOrder: 1 }, children: [] },
+  { parent: { id: "f3", parentId: null, label: "FAQ", href: "/faq", sortOrder: 2 }, children: [] },
+  { parent: { id: "f4", parentId: null, label: "상담신청", href: "/contact", sortOrder: 3 }, children: [] },
+];
+
+function buildNavTree(items: NavMenuItem[]): NavGroup[] {
+  const parents = items.filter((i) => !i.parentId);
+  return parents.map((p) => ({
+    parent: p,
+    children: items.filter((c) => c.parentId === p.id),
+  }));
+}
+
+/* ── 검색 추천 검색어 ── */
+const searchSuggestions = [
+  { label: "수능전략", href: "/articles?category=strategy" },
+  { label: "논술", href: "/articles?category=strategy" },
+  { label: "내신관리", href: "/articles?category=strategy" },
+  { label: "고교학점제", href: "/articles?category=column" },
   { label: "합격스토리", href: "/articles?category=success" },
-  { label: "선생님", href: "/teachers" },
-  { label: "FAQ", href: "/faq" },
-  { label: "상담신청", href: "/contact" },
+  { label: "AI교육", href: "/articles?category=column" },
 ];
 
 export function Header() {
@@ -21,10 +60,28 @@ export function Header() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [navGroups, setNavGroups] = useState<NavGroup[]>(fallbackNavItems);
+  const [mobileSubmenu, setMobileSubmenu] = useState<string | null>(null);
+
+  // DB에서 메뉴 데이터 로드
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/nav-menus")
+      .then((res) => res.json())
+      .then((data: NavMenuItem[]) => {
+        if (!cancelled && data.length > 0) {
+          setNavGroups(buildNavTree(data));
+        }
+      })
+      .catch(() => {
+        // 네트워크 에러 시 폴백 유지
+      });
+    return () => { cancelled = true; };
+  }, []);
 
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-gray-200">
-      {/* Top bar — 삼성 뉴스룸 스타일 */}
+      {/* Top bar */}
       <div className="max-w-[1280px] mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
@@ -37,17 +94,41 @@ export function Header() {
             </div>
           </Link>
 
-          {/* Desktop Navigation — 삼성 뉴스룸과 동일한 수평 네비 */}
+          {/* Desktop Navigation — 삼성 뉴스룸 스타일 드롭다운 */}
           <nav className="hidden lg:flex items-center gap-8">
-            {navItems.map((item) => (
-              <Link
-                key={item.label}
-                href={item.href}
-                className="relative text-[1.125rem] font-bold text-[#1A1A1A] hover:text-[#1E64FA] transition-colors group"
-              >
-                {item.label}
-                <span className="absolute bottom-0 left-0 h-[2px] w-0 bg-[#1E64FA] transition-all duration-[250ms] group-hover:w-full" />
-              </Link>
+            {navGroups.map((group) => (
+              <div key={group.parent.id} className="relative group/nav">
+                <Link
+                  href={group.parent.href}
+                  className="relative flex items-center gap-1 text-[1.125rem] font-bold text-[#1A1A1A] hover:text-[#1E64FA] transition-colors"
+                >
+                  {group.parent.label}
+                  {group.children.length > 0 && (
+                    <ChevronDown
+                      size={14}
+                      className="transition-transform duration-200 group-hover/nav:rotate-180"
+                    />
+                  )}
+                  <span className="absolute bottom-0 left-0 h-[2px] w-0 bg-[#1E64FA] transition-all duration-[250ms] group-hover/nav:w-full" />
+                </Link>
+
+                {/* 드롭다운 패널 */}
+                {group.children.length > 0 && (
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 pt-3 opacity-0 invisible group-hover/nav:opacity-100 group-hover/nav:visible transition-all duration-200 pointer-events-none group-hover/nav:pointer-events-auto">
+                    <div className="bg-white border border-gray-200 rounded-lg shadow-lg py-2 px-2 flex gap-1 whitespace-nowrap">
+                      {group.children.map((child) => (
+                        <Link
+                          key={child.id}
+                          href={child.href}
+                          className="px-4 py-2 text-[0.9375rem] font-medium text-[#666666] hover:text-[#1E64FA] hover:bg-blue-50 rounded-md transition-colors"
+                        >
+                          {child.label}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             ))}
           </nav>
 
@@ -89,7 +170,7 @@ export function Header() {
         </div>
       </div>
 
-      {/* Search Panel — 삼성 뉴스룸 검색 패널 스타일 */}
+      {/* Search Panel */}
       {searchOpen && (
         <div className="border-t border-gray-200 bg-gray-50">
           <div className="max-w-[1280px] mx-auto px-4 py-6">
@@ -111,41 +192,70 @@ export function Header() {
             <div className="mt-4 max-w-2xl mx-auto">
               <p className="text-xs text-gray-500 mb-2">추천 검색어</p>
               <div className="flex flex-wrap gap-2">
-                {[
-                  { label: "수능전략", href: "/articles?category=strategy" },
-                  { label: "논술", href: "/articles?category=strategy" },
-                  { label: "내신관리", href: "/articles?category=strategy" },
-                  { label: "고교학점제", href: "/articles?category=column" },
-                  { label: "합격스토리", href: "/articles?category=success" },
-                  { label: "AI교육", href: "/articles?category=column" },
-                ].map((item) => (
-                    <Link
-                      key={item.label}
-                      href={item.href}
-                      className="px-3 py-1.5 bg-white border border-gray-200 rounded-sm text-sm text-gray-600 hover:border-[#1E64FA] hover:text-[#1E64FA] transition-colors"
-                    >
-                      {item.label}
-                    </Link>
-                  ))}
+                {searchSuggestions.map((item) => (
+                  <Link
+                    key={item.label}
+                    href={item.href}
+                    className="px-3 py-1.5 bg-white border border-gray-200 rounded-sm text-sm text-gray-600 hover:border-[#1E64FA] hover:text-[#1E64FA] transition-colors"
+                  >
+                    {item.label}
+                  </Link>
+                ))}
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Mobile Menu */}
+      {/* Mobile Menu — 아코디언 스타일 */}
       {mobileMenuOpen && (
         <div className="lg:hidden border-t border-gray-200 bg-white">
           <nav className="max-w-[1280px] mx-auto px-4 py-4">
-            {navItems.map((item) => (
-              <Link
-                key={item.label}
-                href={item.href}
-                className="block py-3 text-[1.125rem] font-bold text-[#1A1A1A] border-b border-gray-100 last:border-0"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {item.label}
-              </Link>
+            {navGroups.map((group) => (
+              <div key={group.parent.id} className="border-b border-gray-100 last:border-0">
+                {group.children.length > 0 ? (
+                  <>
+                    <button
+                      onClick={() =>
+                        setMobileSubmenu(
+                          mobileSubmenu === group.parent.id ? null : group.parent.id
+                        )
+                      }
+                      className="flex items-center justify-between w-full py-3 text-[1.125rem] font-bold text-[#1A1A1A]"
+                    >
+                      {group.parent.label}
+                      <ChevronDown
+                        size={16}
+                        className={`text-gray-400 transition-transform duration-200 ${
+                          mobileSubmenu === group.parent.id ? "rotate-180" : ""
+                        }`}
+                      />
+                    </button>
+                    {mobileSubmenu === group.parent.id && (
+                      <div className="pl-4 pb-3 space-y-1">
+                        {group.children.map((child) => (
+                          <Link
+                            key={child.id}
+                            href={child.href}
+                            className="block py-2 text-[1rem] text-[#666666] hover:text-[#1E64FA]"
+                            onClick={() => setMobileMenuOpen(false)}
+                          >
+                            {child.label}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <Link
+                    href={group.parent.href}
+                    className="block py-3 text-[1.125rem] font-bold text-[#1A1A1A]"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    {group.parent.label}
+                  </Link>
+                )}
+              </div>
             ))}
           </nav>
         </div>

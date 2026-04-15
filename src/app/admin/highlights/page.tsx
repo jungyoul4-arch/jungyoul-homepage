@@ -22,6 +22,7 @@ export default function AdminHighlightsPage() {
     setLoading(false);
   }
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- setState is inside async callback
   useEffect(() => { load(); }, []);
 
   async function handleAdd(e: React.FormEvent) {
