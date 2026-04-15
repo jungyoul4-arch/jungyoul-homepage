@@ -66,7 +66,6 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
   const [isItalic, setIsItalic] = useState(false);
   const [listType, setListType] = useState<string>("");
   const [alignType, setAlignType] = useState<string>("left");
-  const [isInColumn, setIsInColumn] = useState(false);
   const initializedRef = useRef(false);
 
   // 기본 단락 구분자를 <p>로 설정 (브라우저 기본 <div> 방지)
@@ -88,8 +87,6 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
       let italic = false;
       let list = "";
       let align = "left";
-      let inCol = false;
-
       while (node && node !== editor) {
         if (node.nodeType === Node.ELEMENT_NODE) {
           const el = node as HTMLElement;
@@ -111,9 +108,6 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
           if (el.style.textAlign && ["left", "center", "right"].includes(el.style.textAlign)) {
             align = el.style.textAlign;
           }
-          if (el.style.columnCount === "2") {
-            inCol = true;
-          }
         }
         node = node.parentNode;
       }
@@ -123,7 +117,6 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
       setIsItalic(italic);
       setListType(list);
       setAlignType(align);
-      setIsInColumn(inCol);
     }
 
     document.addEventListener("selectionchange", detectBlock);
@@ -413,63 +406,6 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
     syncToParent();
   }
 
-  // 2단 나눠쓰기 토글
-  function handleColumnToggle() {
-    const editor = editorRef.current;
-    if (!editor) return;
-
-    const selection = window.getSelection();
-    if (!selection || selection.rangeCount === 0) return;
-
-    // 이미 2단 안에 있으면 해제 (unwrap)
-    let node: Node | null = selection.anchorNode;
-    while (node && node !== editor) {
-      if (node.nodeType === Node.ELEMENT_NODE) {
-        const el = node as HTMLElement;
-        if (el.style.columnCount === "2") {
-          // 2단 wrapper의 자식들을 꺼내서 wrapper 자리에 삽입
-          const parent = el.parentNode;
-          if (parent) {
-            while (el.firstChild) {
-              parent.insertBefore(el.firstChild, el);
-            }
-            parent.removeChild(el);
-          }
-          editor.focus();
-          syncToParent();
-          return;
-        }
-      }
-      node = node.parentNode;
-    }
-
-    // 선택 범위의 블록들을 2단 div로 감싸기
-    const range = selection.getRangeAt(0);
-    const blocks: Node[] = [];
-    for (let i = 0; i < editor.childNodes.length; i++) {
-      const child = editor.childNodes[i];
-      if (range.intersectsNode(child)) {
-        blocks.push(child);
-      }
-    }
-
-    if (blocks.length === 0) return;
-
-    const wrapper = document.createElement("div");
-    wrapper.style.columnCount = "2";
-    wrapper.style.columnGap = "32px";
-
-    // 첫 번째 블록 앞에 wrapper 삽입
-    blocks[0].parentNode?.insertBefore(wrapper, blocks[0]);
-    // 선택된 블록들을 wrapper 안으로 이동
-    for (const block of blocks) {
-      wrapper.appendChild(block);
-    }
-
-    editor.focus();
-    syncToParent();
-  }
-
   function handleImageButton() {
     fileInputRef.current?.click();
   }
@@ -514,9 +450,6 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
         </button>
         <button type="button" onClick={() => execFormatBlock("blockquote")} className={activeBlock === "blockquote" ? tbtnOn : tbtnOff} title="인용구">
           인용
-        </button>
-        <button type="button" onClick={handleColumnToggle} className={isInColumn ? tbtnOn : tbtnOff} title="2단 나눠쓰기">
-          2단
         </button>
       </div>
       {/* Toolbar Row 2 */}

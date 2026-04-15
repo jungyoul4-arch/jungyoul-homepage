@@ -214,14 +214,6 @@
   letter-spacing: -0.54px;
 }
 
-/* ── 2단 나눠쓰기 ── */
-.article-content div[style*="column-count"] {
-  padding-top: 32px;
-}
-.article-content div[style*="column-count"] > *:first-child {
-  padding-top: 0;
-}
-
 /* ── 첫 번째 자식 상단 간격 제거 ── */
 .article-content > *:first-child {
   padding-top: 0;
@@ -252,9 +244,6 @@
   .article-content ol li {
     font-size: 1rem;
     padding-top: 12px;
-  }
-  .article-content div[style*="column-count"] {
-    column-count: 1 !important;
   }
 }
 
@@ -312,12 +301,6 @@
 .article-content-preview li {
   padding-top: 8px;
   list-style: disc;
-}
-.article-content-preview div[style*="column-count"] {
-  padding-top: 16px;
-  border: 1px dashed #ccc;
-  padding-left: 8px;
-  padding-right: 8px;
 }
 .article-content-preview > *:first-child {
   padding-top: 0;

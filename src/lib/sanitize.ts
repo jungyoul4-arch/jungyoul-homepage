@@ -40,8 +40,6 @@ export function sanitizeContent(html: string): string {
         "font-size": [/^\d+/],
         "font-weight": [/^\d+$|^bold$|^normal$/],
         "text-align": [/^left$|^center$|^right$|^justify$/],
-        "column-count": [/^\d+$/],
-        "column-gap": [/^\d+/],
       },
     },
     allowedIframeHostnames: ["www.youtube.com", "player.vimeo.com"],
