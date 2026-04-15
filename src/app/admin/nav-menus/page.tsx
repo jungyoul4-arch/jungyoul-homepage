@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, Trash2, Save, Pencil, X, ChevronDown, ChevronRight } from "lucide-react";
+import { Plus, Trash2, Save, Pencil, X, ChevronDown, ChevronRight, ArrowUp, ArrowDown, ArrowLeft, ArrowRight } from "lucide-react";
 
 interface NavMenu {
   id: string;
@@ -17,10 +17,14 @@ interface ParentWithChildren {
 }
 
 function buildTree(items: NavMenu[]): ParentWithChildren[] {
-  const parents = items.filter((i) => !i.parentId);
+  const parents = items
+    .filter((i) => !i.parentId)
+    .sort((a, b) => a.sortOrder - b.sortOrder);
   return parents.map((p) => ({
     parent: p,
-    children: items.filter((c) => c.parentId === p.id),
+    children: items
+      .filter((c) => c.parentId === p.id)
+      .sort((a, b) => a.sortOrder - b.sortOrder),
   }));
 }
 
@@ -33,14 +37,19 @@ export default function AdminNavMenusPage() {
   const [addChildFor, setAddChildFor] = useState<string | null>(null);
   const [form, setForm] = useState({ label: "", href: "" });
   const [expandedParents, setExpandedParents] = useState<Set<string>>(new Set());
+  const [reordering, setReordering] = useState(false);
 
   async function load() {
     const res = await fetch("/api/nav-menus");
     const data: NavMenu[] = await res.json();
     setItems(data);
     setLoading(false);
-    const parentIds = data.filter((i) => !i.parentId).map((i) => i.id);
-    setExpandedParents(new Set(parentIds));
+    // 첫 로드 시에만 전체 펼치기, 이후에는 현재 상태 보존
+    setExpandedParents((prev) => {
+      if (prev.size > 0) return prev;
+      const parentIds = data.filter((i) => !i.parentId).map((i) => i.id);
+      return new Set(parentIds);
+    });
   }
 
   useEffect(() => {
@@ -96,6 +105,30 @@ export default function AdminNavMenusPage() {
     } else {
       alert("삭제 중 오류가 발생했습니다.");
     }
+  }
+
+  // 순서 변경: 형제 항목 배열에서 위치를 swap 후 즉시 API 저장
+  async function handleMove(targetId: string, direction: -1 | 1, parentId: string | null) {
+    if (reordering) return;
+    const siblings = items
+      .filter((i) => (parentId === null ? !i.parentId : i.parentId === parentId))
+      .sort((a, b) => a.sortOrder - b.sortOrder);
+
+    const idx = siblings.findIndex((s) => s.id === targetId);
+    const swapIdx = idx + direction;
+    if (swapIdx < 0 || swapIdx >= siblings.length) return;
+
+    setReordering(true);
+    const reordered = [...siblings];
+    [reordered[idx], reordered[swapIdx]] = [reordered[swapIdx], reordered[idx]];
+
+    const res = await fetch("/api/admin/nav-menus/reorder", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: reordered.map((s) => s.id) }),
+    });
+    if (res.ok) await load();
+    setReordering(false);
   }
 
   function startEdit(item: NavMenu) {
@@ -202,6 +235,25 @@ export default function AdminNavMenusPage() {
                         <span className="text-xs text-blue-500 ml-2">하위 {children.length}개</span>
                       )}
                     </div>
+                    {/* 순서 변경: 좌우 */}
+                    <div className="flex items-center gap-0.5 mr-1">
+                      <button
+                        onClick={() => handleMove(parent.id, -1, null)}
+                        className="p-1 text-gray-300 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                        disabled={tree.findIndex((t) => t.parent.id === parent.id) === 0}
+                        title="왼쪽으로 이동"
+                      >
+                        <ArrowLeft size={14} />
+                      </button>
+                      <button
+                        onClick={() => handleMove(parent.id, 1, null)}
+                        className="p-1 text-gray-300 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                        disabled={tree.findIndex((t) => t.parent.id === parent.id) === tree.length - 1}
+                        title="오른쪽으로 이동"
+                      >
+                        <ArrowRight size={14} />
+                      </button>
+                    </div>
                     <button onClick={() => startEdit(parent)} className="p-1.5 text-gray-400 hover:text-blue-600">
                       <Pencil size={14} />
                     </button>
@@ -249,6 +301,25 @@ export default function AdminNavMenusPage() {
                           <div className="flex-1 min-w-0">
                             <span className="text-sm text-gray-700">{child.label}</span>
                             <span className="text-xs text-gray-400 ml-2">{child.href}</span>
+                          </div>
+                          {/* 순서 변경: 상하 */}
+                          <div className="flex items-center gap-0.5 mr-1">
+                            <button
+                              onClick={() => handleMove(child.id, -1, parent.id)}
+                              className="p-1 text-gray-300 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                              disabled={children.findIndex((c) => c.id === child.id) === 0}
+                              title="위로 이동"
+                            >
+                              <ArrowUp size={14} />
+                            </button>
+                            <button
+                              onClick={() => handleMove(child.id, 1, parent.id)}
+                              className="p-1 text-gray-300 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                              disabled={children.findIndex((c) => c.id === child.id) === children.length - 1}
+                              title="아래로 이동"
+                            >
+                              <ArrowDown size={14} />
+                            </button>
                           </div>
                           <button onClick={() => startEdit(child)} className="p-1.5 text-gray-400 hover:text-blue-600">
                             <Pencil size={14} />
