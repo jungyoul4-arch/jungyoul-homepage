@@ -110,6 +110,12 @@ export default function RootLayout({
       <head>
         <meta name="naver-site-verification" content="5c65f2da2ffd38277848b8bf1f454d6599ffe850" />
         <meta name="google-site-verification" content="cUDL_79cigC39kEYAtf9YYsGfgYZaQQ2IFFYzGpNogA" />
+        <link
+          rel="stylesheet"
+          as="style"
+          crossOrigin="anonymous"
+          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
+        />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
