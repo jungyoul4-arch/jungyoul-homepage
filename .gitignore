@@ -60,3 +60,7 @@ next-env.d.ts
 
 # Editor set
 /samsung-newsroom-feature-ui
+
+# Local dev helpers (not part of repo)
+start-dev.command
+git-push.command
