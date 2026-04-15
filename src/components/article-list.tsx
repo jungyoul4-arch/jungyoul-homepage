@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { categories, type Article, type Category } from "@/lib/data";
+import { AdminEditButton } from "./admin-edit-button";
 import { isValidThumbnail } from "@/lib/thumbnail";
 import { placeholderGradient } from "@/lib/utils";
 
@@ -42,7 +43,7 @@ export function ArticleList({ articles }: ArticleListProps) {
           <button
             key={cat.value}
             onClick={() => handleTab(cat.value)}
-            className={`px-4 py-3 text-[1.125rem] transition-colors relative ${
+            className={`px-4 py-3 text-[1.125rem] transition-colors relative whitespace-nowrap shrink-0 ${
               activeTab === cat.value
                 ? "text-[#1E64FA] font-bold"
                 : "text-[#666666] hover:text-[#1A1A1A] font-medium"
@@ -56,8 +57,8 @@ export function ArticleList({ articles }: ArticleListProps) {
         ))}
       </div>
 
-      {/* Article List — 삼성 뉴스룸 기사 목록 스타일 (가로형) */}
-      <div className="divide-y divide-gray-100">
+      {/* Article Grid/List — PC: 4열 그리드, 모바일: 세로 리스트 */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-4 md:gap-y-12">
         {filtered.map((article) => (
           <ArticleRow key={article.id} article={article} />
         ))}
@@ -74,42 +75,68 @@ export function ArticleList({ articles }: ArticleListProps) {
 
 function ArticleRow({ article }: { article: Article }) {
   return (
-    <article className="py-6">
-      <Link
-        href={`/articles/${article.slug}`}
-        className="group flex gap-6 items-start"
-      >
-        {/* Thumbnail */}
-        <div className="shrink-0 w-[200px] md:w-[280px] aspect-[16/9] rounded-sm overflow-hidden hidden sm:block relative">
-          <div
-            className="absolute inset-0 transition-transform duration-300 group-hover:scale-105"
-            style={{
-              background: placeholderGradient(article.id, "article"),
-            }}
-          />
-          {isValidThumbnail(article.thumbnail) && (
-            <Image
-              src={article.thumbnail}
-              alt={article.title}
-              fill
-              unoptimized
-              className="object-cover transition-transform duration-300 group-hover:scale-105"
+    <article className="relative border-b border-gray-100 md:border-b-0">
+      <div className="absolute top-2 right-2 z-10 hidden md:block">
+        <AdminEditButton type="article" data={article} />
+      </div>
+      <Link href={`/articles/${article.slug}`} className="group block">
+        {/* Desktop: vertical card (grid item) */}
+        <div className="hidden md:block">
+          <div className="relative aspect-[16/9] bg-gray-100 rounded-lg overflow-hidden mb-4">
+            <div
+              className="absolute inset-0 transition-transform duration-300 ease-in-out group-hover:scale-110"
+              style={{ background: placeholderGradient(article.id, "article") }}
             />
-          )}
+            {isValidThumbnail(article.thumbnail) && (
+              <Image
+                src={article.thumbnail}
+                alt={article.title}
+                fill
+                unoptimized
+                className="object-cover transition-transform duration-300 ease-in-out group-hover:scale-110"
+              />
+            )}
+          </div>
+          <div>
+            <span className="text-[1rem] font-bold text-[#1E64FA] mb-1.5 block">
+              {article.categoryLabel}
+            </span>
+            <h2 className="text-[0.875rem] md:text-[1.125rem] lg:text-[1.375rem] font-bold text-[#1A1A1A] leading-7 line-clamp-2 group-hover:text-[#1E64FA] transition-colors">
+              {article.title}
+            </h2>
+            <p className="text-[0.875rem] text-[#666666] mt-2 line-clamp-2">
+              {article.excerpt}
+            </p>
+            <time className="text-[1rem] font-medium text-[#666666] mt-2 block">{article.date}</time>
+          </div>
         </div>
 
-        {/* Text Content */}
-        <div className="flex-1 min-w-0">
-          <span className="text-[1rem] font-bold text-[#1E64FA] mb-1.5 block">
-            {article.categoryLabel}
-          </span>
-          <h2 className="text-[1rem] md:text-[1.375rem] font-bold text-[#1A1A1A] leading-snug line-clamp-2 group-hover:text-[#1E64FA] transition-colors mb-2">
-            {article.title}
-          </h2>
-          <p className="text-[0.875rem] text-[#666666] line-clamp-2 mb-2 hidden md:block">
-            {article.excerpt}
-          </p>
-          <time className="text-[1rem] font-medium text-[#666666]">{article.date}</time>
+        {/* Mobile: horizontal row (list item) */}
+        <div className="flex gap-4 py-6 md:hidden">
+          <div className="w-[120px] h-[80px] shrink-0 rounded-lg overflow-hidden relative">
+            <div
+              className="absolute inset-0"
+              style={{ background: placeholderGradient(article.id, "article") }}
+            />
+            {isValidThumbnail(article.thumbnail) && (
+              <Image
+                src={article.thumbnail}
+                alt={article.title}
+                fill
+                unoptimized
+                className="object-cover"
+              />
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <span className="text-[0.75rem] font-bold text-[#1E64FA]">
+              {article.categoryLabel}
+            </span>
+            <h2 className="text-[0.875rem] font-medium text-[#1A1A1A] leading-snug line-clamp-2 mt-1">
+              {article.title}
+            </h2>
+            <time className="text-[0.75rem] font-medium text-[#767676] mt-1 block">{article.date}</time>
+          </div>
         </div>
       </Link>
     </article>
