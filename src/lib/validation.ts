@@ -96,11 +96,11 @@ const hrefMsg = { message: "링크는 /로 시작하는 상대경로 또는 http
 export const insertNavMenuSchema = createInsertSchema(navMenus, {
   label: (schema) => schema.min(1).max(100),
   href: (schema) => schema.min(1).max(300).refine(hrefRefine, hrefMsg),
-}).omit({ id: true });
+}).omit({ id: true, sortOrder: true });
 export const updateNavMenuSchema = createUpdateSchema(navMenus, {
   label: (schema) => schema.max(100),
-  href: (schema) => schema.max(300).refine((v) => !v || hrefRefine(v), hrefMsg),
-}).omit({ id: true });
+  href: (schema) => schema.max(300).refine((v) => v === undefined || hrefRefine(v), hrefMsg),
+}).omit({ id: true, sortOrder: true });
 
 export function validationError(e: unknown) {
   if (e instanceof z.ZodError) {

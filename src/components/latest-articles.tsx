@@ -15,10 +15,17 @@ interface LatestArticlesProps {
 export function LatestArticles({ articles }: LatestArticlesProps) {
   const [activeTab, setActiveTab] = useState<Category>("all");
 
-  const filtered =
-    activeTab === "all"
-      ? articles
-      : articles.filter((a) => a.category === activeTab);
+  const filtered = (() => {
+    if (activeTab !== "all") {
+      return articles.filter((a) => a.category === activeTab);
+    }
+    // 전체 탭: pinnedOrder가 있는 기사를 앞에 고정, 나머지는 날짜순 유지
+    const pinned = articles
+      .filter((a) => a.pinnedOrder != null)
+      .sort((a, b) => (a.pinnedOrder ?? 0) - (b.pinnedOrder ?? 0));
+    const rest = articles.filter((a) => a.pinnedOrder == null);
+    return [...pinned, ...rest];
+  })();
 
   return (
     <section className="py-12 md:py-16" aria-label="최신 교육정보">

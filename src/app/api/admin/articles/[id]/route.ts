@@ -35,10 +35,10 @@ export async function PUT(
     return NextResponse.json({ success: true });
   } catch (e) {
     if (e instanceof Error && e.message.includes("UNIQUE constraint failed")) {
-      return NextResponse.json(
-        { error: "이미 사용 중인 슬러그입니다. 다른 슬러그를 입력하세요." },
-        { status: 409 }
-      );
+      const msg = e.message.includes("pinned_order")
+        ? "이미 사용 중인 고정 순서입니다. 다른 순서를 선택하세요."
+        : "이미 사용 중인 슬러그입니다. 다른 슬러그를 입력하세요.";
+      return NextResponse.json({ error: msg }, { status: 409 });
     }
     return errorResponse(e);
   }

@@ -279,6 +279,19 @@ function ArticleForm({
           />
         </Field>
       </div>
+      <Field label="메인 고정 순서">
+        <select
+          value={form.pinnedOrder != null ? String(form.pinnedOrder) : ""}
+          onChange={(e) => update("pinnedOrder", e.target.value ? Number(e.target.value) : null)}
+          className={inputClass}
+        >
+          <option value="">없음</option>
+          <option value="1">1번째 고정</option>
+          <option value="2">2번째 고정</option>
+          <option value="3">3번째 고정</option>
+          <option value="4">4번째 고정</option>
+        </select>
+      </Field>
       <Field label="요약">
         <textarea
           value={(form.excerpt as string) || ""}

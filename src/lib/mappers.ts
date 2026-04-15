@@ -11,6 +11,7 @@ type DbArticle = {
   date: string;
   slug: string;
   featured: boolean | null;
+  pinnedOrder: number | null;
   createdAt: string | null;
   updatedAt: string | null;
 };
@@ -50,6 +51,7 @@ export function toArticle(row: DbArticle): Article {
     date: row.date,
     slug: row.slug,
     featured: row.featured ?? false,
+    pinnedOrder: row.pinnedOrder ?? null,
   };
 }
 

@@ -40,20 +40,23 @@ export default function AdminNavMenusPage() {
   const [reordering, setReordering] = useState(false);
 
   async function load() {
-    const res = await fetch("/api/nav-menus");
-    const data: NavMenu[] = await res.json();
-    setItems(data);
-    setLoading(false);
-    // 첫 로드 시에만 전체 펼치기, 이후에는 현재 상태 보존
-    setExpandedParents((prev) => {
-      if (prev.size > 0) return prev;
-      const parentIds = data.filter((i) => !i.parentId).map((i) => i.id);
-      return new Set(parentIds);
-    });
+    try {
+      const res = await fetch("/api/nav-menus");
+      const data: NavMenu[] = await res.json();
+      setItems(data);
+      setExpandedParents((prev) => {
+        if (prev.size > 0) return prev;
+        const parentIds = data.filter((i) => !i.parentId).map((i) => i.id);
+        return new Set(parentIds);
+      });
+    } catch {
+      // 네트워크 에러 시 기존 상태 유지
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- setState is inside async callback, not synchronous
     load();
   }, []);
 
@@ -119,16 +122,19 @@ export default function AdminNavMenusPage() {
     if (swapIdx < 0 || swapIdx >= siblings.length) return;
 
     setReordering(true);
-    const reordered = [...siblings];
-    [reordered[idx], reordered[swapIdx]] = [reordered[swapIdx], reordered[idx]];
+    try {
+      const reordered = [...siblings];
+      [reordered[idx], reordered[swapIdx]] = [reordered[swapIdx], reordered[idx]];
 
-    const res = await fetch("/api/admin/nav-menus/reorder", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ids: reordered.map((s) => s.id) }),
-    });
-    if (res.ok) await load();
-    setReordering(false);
+      const res = await fetch("/api/admin/nav-menus/reorder", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: reordered.map((s) => s.id) }),
+      });
+      if (res.ok) await load();
+    } finally {
+      setReordering(false);
+    }
   }
 
   function startEdit(item: NavMenu) {

@@ -64,7 +64,8 @@ export function Header() {
   const [navGroups, setNavGroups] = useState<NavGroup[]>(fallbackNavItems);
   const [mobileSubmenu, setMobileSubmenu] = useState<string | null>(null);
   const [hoveredNav, setHoveredNav] = useState<string | null>(null);
-  const hasChildren = navGroups.some((g) => g.children.length > 0);
+  const hoveredGroup = navGroups.find((g) => g.parent.id === hoveredNav);
+  const showMegaMenu = !!hoveredGroup && hoveredGroup.children.length > 0;
 
   // DB에서 메뉴 데이터 로드
   useEffect(() => {
@@ -158,7 +159,7 @@ export function Header() {
       </div>
 
       {/* 삼성 뉴스룸 스타일 풀와이드 메가메뉴 — header 직속, h-16 밖 */}
-      {hoveredNav && hasChildren && (
+      {showMegaMenu && (
         <div className="hidden lg:block border-t border-gray-200 bg-white shadow-md">
           <div className="max-w-[1280px] mx-auto px-4">
             <div className="flex items-start justify-between">

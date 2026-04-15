@@ -34,7 +34,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     async function init() {
       const [authResult, settingsResult] = await Promise.allSettled([
         fetch("/api/auth/me"),
-        fetch("/api/settings").then((r) => r.json()),
+        fetch("/api/settings").then((r) => { if (!r.ok) throw new Error(); return r.json(); }),
       ]);
       setIsAdmin(authResult.status === "fulfilled" && authResult.value.ok);
       setLogoUrl(
