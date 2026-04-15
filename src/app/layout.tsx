@@ -142,7 +142,7 @@ export default function RootLayout({
         />
         <TrackingCodeHead />
       </head>
-      <body className="min-h-full flex flex-col font-[family-name:var(--font-noto-sans-kr)]">
+      <body className="min-h-full flex flex-col font-sans">
         <TrackingCodeBodyStart />
         <AuthProvider>
           <Header />

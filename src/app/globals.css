@@ -1,12 +1,13 @@
 @import "tailwindcss";
 @import "shadcn/tailwind.css";
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css");
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-noto-sans-kr), "Noto Sans KR", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Pretendard Variable", Pretendard, var(--font-noto-sans-kr), "Noto Sans KR", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   --font-mono: ui-monospace, monospace;
   --font-heading: var(--font-sans);
   --color-ring: var(--ring);
