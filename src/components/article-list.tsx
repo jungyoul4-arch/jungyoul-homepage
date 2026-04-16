@@ -58,7 +58,7 @@ export function ArticleList({ articles }: ArticleListProps) {
       </div>
 
       {/* Article Grid/List — PC: 4열 그리드, 모바일: 세로 리스트 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-4 md:gap-y-12">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-4 md:gap-y-12">
         {filtered.map((article) => (
           <ArticleRow key={article.id} article={article} />
         ))}
@@ -111,9 +111,9 @@ function ArticleRow({ article }: { article: Article }) {
           </div>
         </div>
 
-        {/* Mobile: horizontal row (list item) */}
-        <div className="flex gap-4 py-6 md:hidden">
-          <div className="w-[120px] h-[80px] shrink-0 rounded-lg overflow-hidden relative">
+        {/* Mobile: horizontal row (썸네일:제목 = 5:5) */}
+        <div className="flex gap-3 py-6 md:hidden">
+          <div className="w-1/2 aspect-[16/9] shrink-0 rounded-lg overflow-hidden relative">
             <div
               className="absolute inset-0"
               style={{ background: placeholderGradient(article.id, "article") }}
@@ -128,7 +128,7 @@ function ArticleRow({ article }: { article: Article }) {
               />
             )}
           </div>
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 flex flex-col justify-center">
             <span className="text-[0.75rem] font-bold text-[#1E64FA]">
               {article.categoryLabel}
             </span>
