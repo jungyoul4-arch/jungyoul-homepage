@@ -121,9 +121,9 @@ function ArticleCard({ article }: { article: Article }) {
           </div>
         </div>
 
-        {/* Mobile: horizontal layout */}
-        <div className="flex gap-4 md:hidden">
-          <div className="w-[120px] h-[80px] shrink-0 rounded-lg overflow-hidden relative">
+        {/* Mobile: horizontal layout (썸네일:제목 = 5:5) */}
+        <div className="flex gap-3 md:hidden">
+          <div className="w-1/2 aspect-[16/9] shrink-0 rounded-lg overflow-hidden relative">
             <div
               className="absolute inset-0"
               style={{
@@ -140,7 +140,7 @@ function ArticleCard({ article }: { article: Article }) {
               />
             )}
           </div>
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 flex flex-col justify-center">
             <span className="text-[0.75rem] font-bold text-[#1E64FA]">
               {article.categoryLabel}
             </span>

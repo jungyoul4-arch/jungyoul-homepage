@@ -35,8 +35,8 @@ export default function AdminPinnedArticlesPage() {
           fetch("/api/articles"),
           fetch("/api/pinned-articles"),
         ]);
-        const articlesData: ArticleSummary[] = await articlesRes.json();
-        const pinnedData: PinnedSlot[] = await pinnedRes.json();
+        const articlesData: ArticleSummary[] = await articlesRes.json().catch(() => []);
+        const pinnedData: PinnedSlot[] = await pinnedRes.json().catch(() => []);
 
         setArticles(articlesData);
 

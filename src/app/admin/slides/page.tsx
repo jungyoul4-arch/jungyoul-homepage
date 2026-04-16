@@ -110,7 +110,10 @@ export default function AdminSlidesPage() {
         items: [{ articleId: articles[0].id, role: "main" }],
       }),
     });
-    if (res.ok) load();
+    if (res.ok) {
+      await load();
+      setTimeout(() => window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" }), 100);
+    }
   }
 
   async function handleDeleteSlide(slideId: string) {

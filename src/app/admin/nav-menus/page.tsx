@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, Trash2, Save, Pencil, X, ChevronDown, ChevronRight, ArrowUp, ArrowDown, ArrowLeft, ArrowRight } from "lucide-react";
+import { Plus, Trash2, Save, Pencil, X, ChevronDown, ChevronRight, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, RotateCcw } from "lucide-react";
 
 interface NavMenu {
   id: string;
@@ -108,6 +108,45 @@ export default function AdminNavMenusPage() {
     } else {
       alert("삭제 중 오류가 발생했습니다.");
     }
+  }
+
+  // 기본 메뉴 초기화 (DB가 비어 있을 때 fallback 데이터를 등록)
+  async function handleInitDefaults() {
+    if (!confirm("기본 메뉴(교육정보/선생님/FAQ/상담신청)를 등록하시겠습니까?")) return;
+
+    const defaults = [
+      { label: "교육정보", href: "/articles", children: [
+        { label: "전체", href: "/articles" },
+        { label: "입시전략", href: "/articles?category=strategy" },
+        { label: "교육칼럼", href: "/articles?category=column" },
+        { label: "합격스토리", href: "/articles?category=success" },
+        { label: "공지사항", href: "/articles?category=news" },
+      ]},
+      { label: "선생님", href: "/teachers", children: [] },
+      { label: "FAQ", href: "/faq", children: [] },
+      { label: "상담신청", href: "/contact", children: [] },
+    ];
+
+    let anyFailed = false;
+    for (const parent of defaults) {
+      const res = await fetch("/api/admin/nav-menus", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ label: parent.label, href: parent.href, parentId: null }),
+      });
+      if (!res.ok) { anyFailed = true; continue; }
+      const { id: parentId } = await res.json();
+      for (const child of parent.children) {
+        const cres = await fetch("/api/admin/nav-menus", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ label: child.label, href: child.href, parentId }),
+        });
+        if (!cres.ok) anyFailed = true;
+      }
+    }
+    if (anyFailed) alert("일부 메뉴 등록에 실패했습니다. 결과를 확인하세요.");
+    load();
   }
 
   // 순서 변경: 형제 항목 배열에서 위치를 swap 후 즉시 API 저장
@@ -359,7 +398,14 @@ export default function AdminNavMenusPage() {
           {tree.length === 0 && !addParent && (
             <div className="text-center py-12 text-gray-400">
               <p>등록된 메뉴가 없습니다.</p>
-              <p className="text-xs mt-1">상위 메뉴를 추가하여 헤더 네비게이션을 구성하세요.</p>
+              <p className="text-xs mt-1 mb-4">상위 메뉴를 추가하거나 기본 메뉴로 초기화하세요.</p>
+              <button
+                onClick={handleInitDefaults}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-gray-700 text-white text-sm font-medium rounded-md hover:bg-gray-800 transition-colors"
+              >
+                <RotateCcw size={14} />
+                기본 메뉴로 초기화
+              </button>
             </div>
           )}
 
