@@ -63,7 +63,7 @@ export function LatestArticles({ articles, pinnedArticleIds = [] }: LatestArticl
             <div
               key={article.id}
               className={index >= 9 ? "hidden lg:block card-animate" : "card-animate"}
-              style={{ animationDelay: `${index * 50}ms` }}
+              style={{ animationDelay: `${index * 70}ms` }}
             >
               <ArticleCard article={article} />
             </div>
