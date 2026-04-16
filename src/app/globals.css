@@ -92,6 +92,11 @@
   }
 }
 
+/* ── 스크롤바 숨김 (캐러셀용) ── */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* ══════════════════════════════════════════════════════════
    기사 본문 스타일 — 삼성 뉴스룸 기획기사 UI 레퍼런스 기반
    samsung-newsroom-feature-ui/ 실측값 적용

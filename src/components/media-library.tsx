@@ -24,7 +24,7 @@ export function MediaLibrary({ videos }: MediaLibraryProps) {
 
   const scroll = (direction: "left" | "right") => {
     if (!scrollRef.current) return;
-    const amount = 320;
+    const amount = 312;
     scrollRef.current.scrollBy({
       left: direction === "left" ? -amount : amount,
       behavior: "smooth",
@@ -68,11 +68,11 @@ export function MediaLibrary({ videos }: MediaLibraryProps) {
         {/* Video Carousel */}
         <div
           ref={scrollRef}
-          className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-2"
+          className="flex gap-3 overflow-x-auto scrollbar-hide scroll-smooth pb-2"
           style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
         >
           {videos.map((video) => (
-            <div key={video.id} className="relative shrink-0 w-[280px] md:w-[352px]">
+            <div key={video.id} className="relative shrink-0 w-[280px] md:w-[300px]">
               <div className="absolute top-2 right-2 z-10">
                 <AdminEditButton type="video" data={video} />
               </div>
@@ -81,6 +81,7 @@ export function MediaLibrary({ videos }: MediaLibraryProps) {
                   <iframe
                     src={`https://www.youtube.com/embed/${video.youtubeId}?autoplay=1&mute=1`}
                     className="absolute inset-0 w-full h-full"
+                    title={video.title}
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
                   />
@@ -88,6 +89,7 @@ export function MediaLibrary({ videos }: MediaLibraryProps) {
                   <button
                     onClick={() => setPlayingId(video.id)}
                     className="group block w-full h-full"
+                    aria-label={`${video.title} 재생`}
                   >
                     <div
                       className="absolute inset-0 transition-transform duration-300 group-hover:scale-105"
@@ -106,19 +108,17 @@ export function MediaLibrary({ videos }: MediaLibraryProps) {
                     )}
                     {/* Play Icon */}
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center group-hover:bg-white/30 transition-colors">
-                        <Play size={24} className="text-white ml-1" fill="white" />
+                      <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center group-hover:bg-white/30 transition-colors">
+                        <Play size={20} className="text-white ml-1" fill="white" />
                       </div>
-                    </div>
-                    {/* Title overlay */}
-                    <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/70 to-transparent">
-                      <p className="text-white text-[1rem] font-bold line-clamp-2">
-                        {video.title}
-                      </p>
                     </div>
                   </button>
                 )}
               </div>
+              {/* Title below image — Samsung Newsroom style */}
+              <p className="mt-2.5 text-[#1A1A1A] text-[0.9375rem] md:text-[1rem] font-bold line-clamp-2 leading-snug">
+                {video.title}
+              </p>
             </div>
           ))}
         </div>
