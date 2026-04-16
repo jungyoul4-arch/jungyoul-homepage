@@ -58,7 +58,7 @@ export function LatestArticles({ articles, pinnedArticleIds = [] }: LatestArticl
         </div>
 
         {/* Article Grid — PC: 4열×3행=12개, 태블릿: 3열×3행=9개, 모바일: 1열 */}
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-12">
+        <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-12">
           {filtered.slice(0, 12).map((article, index) =>
             index >= 9 ? (
               <div key={article.id} className="hidden lg:block">
@@ -91,8 +91,8 @@ function ArticleCard({ article }: { article: Article }) {
         <AdminEditButton type="article" data={article} />
       </div>
       <Link href={`/articles/${article.slug}`} className="group block">
-        {/* Desktop: vertical layout */}
-        <div className="hidden md:block">
+        {/* Desktop/Tablet: vertical layout */}
+        <div className="hidden sm:block">
           {/* Thumbnail — 삼성 뉴스룸 기사 썸네일 비율 */}
           <div className="relative aspect-[16/9] bg-gray-100 rounded-lg overflow-hidden mb-4">
             <div
@@ -125,7 +125,7 @@ function ArticleCard({ article }: { article: Article }) {
         </div>
 
         {/* Mobile: horizontal layout (썸네일:제목 = 5:5) */}
-        <div className="flex gap-3 md:hidden">
+        <div className="flex gap-3 sm:hidden">
           <div className="w-1/2 aspect-[16/9] shrink-0 rounded-lg overflow-hidden relative">
             <div
               className="absolute inset-0"
