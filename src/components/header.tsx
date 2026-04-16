@@ -101,8 +101,8 @@ export function Header() {
             </div>
           </Link>
 
-          {/* Desktop Navigation — 상위 카테고리 링크 */}
-          <nav className="hidden lg:flex items-center gap-8">
+          {/* Desktop Navigation — 상위 카테고리 링크 + 메가메뉴 (nav 기준 정렬) */}
+          <nav className="hidden lg:flex items-center gap-8 relative">
             {navGroups.map((group) => (
               <Link
                 key={group.parent.id}
@@ -118,6 +118,21 @@ export function Header() {
                 />
               </Link>
             ))}
+
+            {/* 하위 메뉴: 호버된 그룹의 children만 표시 */}
+            {showMegaMenu && (
+              <div className="absolute top-full left-0 py-6 z-10">
+                {hoveredGroup!.children.map((child) => (
+                  <Link
+                    key={child.id}
+                    href={child.href}
+                    className="block py-1.5 text-[0.9375rem] text-[#666666] hover:text-[#1E64FA] transition-colors whitespace-nowrap"
+                  >
+                    {child.label}
+                  </Link>
+                ))}
+              </div>
+            )}
           </nav>
 
           {/* Search + Admin + Mobile Menu */}
@@ -158,40 +173,15 @@ export function Header() {
         </div>
       </div>
 
-      {/* 삼성 뉴스룸 스타일 풀와이드 메가메뉴 — header 직속, h-16 밖 */}
+      {/* 풀와이드 메가메뉴 배경 — header 기준 absolute, 하위 메뉴 영역 커버 */}
       {showMegaMenu && (
         <div className="hidden lg:block border-t border-gray-200 bg-white shadow-md">
-          <div className="max-w-[1280px] mx-auto px-4">
-            <div className="flex items-start justify-between">
-              {/* 로고 영역 너비 확보용 (invisible) */}
-              <div className="shrink-0 flex items-center gap-2 invisible" aria-hidden="true">
-                <SiteLogo size="md" />
-                <span className="text-[1.125rem] font-bold leading-6">정율 교육정보</span>
+          <div className="py-6">
+            {hoveredGroup!.children.map((child) => (
+              <div key={`bg-${child.id}`} className="py-1.5 text-[0.9375rem] invisible">
+                {child.label}
               </div>
-
-              {/* 하위 카테고리 — nav과 동일한 gap-8 → 상위 버튼 아래 정렬 */}
-              <div className="flex items-start gap-8 py-6">
-                {navGroups.map((group) => (
-                  <div key={`sub-${group.parent.id}`}>
-                    {group.children.map((child) => (
-                      <Link
-                        key={child.id}
-                        href={child.href}
-                        className="block py-1.5 text-[0.9375rem] text-[#666666] hover:text-[#1E64FA] transition-colors whitespace-nowrap"
-                      >
-                        {child.label}
-                      </Link>
-                    ))}
-                  </div>
-                ))}
-              </div>
-
-              {/* 오른쪽 영역 너비 확보용 (invisible) */}
-              <div className="shrink-0 flex items-center gap-3 invisible" aria-hidden="true">
-                <div className="p-2"><Search size={20} /></div>
-                <div className="px-3 py-1.5"><LayoutDashboard size={14} /><span className="hidden sm:inline text-xs">관리자</span></div>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       )}

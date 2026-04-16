@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, Trash2, Save, Pencil, X, ChevronDown, ChevronRight, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, RotateCcw } from "lucide-react";
+import { Plus, Trash2, Save, Pencil, X, ChevronDown, ChevronRight, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, RotateCcw, Eye } from "lucide-react";
 
 interface NavMenu {
   id: string;
@@ -26,6 +26,59 @@ function buildTree(items: NavMenu[]): ParentWithChildren[] {
       .filter((c) => c.parentId === p.id)
       .sort((a, b) => a.sortOrder - b.sortOrder),
   }));
+}
+
+/* ── 메뉴 미리보기 컴포넌트 ── */
+function MenuPreview({ tree }: { tree: ParentWithChildren[] }) {
+  const [hovered, setHovered] = useState<string | null>(null);
+  const hoveredGroup = tree.find((t) => t.parent.id === hovered);
+  const showSub = !!hoveredGroup && hoveredGroup.children.length > 0;
+
+  return (
+    <div
+      className="bg-white border border-gray-200 rounded-lg mb-6 overflow-hidden"
+      onMouseLeave={() => setHovered(null)}
+    >
+      <div className="flex items-center gap-2 px-4 py-2 bg-gray-50 border-b border-gray-100">
+        <Eye size={14} className="text-gray-400" />
+        <span className="text-xs font-medium text-gray-500">미리보기</span>
+      </div>
+      <div className="px-6 py-4">
+        {/* 상위 메뉴 */}
+        <div className="flex items-center gap-8 relative">
+          {tree.map((group) => (
+            <span
+              key={group.parent.id}
+              className={`relative text-[1rem] font-bold cursor-default transition-colors pb-2 ${
+                hovered === group.parent.id ? "text-[#1E64FA]" : "text-[#1A1A1A]"
+              }`}
+              onMouseEnter={() => setHovered(group.parent.id)}
+            >
+              {group.parent.label}
+              <span
+                className={`absolute bottom-0 left-0 right-0 h-[3px] bg-[#1E64FA] transition-opacity duration-200 ${
+                  hovered === group.parent.id ? "opacity-100" : "opacity-0"
+                }`}
+              />
+            </span>
+          ))}
+        </div>
+        {/* 하위 메뉴 — 호버된 그룹의 children만 표시 */}
+        {showSub && (
+          <div className="pt-4 border-t border-gray-100 mt-2">
+            {hoveredGroup!.children.map((child) => (
+              <span
+                key={child.id}
+                className="block py-1 text-[0.875rem] text-[#666666] cursor-default"
+              >
+                {child.label}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export default function AdminNavMenusPage() {
@@ -234,6 +287,11 @@ export default function AdminNavMenusPage() {
       <p className="text-sm text-gray-500 mb-4">
         상위 메뉴에 하위 항목이 있으면 마우스 오버 시 드롭다운으로 펼쳐집니다.
       </p>
+
+      {/* 실시간 메뉴 미리보기 */}
+      {!loading && tree.length > 0 && (
+        <MenuPreview tree={tree} />
+      )}
 
       {loading ? (
         <p className="text-gray-500">불러오는 중...</p>
