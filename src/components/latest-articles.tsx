@@ -59,7 +59,7 @@ export function LatestArticles({ articles, pinnedArticleIds = [] }: LatestArticl
 
         {/* Article Grid — 삼성 뉴스룸의 기사 그리드 레이아웃 */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-12">
-          {filtered.map((article) => (
+          {filtered.slice(0, 12).map((article) => (
             <ArticleCard key={article.id} article={article} />
           ))}
         </div>
@@ -108,15 +108,12 @@ function ArticleCard({ article }: { article: Article }) {
 
           {/* Category + Title — 삼성 뉴스룸 기사 카드 텍스트 스타일 */}
           <div>
-            <span className="text-[1rem] font-bold text-[#1E64FA] mb-1.5 block">
+            <span className="text-[1rem] font-medium text-[#666666] mb-1.5 block">
               {article.categoryLabel}
             </span>
             <h3 className="text-[0.875rem] md:text-[1.125rem] lg:text-[1.375rem] font-bold text-[#1A1A1A] leading-7 line-clamp-2 group-hover:text-[#1E64FA] transition-colors">
               {article.title}
             </h3>
-            <p className="text-[0.875rem] text-[#666666] mt-2 line-clamp-2">
-              {article.excerpt}
-            </p>
             <time className="text-[1rem] font-medium text-[#666666] mt-2 block">{article.date}</time>
           </div>
         </div>
