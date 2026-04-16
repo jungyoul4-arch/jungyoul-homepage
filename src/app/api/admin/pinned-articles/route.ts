@@ -37,15 +37,13 @@ export async function PUT(request: NextRequest) {
 
     const db = await getDb();
 
-    // 트랜잭션으로 전체 삭제 후 삽입 (원자적 처리)
-    await db.transaction(async (tx) => {
-      await tx.delete(pinnedArticles);
-      if (slots.length > 0) {
-        await tx.insert(pinnedArticles).values(
-          slots.map((s) => ({ slot: s.slot, articleId: s.articleId }))
-        );
-      }
-    });
+    // D1은 Drizzle transaction() 미지원 — 순차 실행
+    await db.delete(pinnedArticles);
+    if (slots.length > 0) {
+      await db.insert(pinnedArticles).values(
+        slots.map((s) => ({ slot: s.slot, articleId: s.articleId }))
+      );
+    }
 
     return NextResponse.json({ success: true });
   } catch (e) {
