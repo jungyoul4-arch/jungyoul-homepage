@@ -64,8 +64,8 @@ export function Header() {
   const [navGroups, setNavGroups] = useState<NavGroup[]>(fallbackNavItems);
   const [mobileSubmenu, setMobileSubmenu] = useState<string | null>(null);
   const [hoveredNav, setHoveredNav] = useState<string | null>(null);
-  const hoveredGroup = navGroups.find((g) => g.parent.id === hoveredNav);
-  const showMegaMenu = !!hoveredGroup && hoveredGroup.children.length > 0;
+  const hasAnyChildren = navGroups.some((g) => g.children.length > 0);
+  const showMegaMenu = !!hoveredNav && hasAnyChildren;
 
   // DB에서 메뉴 데이터 로드
   useEffect(() => {
@@ -119,17 +119,21 @@ export function Header() {
               </Link>
             ))}
 
-            {/* 하위 메뉴: 호버된 그룹의 children만 표시 */}
+            {/* 하위 메뉴: 모든 그룹의 하위 항목을 동시 전개 (삼성 뉴스룸 스타일) */}
             {showMegaMenu && (
-              <div className="absolute top-full left-0 py-6 z-10">
-                {hoveredGroup!.children.map((child) => (
-                  <Link
-                    key={child.id}
-                    href={child.href}
-                    className="block py-1.5 text-[0.9375rem] text-[#666666] hover:text-[#1E64FA] transition-colors whitespace-nowrap"
-                  >
-                    {child.label}
-                  </Link>
+              <div className="absolute top-full left-0 flex items-start gap-8 py-6 z-10">
+                {navGroups.map((group) => (
+                  <div key={`sub-${group.parent.id}`}>
+                    {group.children.map((child) => (
+                      <Link
+                        key={child.id}
+                        href={child.href}
+                        className="block py-1.5 text-[0.9375rem] text-[#666666] hover:text-[#1E64FA] transition-colors whitespace-nowrap"
+                      >
+                        {child.label}
+                      </Link>
+                    ))}
+                  </div>
                 ))}
               </div>
             )}
@@ -173,15 +177,17 @@ export function Header() {
         </div>
       </div>
 
-      {/* 풀와이드 메가메뉴 배경 — header 기준 absolute, 하위 메뉴 영역 커버 */}
+      {/* 풀와이드 메가메뉴 배경 — 가장 긴 그룹 기준 높이 */}
       {showMegaMenu && (
         <div className="hidden lg:block border-t border-gray-200 bg-white shadow-md">
           <div className="py-6">
-            {hoveredGroup!.children.map((child) => (
-              <div key={`bg-${child.id}`} className="py-1.5 text-[0.9375rem] invisible">
-                {child.label}
-              </div>
-            ))}
+            {navGroups
+              .reduce<NavMenuItem[]>((longest, g) => g.children.length > longest.length ? g.children : longest, [])
+              .map((child) => (
+                <div key={`bg-${child.id}`} className="py-1.5 text-[0.9375rem] invisible">
+                  {child.label}
+                </div>
+              ))}
           </div>
         </div>
       )}
