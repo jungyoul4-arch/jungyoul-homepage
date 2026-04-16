@@ -305,3 +305,28 @@
 .article-content-preview > *:first-child {
   padding-top: 0;
 }
+
+/* ══════════════════════════════════════════════════════════
+   카드 등장 애니메이션 (카테고리 전환 시 stagger fade-up)
+   ══════════════════════════════════════════════════════════ */
+@keyframes card-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.card-animate {
+  opacity: 0;
+  animation: card-fade-up 0.4s ease-out forwards;
+  will-change: opacity, transform;
+}
+@media (prefers-reduced-motion: reduce) {
+  .card-animate {
+    animation: none;
+    opacity: 1;
+  }
+}
