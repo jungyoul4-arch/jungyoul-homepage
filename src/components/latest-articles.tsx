@@ -57,11 +57,17 @@ export function LatestArticles({ articles, pinnedArticleIds = [] }: LatestArticl
           ))}
         </div>
 
-        {/* Article Grid — 삼성 뉴스룸의 기사 그리드 레이아웃 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-12">
-          {filtered.slice(0, 12).map((article) => (
-            <ArticleCard key={article.id} article={article} />
-          ))}
+        {/* Article Grid — PC: 4열×3행=12개, 태블릿: 3열×3행=9개, 모바일: 1열 */}
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-12">
+          {filtered.slice(0, 12).map((article, index) =>
+            index >= 9 ? (
+              <div key={article.id} className="hidden lg:block">
+                <ArticleCard article={article} />
+              </div>
+            ) : (
+              <ArticleCard key={article.id} article={article} />
+            )
+          )}
         </div>
 
         {/* More Button — 삼성 뉴스룸 "기사 더보기" 스타일 */}
