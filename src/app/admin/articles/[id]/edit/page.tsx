@@ -27,7 +27,6 @@ export default function EditArticlePage() {
     thumbnail: "",
     date: "",
     featured: false,
-    pinnedOrder: "",
   });
 
   useEffect(() => {
@@ -46,7 +45,6 @@ export default function EditArticlePage() {
           thumbnail: article.thumbnail || "",
           date: article.date,
           featured: !!article.featured,
-          pinnedOrder: article.pinnedOrder != null ? String(article.pinnedOrder) : "",
         });
       }
       setLoading(false);
@@ -54,7 +52,7 @@ export default function EditArticlePage() {
     load();
   }, [id]);
 
-  function update(field: string, value: string | boolean | number | null) {
+  function update(field: string, value: string | boolean) {
     setForm((prev) => ({ ...prev, [field]: value }));
   }
 
@@ -63,19 +61,18 @@ export default function EditArticlePage() {
     setSaving(true);
 
     const categoryLabel = categoryOptions.find((c) => c.value === form.category)?.label || "";
-    const { pinnedOrder: rawPinned, ...restForm } = form;
-    const pinnedOrder = rawPinned ? Number(rawPinned) : null;
 
     const res = await fetch(`/api/admin/articles/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...restForm, categoryLabel, pinnedOrder }),
+      body: JSON.stringify({ ...form, categoryLabel }),
     });
 
     if (res.ok) {
       router.push("/admin/articles");
     } else {
-      alert("수정에 실패했습니다.");
+      const data = await res.json().catch(() => null);
+      alert(data?.error || "수정에 실패했습니다.");
       setSaving(false);
     }
   }
@@ -132,22 +129,6 @@ export default function EditArticlePage() {
               required
             />
           </div>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">메인 고정 순서</label>
-          <select
-            value={form.pinnedOrder}
-            onChange={(e) => update("pinnedOrder", e.target.value)}
-            className="w-full h-10 px-3 border border-gray-300 rounded-sm text-sm focus:outline-none focus:border-blue-600"
-          >
-            <option value="">없음 (날짜순 정렬)</option>
-            <option value="1">1번째 고정</option>
-            <option value="2">2번째 고정</option>
-            <option value="3">3번째 고정</option>
-            <option value="4">4번째 고정</option>
-          </select>
-          <p className="text-xs text-gray-400 mt-1">메인 페이지 전체 탭에서 상위에 고정 표시됩니다.</p>
         </div>
 
         <div>

@@ -11,6 +11,7 @@ import {
   videos as videosTable,
   heroSlides as heroSlidesTable,
   heroSlideItems as heroSlideItemsTable,
+  pinnedArticles as pinnedArticlesTable,
 } from "@/db/schema";
 import { desc, asc } from "drizzle-orm";
 import { toArticle, toHighlight, toVideo, resolveSlides } from "@/lib/mappers";
@@ -18,15 +19,17 @@ import { toArticle, toHighlight, toVideo, resolveSlides } from "@/lib/mappers";
 export default async function Home() {
   const db = await getDb();
 
-  const [rawArticles, rawHighlights, rawVideos, rawSlides, rawSlideItems] = await Promise.all([
+  const [rawArticles, rawHighlights, rawVideos, rawSlides, rawSlideItems, rawPinned] = await Promise.all([
     db.select().from(articlesTable).orderBy(desc(articlesTable.date)),
     db.select().from(highlightsTable),
     db.select().from(videosTable).orderBy(asc(videosTable.sortOrder)),
     db.select().from(heroSlidesTable).orderBy(asc(heroSlidesTable.sortOrder)),
     db.select().from(heroSlideItemsTable).orderBy(asc(heroSlideItemsTable.sortOrder)),
+    db.select().from(pinnedArticlesTable).orderBy(asc(pinnedArticlesTable.slot)).catch(() => [] as { slot: number; articleId: string }[]),
   ]);
 
   const allArticles = rawArticles.map(toArticle);
+  const pinnedArticleIds = rawPinned.map((p) => p.articleId);
   const heroSlides = resolveSlides(rawSlides, rawSlideItems, allArticles);
 
   return (
@@ -114,7 +117,7 @@ export default async function Home() {
 
       {/* Hero Carousel — 삼성 뉴스룸 메인 슬라이더 */}
       <HeroCarousel slides={heroSlides} />
-      <LatestArticles articles={allArticles} />
+      <LatestArticles articles={allArticles} pinnedArticleIds={pinnedArticleIds} />
       <HighlightsCarousel highlights={rawHighlights.map(toHighlight)} />
       <MediaLibrary videos={rawVideos.map(toVideo)} />
     </>

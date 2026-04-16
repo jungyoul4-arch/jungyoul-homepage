@@ -13,6 +13,7 @@ import {
   Settings,
   Layers,
   Navigation,
+  Pin,
 } from "lucide-react";
 import { SiteLogo } from "@/components/site-logo";
 
@@ -20,6 +21,7 @@ const sidebarItems = [
   { label: "대시보드", href: "/admin", icon: LayoutDashboard },
   { label: "기사 관리", href: "/admin/articles", icon: FileText },
   { label: "슬라이드 관리", href: "/admin/slides", icon: Layers },
+  { label: "메인 고정 기사", href: "/admin/pinned-articles", icon: Pin },
   { label: "하이라이트", href: "/admin/highlights", icon: Star },
   { label: "강사 관리", href: "/admin/teachers", icon: Users },
   { label: "영상 관리", href: "/admin/videos", icon: Video },

@@ -11,7 +11,6 @@ export const articles = sqliteTable("articles", {
   date: text("date").notNull(),
   slug: text("slug").unique().notNull(),
   featured: integer("featured", { mode: "boolean" }).default(false),
-  pinnedOrder: integer("pinned_order").unique(),  // null=일반, 1~4=고정 순서 (중복 불가)
   createdAt: text("created_at").$defaultFn(() => new Date().toISOString()),
   updatedAt: text("updated_at").$defaultFn(() => new Date().toISOString()),
 });
@@ -67,6 +66,11 @@ export const heroSlideItems = sqliteTable("hero_slide_items", {
   articleId: text("article_id").notNull(),
   role: text("role").notNull(), // "main" | "sub-image" | "sub-text"
   sortOrder: integer("sort_order").default(0),
+});
+
+export const pinnedArticles = sqliteTable("pinned_articles", {
+  slot: integer("slot").primaryKey(),        // 1~4
+  articleId: text("article_id").notNull(),
 });
 
 export const navMenus = sqliteTable("nav_menus", {

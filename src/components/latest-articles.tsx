@@ -10,20 +10,22 @@ import { placeholderGradient } from "@/lib/utils";
 
 interface LatestArticlesProps {
   articles: Article[];
+  pinnedArticleIds?: string[];
 }
 
-export function LatestArticles({ articles }: LatestArticlesProps) {
+export function LatestArticles({ articles, pinnedArticleIds = [] }: LatestArticlesProps) {
   const [activeTab, setActiveTab] = useState<Category>("all");
 
   const filtered = (() => {
     if (activeTab !== "all") {
       return articles.filter((a) => a.category === activeTab);
     }
-    // 전체 탭: pinnedOrder가 있는 기사를 앞에 고정, 나머지는 날짜순 유지
-    const pinned = articles
-      .filter((a) => a.pinnedOrder != null)
-      .sort((a, b) => (a.pinnedOrder ?? 0) - (b.pinnedOrder ?? 0));
-    const rest = articles.filter((a) => a.pinnedOrder == null);
+    if (pinnedArticleIds.length === 0) return articles;
+    const pinnedSet = new Set(pinnedArticleIds);
+    const pinned = pinnedArticleIds
+      .map((id) => articles.find((a) => a.id === id))
+      .filter((a): a is Article => a !== undefined);
+    const rest = articles.filter((a) => !pinnedSet.has(a.id));
     return [...pinned, ...rest];
   })();
 

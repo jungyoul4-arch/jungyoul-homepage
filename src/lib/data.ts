@@ -12,7 +12,6 @@ export interface Article {
   date: string;
   slug: string;
   featured?: boolean;
-  pinnedOrder?: number | null;
 }
 
 export interface Highlight {
