@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, Trash2, Save, Pencil, X, ChevronDown, ChevronRight, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, RotateCcw, Eye } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Plus, Trash2, Save, Pencil, X, ChevronDown, ChevronRight, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, RotateCcw, Eye, RefreshCw } from "lucide-react";
 
 interface NavMenu {
   id: string;
@@ -82,6 +83,7 @@ function MenuPreview({ tree }: { tree: ParentWithChildren[] }) {
 }
 
 export default function AdminNavMenusPage() {
+  const router = useRouter();
   const [items, setItems] = useState<NavMenu[]>([]);
   const [loading, setLoading] = useState(true);
   const [editId, setEditId] = useState<string | null>(null);
@@ -275,13 +277,22 @@ export default function AdminNavMenusPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">메뉴 관리</h1>
-        <button
-          onClick={() => { setAddParent(true); setAddChildFor(null); setForm({ label: "", href: "" }); }}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"
-        >
-          <Plus size={16} />
-          상위 메뉴 추가
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => { router.refresh(); alert("헤더에 반영되었습니다."); }}
+            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 transition-colors"
+          >
+            <RefreshCw size={16} />
+            헤더에 반영
+          </button>
+          <button
+            onClick={() => { setAddParent(true); setAddChildFor(null); setForm({ label: "", href: "" }); }}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"
+          >
+            <Plus size={16} />
+            상위 메뉴 추가
+          </button>
+        </div>
       </div>
 
       <p className="text-sm text-gray-500 mb-4">
