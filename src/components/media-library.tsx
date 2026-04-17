@@ -21,6 +21,7 @@ interface MediaLibraryProps {
 export function MediaLibrary({ videos }: MediaLibraryProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [playingId, setPlayingId] = useState<string | null>(null);
+  const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
 
   const scroll = (direction: "left" | "right") => {
     if (!scrollRef.current) return;
@@ -104,13 +105,20 @@ export function MediaLibrary({ videos }: MediaLibraryProps) {
                         background: placeholderGradient(video.id, "video"),
                       }}
                     />
-                    {isValidThumbnail(video.thumbnail) && (
+                    {isValidThumbnail(video.thumbnail) && !failedImages.has(video.id) && (
                       <Image
                         src={video.thumbnail.replace("hqdefault.jpg", "mqdefault.jpg")}
                         alt={video.title}
                         fill
                         unoptimized
                         className="object-cover transition-transform duration-300 group-hover:scale-110"
+                        onError={() =>
+                          setFailedImages((prev) => {
+                            const next = new Set(prev);
+                            next.add(video.id);
+                            return next;
+                          })
+                        }
                       />
                     )}
                     {/* Play Icon */}

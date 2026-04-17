@@ -16,6 +16,7 @@ interface HighlightsCarouselProps {
 export function HighlightsCarousel({ highlights }: HighlightsCarouselProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
 
   const scroll = (direction: "left" | "right") => {
     if (!scrollRef.current || highlights.length === 0) return;
@@ -122,13 +123,20 @@ export function HighlightsCarousel({ highlights }: HighlightsCarouselProps) {
                         background: placeholderGradient(item.id, "highlight"),
                       }}
                     />
-                    {isValidThumbnail(item.thumbnail) && (
+                    {isValidThumbnail(item.thumbnail) && !failedImages.has(item.id) && (
                       <Image
                         src={item.thumbnail}
                         alt={item.title}
                         fill
                         unoptimized
                         className="object-cover transition-transform duration-300 ease-in-out group-hover:scale-110"
+                        onError={() =>
+                          setFailedImages((prev) => {
+                            const next = new Set(prev);
+                            next.add(item.id);
+                            return next;
+                          })
+                        }
                       />
                     )}
                   </div>
