@@ -18,18 +18,28 @@ export function HighlightsCarousel({ highlights }: HighlightsCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const scroll = (direction: "left" | "right") => {
-    if (!scrollRef.current) return;
+    if (!scrollRef.current || highlights.length === 0) return;
     const container = scrollRef.current;
     const cardWidth = container.scrollWidth / highlights.length;
-    container.scrollBy({
-      left: direction === "left" ? -cardWidth : cardWidth,
-      behavior: "smooth",
-    });
-    setCurrentIndex((prev) =>
-      direction === "left"
-        ? Math.max(0, prev - 1)
-        : Math.min(highlights.length - 1, prev + 1)
-    );
+
+    if (direction === "right") {
+      if (currentIndex >= highlights.length - 1) {
+        container.scrollTo({ left: 0, behavior: "smooth" });
+        setCurrentIndex(0);
+      } else {
+        container.scrollBy({ left: cardWidth, behavior: "smooth" });
+        setCurrentIndex((prev) => prev + 1);
+      }
+    } else {
+      if (currentIndex <= 0) {
+        const lastPos = cardWidth * (highlights.length - 1);
+        container.scrollTo({ left: lastPos, behavior: "smooth" });
+        setCurrentIndex(highlights.length - 1);
+      } else {
+        container.scrollBy({ left: -cardWidth, behavior: "smooth" });
+        setCurrentIndex((prev) => prev - 1);
+      }
+    }
   };
 
   const displayIndex = String(currentIndex + 1).padStart(2, "0");
