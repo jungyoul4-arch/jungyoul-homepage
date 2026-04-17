@@ -64,3 +64,6 @@ next-env.d.ts
 # Local dev helpers (not part of repo)
 start-dev.command
 git-push.command
+
+# Graphify
+graphify-out/

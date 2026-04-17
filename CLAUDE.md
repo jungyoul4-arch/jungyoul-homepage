@@ -41,3 +41,12 @@
 - **원인**: 이전 빌드의 .next 캐시가 현재 코드와 불일치
 - **해결**: rm -rf .next 후 재실행으로 해결
 - **교훈**: 대규모 파일 변경 후에는 .next 캐시 삭제 후 타입 체크 실행
+
+## graphify
+
+This project has a graphify knowledge graph at graphify-out/.
+
+Rules:
+- Before answering architecture or codebase questions, read graphify-out/GRAPH_REPORT.md for god nodes and community structure
+- If graphify-out/wiki/index.md exists, navigate it instead of reading raw files
+- After modifying code files in this session, run `graphify update .` to keep the graph current (AST-only, no API cost)
