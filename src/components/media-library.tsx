@@ -83,7 +83,7 @@ export function MediaLibrary({ videos }: MediaLibraryProps) {
               <div className="absolute top-2 right-2 z-10">
                 <AdminEditButton type="video" data={video} />
               </div>
-              <div className="relative aspect-square bg-gray-200 overflow-hidden rounded-lg group">
+              <div className="relative aspect-video bg-gray-200 overflow-hidden rounded-lg group">
                 {playingId === video.id ? (
                   <iframe
                     src={`https://www.youtube.com/embed/${video.youtubeId}?autoplay=1&mute=1`}
@@ -120,8 +120,8 @@ export function MediaLibrary({ videos }: MediaLibraryProps) {
                       </div>
                     </div>
                     {/* Title overlay with gradient */}
-                    <div className="absolute bottom-0 left-0 w-full min-h-[24%] flex items-end p-5 rounded-b-lg bg-gradient-to-t from-black/80 to-transparent z-[1]">
-                      <span className="block w-full text-white text-2xl font-bold truncate leading-snug">
+                    <div className="absolute bottom-0 left-0 w-full min-h-[30%] flex items-end p-4 rounded-b-lg bg-gradient-to-t from-black/80 to-transparent z-[1]">
+                      <span className="block w-full text-white text-lg md:text-xl font-bold truncate leading-snug">
                         {video.title}
                       </span>
                     </div>
