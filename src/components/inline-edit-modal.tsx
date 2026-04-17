@@ -18,7 +18,7 @@ function extractYoutubeId(input: string): string {
 }
 
 function youtubeThumbnail(youtubeId: string): string {
-  return `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`;
+  return `https://img.youtube.com/vi/${youtubeId}/mqdefault.jpg`;
 }
 
 const subjectOptions = ["국어", "수학", "영어", "탐구", "컨설팅"] as const;

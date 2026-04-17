@@ -24,7 +24,7 @@ export function MediaLibrary({ videos }: MediaLibraryProps) {
 
   const scroll = (direction: "left" | "right") => {
     if (!scrollRef.current) return;
-    const amount = 312;
+    const amount = 336;
     scrollRef.current.scrollBy({
       left: direction === "left" ? -amount : amount,
       behavior: "smooth",
@@ -68,15 +68,15 @@ export function MediaLibrary({ videos }: MediaLibraryProps) {
         {/* Video Carousel */}
         <div
           ref={scrollRef}
-          className="flex gap-3 overflow-x-auto scrollbar-hide scroll-smooth pb-2"
+          className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-2"
           style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
         >
           {videos.map((video) => (
-            <div key={video.id} className="relative shrink-0 w-[280px] md:w-[300px]">
+            <div key={video.id} className="relative shrink-0 w-[280px] md:w-[320px]">
               <div className="absolute top-2 right-2 z-10">
                 <AdminEditButton type="video" data={video} />
               </div>
-              <div className="relative aspect-square bg-gray-200 overflow-hidden rounded-sm">
+              <div className="relative aspect-video bg-gray-200 overflow-hidden rounded-sm">
                 {playingId === video.id ? (
                   <iframe
                     src={`https://www.youtube.com/embed/${video.youtubeId}?autoplay=1&mute=1`}
@@ -99,7 +99,7 @@ export function MediaLibrary({ videos }: MediaLibraryProps) {
                     />
                     {isValidThumbnail(video.thumbnail) && (
                       <Image
-                        src={video.thumbnail}
+                        src={video.thumbnail.replace("hqdefault.jpg", "mqdefault.jpg")}
                         alt={video.title}
                         fill
                         unoptimized
@@ -108,15 +108,15 @@ export function MediaLibrary({ videos }: MediaLibraryProps) {
                     )}
                     {/* Play Icon */}
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center group-hover:bg-white/30 transition-colors">
-                        <Play size={20} className="text-white ml-1" fill="white" />
+                      <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center group-hover:bg-white/30 transition-colors">
+                        <Play size={18} className="text-white ml-0.5" fill="white" />
                       </div>
                     </div>
                   </button>
                 )}
               </div>
               {/* Title below image — Samsung Newsroom style */}
-              <p className="mt-2.5 text-[#1A1A1A] text-[0.9375rem] md:text-[1rem] font-bold line-clamp-2 leading-snug">
+              <p className="mt-2 text-[#1A1A1A] text-[0.9375rem] md:text-[1rem] font-bold line-clamp-2 leading-snug">
                 {video.title}
               </p>
             </div>

@@ -22,7 +22,7 @@ function extractYoutubeId(input: string): string {
 }
 
 function youtubeThumbnail(youtubeId: string): string {
-  return `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`;
+  return `https://img.youtube.com/vi/${youtubeId}/mqdefault.jpg`;
 }
 
 export default function AdminVideosPage() {
