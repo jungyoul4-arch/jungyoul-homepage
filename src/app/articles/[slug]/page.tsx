@@ -73,7 +73,7 @@ export default async function ArticlePage({ params }: Props) {
   const relatedArticles = allRaw
     .map(toArticle)
     .filter((a) => a.category === article.category && a.id !== article.id)
-    .slice(0, 3);
+    .slice(0, 4);
 
   return (
     <>
@@ -150,7 +150,7 @@ export default async function ArticlePage({ params }: Props) {
         }}
       />
 
-      <article className="max-w-[1280px] mx-auto px-4">
+      <article className="max-w-[1080px] mx-auto px-4 lg:px-10">
         <nav className="py-4 text-[1rem] text-[#666666]" aria-label="breadcrumb">
           <ol className="flex items-center gap-1">
             <li>
@@ -209,18 +209,29 @@ export default async function ArticlePage({ params }: Props) {
           )}
         </div>
 
+        {/* 저작권 안내 박스 — 삼성 뉴스룸 스타일 */}
+        <div className="mt-8 bg-[#F4F7FF] rounded-lg p-8 text-[#666666] text-sm leading-relaxed">
+          정율 교육정보의 콘텐츠는 출처를 밝히는 경우 자유롭게 이용하실 수 있습니다.
+          콘텐츠 이용 시{" "}
+          <Link href="/" className="text-[#1E64FA]">
+            정율 교육정보
+          </Link>
+          {" "}출처 표기를 부탁드립니다.
+        </div>
+
+        {/* 관련 교육정보 — 삼성 뉴스룸 스타일 (가로 스크롤) */}
         {relatedArticles.length > 0 && (
-          <section className="border-t border-gray-200 py-12 mb-8">
-            <h2 className="text-[1.375rem] font-bold text-[#000080] mb-6">관련 교육정보</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <section className="border-t border-gray-200 pt-12 mt-8 pb-8">
+            <h2 className="text-[1.5rem] font-bold text-[#1A1A1A] mb-6">관련 교육정보</h2>
+            <div className="flex gap-5 overflow-x-auto scrollbar-hide -mr-4 lg:-mr-10 pr-4 lg:pr-10" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
               {relatedArticles.map((related) => (
                 <Link
                   key={related.id}
                   href={`/articles/${related.slug}`}
-                  className="group block"
+                  className="group block shrink-0 w-[calc(50%-10px)] md:w-[calc(25%-15px)]"
                 >
                   <div
-                    className="aspect-[16/9] mb-3 rounded-sm overflow-hidden relative"
+                    className="aspect-[16/9] mb-3 rounded-lg overflow-hidden relative"
                     style={{
                       background: placeholderGradient(related.id, "article"),
                     }}
@@ -231,24 +242,37 @@ export default async function ArticlePage({ params }: Props) {
                         alt={related.title}
                         fill
                         unoptimized
-                        className="object-cover"
+                        className="object-cover transition-transform duration-300 group-hover:scale-110"
                       />
                     )}
                   </div>
-                  <span className="text-[1rem] font-bold text-[#1E64FA] mb-1 block">
+                  <span className="text-[0.875rem] font-bold text-[#666666] mb-1 block">
                     {related.categoryLabel}
                   </span>
-                  <h3 className="text-[1.375rem] font-medium text-[#1A1A1A] leading-7 line-clamp-2 group-hover:text-[#1E64FA] transition-colors">
+                  <h3 className="text-[1rem] md:text-[1.375rem] font-bold text-[#1A1A1A] leading-7 line-clamp-2 group-hover:text-[#1E64FA] transition-colors">
                     {related.title}
                   </h3>
                   <time
                     dateTime={related.date.replace(/\//g, "-")}
-                    className="text-[1rem] font-medium text-[#666666] mt-1 block"
+                    className="text-[0.875rem] font-medium text-[#666666] mt-1 block"
                   >
                     {related.date}
                   </time>
                 </Link>
               ))}
+            </div>
+
+            {/* 하단 CTA — 삼성 뉴스룸 스타일 */}
+            <div className="relative mt-[58px]">
+              <div className="h-px bg-[#E0E9FE]" />
+              <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+                <Link
+                  href="/articles"
+                  className="inline-flex items-center justify-center h-16 px-12 bg-[#1E64FA] text-[1.375rem] font-bold text-white rounded-full hover:bg-[#0E41AD] transition-colors whitespace-nowrap"
+                >
+                  교육정보 더보기
+                </Link>
+              </div>
             </div>
           </section>
         )}

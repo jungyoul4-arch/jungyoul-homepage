@@ -31,7 +31,7 @@ export default async function ArticlesPage() {
   return (
     <>
       <HeroBanner src="/images/hero-articles.jpg" alt="정율 교육정보" />
-      <div className="max-w-[1280px] mx-auto px-4 py-10">
+      <div className="max-w-[1480px] mx-auto px-4 lg:px-10 py-10">
       {/* CollectionPage JSON-LD */}
       <script
         type="application/ld+json"
@@ -56,7 +56,7 @@ export default async function ArticlesPage() {
       />
 
       {/* Page Header — 삼성 뉴스룸 "최신기사" 페이지 스타일 */}
-      <h1 className="text-[1.5rem] md:text-[2.75rem] font-bold text-[#1A1A1A] mb-8">
+      <h1 className="text-[1.5rem] md:text-[1.875rem] font-bold text-[#1A1A1A] mt-10 md:mt-20 pb-5 border-b border-[#E0E0E0] mb-10">
         교육정보
       </h1>
       <ArticleList articles={articles} />

@@ -20,7 +20,7 @@ export function HeroBanner({ src, alt, title, subtitle }: HeroBannerProps) {
       />
       {(title || subtitle) && (
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent flex items-end">
-          <div className="max-w-[1280px] mx-auto w-full px-4 pb-8">
+          <div className="max-w-[1480px] mx-auto w-full px-4 lg:px-10 pb-8">
             {title && <h1 className="text-[1.375rem] md:text-[1.875rem] font-bold text-white">{title}</h1>}
             {subtitle && <p className="text-[0.875rem] md:text-[1.5rem] font-medium text-white/80 mt-2">{subtitle}</p>}
           </div>

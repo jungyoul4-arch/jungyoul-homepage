@@ -80,7 +80,7 @@ export default function FAQPage() {
   return (
     <>
       <HeroBanner src="/images/hero-faq.jpg" alt="정율 교육정보 자주 묻는 질문" />
-      <div className="max-w-[1280px] mx-auto px-4 py-10">
+      <div className="max-w-[1480px] mx-auto px-4 lg:px-10 py-10">
         {/* FAQPage JSON-LD — AEO 핵심 */}
       <script
         type="application/ld+json"

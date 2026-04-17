@@ -19,7 +19,7 @@ export default function AboutPage() {
   return (
     <>
       <HeroBanner src="/images/hero-about.jpg" alt="정율 교육정보 회사소개" />
-      <div className="max-w-[1280px] mx-auto px-4 py-10">
+      <div className="max-w-[1480px] mx-auto px-4 lg:px-10 py-10">
         {/* AboutPage JSON-LD */}
       <script
         type="application/ld+json"

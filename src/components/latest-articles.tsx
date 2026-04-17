@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { categories, type Article, type Category } from "@/lib/data";
@@ -15,6 +15,8 @@ interface LatestArticlesProps {
 
 export function LatestArticles({ articles, pinnedArticleIds = [] }: LatestArticlesProps) {
   const [activeTab, setActiveTab] = useState<Category>("all");
+  const [isSticky, setIsSticky] = useState(false);
+  const headerRef = useRef<HTMLDivElement>(null);
 
   const filtered = (() => {
     if (activeTab !== "all") {
@@ -29,36 +31,53 @@ export function LatestArticles({ articles, pinnedArticleIds = [] }: LatestArticl
     return [...pinned, ...rest];
   })();
 
-  return (
-    <section className="py-12 md:py-16" aria-label="최신 교육정보">
-      <div className="max-w-[1280px] mx-auto px-4">
-        {/* Section Header — 삼성 뉴스룸 "최신기사" 헤더 스타일 */}
-        <h2 className="text-[1.25rem] md:text-[1.5rem] font-bold text-[#1A1A1A] mb-6">
-          최신 교육정보
-        </h2>
+  // Sticky 탭 바 감지 — 삼성 뉴스룸 스타일
+  useEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsSticky(!entry.isIntersecting),
+      { rootMargin: "-104px 0px 0px 0px", threshold: 0 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
-        {/* Tab Filter — 삼성 뉴스룸 탭 스타일 (모바일 가로 스크롤) */}
-        <div className="flex gap-1 mb-8 border-b border-gray-200 overflow-x-auto" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
-          {categories.map((cat) => (
-            <button
-              key={cat.value}
-              onClick={() => setActiveTab(cat.value)}
-              className={`px-4 py-3 text-[1.125rem] transition-colors relative whitespace-nowrap shrink-0 ${
-                activeTab === cat.value
-                  ? "text-[#1E64FA] font-bold"
-                  : "text-[#666666] hover:text-[#1A1A1A] font-medium"
-              }`}
-            >
-              {cat.label}
-              {activeTab === cat.value && (
-                <span className="absolute bottom-0 left-0 right-0 h-1 bg-[#1E64FA]" />
-              )}
-            </button>
-          ))}
+  return (
+    <section className="pb-[120px]" aria-label="최신 교육정보">
+      <div className="max-w-[1480px] mx-auto px-4 lg:px-10">
+        {/* Sticky sentinel */}
+        <div ref={headerRef} />
+
+        {/* Section Header + Tab — sticky on scroll */}
+        <div className={`${isSticky ? "sticky top-16 lg:top-[104px] z-40 bg-white" : ""}`}>
+          <h2 className="text-[1.25rem] md:text-[1.5rem] font-bold text-[#1A1A1A] mb-6">
+            최신 교육정보
+          </h2>
+
+          {/* Tab Filter — 삼성 뉴스룸 탭 스타일 */}
+          <div className="flex border-b border-[#d9d9d9] overflow-x-auto" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
+            {categories.map((cat) => (
+              <button
+                key={cat.value}
+                onClick={() => setActiveTab(cat.value)}
+                className={`py-2 mr-6 text-[1.125rem] transition-colors relative whitespace-nowrap shrink-0 ${
+                  activeTab === cat.value
+                    ? "text-[#1E64FA] font-bold"
+                    : "text-[#666666] hover:text-[#1A1A1A] font-medium"
+                }`}
+              >
+                {cat.label}
+                {activeTab === cat.value && (
+                  <span className="absolute bottom-0 left-0 right-0 h-1 bg-[#1E64FA]" />
+                )}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Article Grid — PC: 4열×3행=12개, 태블릿: 3열×3행=9개, 모바일: 1열 */}
-        <div key={activeTab} className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-12">
+        {/* Article Grid — PC: 4열×3행=12개, 태블릿: 3열, 모바일: 1열 */}
+        <div key={activeTab} className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-14 mt-8">
           {filtered.slice(0, 12).map((article, index) => (
             <div
               key={article.id}
@@ -70,14 +89,17 @@ export function LatestArticles({ articles, pinnedArticleIds = [] }: LatestArticl
           ))}
         </div>
 
-        {/* More Button — 삼성 뉴스룸 "기사 더보기" 스타일 */}
-        <div className="mt-10 text-center">
-          <Link
-            href="/articles"
-            className="inline-flex items-center justify-center h-16 px-10 bg-[#1E64FA] text-[1.375rem] font-bold text-white rounded-full hover:bg-[#0E41AD] transition-colors"
-          >
-            교육정보 더보기
-          </Link>
+        {/* More Button — 삼성 뉴스룸 가로선 중앙 텍스트 스타일 */}
+        <div className="relative mt-[58px]">
+          <div className="h-px bg-[#E0E9FE]" />
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+            <Link
+              href="/articles"
+              className="inline-flex items-center justify-center h-16 px-12 bg-[#1E64FA] text-[1.375rem] font-bold text-white rounded-full hover:bg-[#0E41AD] transition-colors whitespace-nowrap"
+            >
+              교육정보 더보기
+            </Link>
+          </div>
         </div>
       </div>
     </section>
@@ -112,15 +134,15 @@ function ArticleCard({ article }: { article: Article }) {
             )}
           </div>
 
-          {/* Category + Title — 삼성 뉴스룸 기사 카드 텍스트 스타일 */}
-          <div>
-            <span className="text-[1rem] font-medium text-[#666666] mb-1.5 block">
+          {/* Category + Title */}
+          <div className="flex flex-col gap-3">
+            <span className="text-[1rem] font-bold text-[#666666]">
               {article.categoryLabel}
             </span>
             <h3 className="text-[0.875rem] md:text-[1.125rem] lg:text-[1.375rem] font-bold text-[#1A1A1A] leading-7 line-clamp-2 group-hover:text-[#1E64FA] transition-colors">
               {article.title}
             </h3>
-            <time className="text-[1rem] font-medium text-[#666666] mt-2 block">{article.date}</time>
+            <time className="text-[1rem] font-medium text-[#666666]">{article.date}</time>
           </div>
         </div>
 

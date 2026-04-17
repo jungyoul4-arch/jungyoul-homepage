@@ -64,8 +64,16 @@ export function Header() {
   const [navGroups, setNavGroups] = useState<NavGroup[]>(fallbackNavItems);
   const [mobileSubmenu, setMobileSubmenu] = useState<string | null>(null);
   const [hoveredNav, setHoveredNav] = useState<string | null>(null);
+  const [scrolled, setScrolled] = useState(false);
   const hasAnyChildren = navGroups.some((g) => g.children.length > 0);
   const showMegaMenu = !!hoveredNav && hasAnyChildren;
+
+  // 스크롤 감지 — 삼성 뉴스룸처럼 스크롤 시에만 하단 보더 표시
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 0);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   // DB에서 메뉴 데이터 로드
   useEffect(() => {
@@ -85,12 +93,12 @@ export function Header() {
 
   return (
     <header
-      className="sticky top-0 z-50 bg-white border-b border-gray-200 relative"
+      className={`sticky top-0 z-50 bg-white relative transition-shadow ${scrolled ? "border-b border-gray-200 shadow-sm" : ""}`}
       onMouseLeave={() => setHoveredNav(null)}
     >
       {/* Top bar */}
-      <div className="max-w-[1280px] mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
+      <div className="max-w-[1480px] mx-auto px-4 lg:px-10">
+        <div className="flex items-center justify-between h-16 lg:h-[104px]">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 shrink-0">
             <SiteLogo size="md" />
@@ -102,17 +110,17 @@ export function Header() {
           </Link>
 
           {/* Desktop Navigation — 상위 카테고리 링크 + 메가메뉴 (nav 기준 정렬) */}
-          <nav className="hidden lg:flex items-center gap-8 relative">
+          <nav className="hidden lg:flex items-center gap-6 relative">
             {navGroups.map((group) => (
               <Link
                 key={group.parent.id}
                 href={group.parent.href}
-                className="relative text-[1.125rem] font-bold text-[#1A1A1A] hover:text-[#1E64FA] transition-colors py-5"
+                className="relative text-[1.125rem] font-bold text-[#1A1A1A] hover:text-[#1E64FA] transition-colors py-5 lg:pt-[42px] lg:pb-[30px]"
                 onMouseEnter={() => setHoveredNav(group.parent.id)}
               >
                 {group.parent.label}
                 <span
-                  className={`absolute bottom-0 left-0 right-0 h-[3px] bg-[#1E64FA] transition-opacity duration-200 ${
+                  className={`absolute bottom-0 left-0 right-0 h-1 bg-[#1E64FA] transition-opacity duration-200 ${
                     hoveredNav === group.parent.id ? "opacity-100" : "opacity-0"
                   }`}
                 />
@@ -121,7 +129,7 @@ export function Header() {
 
             {/* 하위 메뉴: 모든 그룹의 하위 항목을 동시 전개 (삼성 뉴스룸 스타일) */}
             {showMegaMenu && (
-              <div className="absolute top-full left-0 flex items-start gap-8 py-6 z-10">
+              <div className="absolute top-full left-0 flex items-start gap-6 py-6 z-10">
                 {navGroups.map((group) => (
                   <div key={`sub-${group.parent.id}`}>
                     {group.children.map((child) => (
@@ -195,7 +203,7 @@ export function Header() {
       {/* Search Panel */}
       {searchOpen && (
         <div className="border-t border-gray-200 bg-gray-50">
-          <div className="max-w-[1280px] mx-auto px-4 py-6">
+          <div className="max-w-[1480px] mx-auto px-4 lg:px-10 py-6">
             <div className="flex items-center gap-3 max-w-2xl mx-auto">
               <div className="flex-1 relative">
                 <input
@@ -232,7 +240,7 @@ export function Header() {
       {/* Mobile Menu — 아코디언 스타일 */}
       {mobileMenuOpen && (
         <div className="lg:hidden border-t border-gray-200 bg-white">
-          <nav className="max-w-[1280px] mx-auto px-4 py-4">
+          <nav className="max-w-[1480px] mx-auto px-4 lg:px-10 py-4">
             {navGroups.map((group) => (
               <div key={group.parent.id} className="border-b border-gray-100 last:border-0">
                 {group.children.length > 0 ? (

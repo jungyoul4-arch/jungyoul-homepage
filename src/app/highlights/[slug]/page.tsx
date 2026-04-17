@@ -51,7 +51,7 @@ export default async function HighlightPage({ params }: Props) {
   const highlight = toHighlight(raw);
 
   return (
-    <div className="max-w-[1280px] mx-auto px-4 py-10">
+    <div className="max-w-[1480px] mx-auto px-4 lg:px-10 py-10">
       <nav className="pb-6 text-[1rem] text-[#666666]" aria-label="breadcrumb">
         <ol className="flex items-center gap-1">
           <li>

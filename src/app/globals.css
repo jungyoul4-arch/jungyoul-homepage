@@ -26,6 +26,12 @@
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
   --color-media-bg: #f4f7ff;
+  --color-brand-blue: #1E64FA;
+  --color-brand-blue-dark: #0E41AD;
+  --color-text-primary: #1A1A1A;
+  --color-text-secondary: #666666;
+  --color-border-light: #E0E0E0;
+  --color-article-line: #E0E9FE;
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);

@@ -121,7 +121,7 @@ export function MediaLibrary({ videos }: MediaLibraryProps) {
                     </div>
                     {/* Title overlay with gradient */}
                     <div className="absolute bottom-0 left-0 w-full min-h-[24%] flex items-end p-5 rounded-b-lg bg-gradient-to-t from-black/80 to-transparent z-[1]">
-                      <span className="block w-full text-white text-lg md:text-2xl font-bold truncate leading-snug">
+                      <span className="block w-full text-white text-2xl font-bold truncate leading-snug">
                         {video.title}
                       </span>
                     </div>

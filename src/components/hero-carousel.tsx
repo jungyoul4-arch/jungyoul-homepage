@@ -126,10 +126,10 @@ export function HeroCarousel({ slides }: HeroCarouselProps) {
   if (slides.length === 0) return null;
 
   return (
-    <section className="relative bg-white pt-6 pb-2" aria-label="주요 교육정보">
+    <section className="relative bg-white pt-6 mb-20" aria-label="주요 교육정보">
       <div
         ref={containerRef}
-        className="relative max-w-[1420px] mx-auto px-4 md:px-8"
+        className="relative max-w-[1480px] mx-auto px-4 md:px-8 lg:px-10"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
