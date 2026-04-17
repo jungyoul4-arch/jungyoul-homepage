@@ -24,7 +24,7 @@ export function MediaLibrary({ videos }: MediaLibraryProps) {
 
   const scroll = (direction: "left" | "right") => {
     if (!scrollRef.current) return;
-    const amount = 336;
+    const amount = 300;
     scrollRef.current.scrollBy({
       left: direction === "left" ? -amount : amount,
       behavior: "smooth",
@@ -32,33 +32,37 @@ export function MediaLibrary({ videos }: MediaLibraryProps) {
   };
 
   return (
-    <section className="py-12 md:py-16" aria-label="정율TV">
-      <div className="max-w-[1280px] mx-auto px-4">
+    <section
+      className="overflow-hidden pt-20 pb-[120px] bg-media-bg"
+      aria-label="정율TV"
+    >
+      <div className="max-w-[1480px] mx-auto px-10">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-[1.25rem] md:text-[1.5rem] font-bold text-[#1A1A1A]">
+          <h2 className="text-[1.25rem] md:text-[1.5rem] font-bold text-[#1A1A1A] leading-8 tracking-[-0.045rem]">
             정율TV
           </h2>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center">
             <button
               onClick={() => scroll("left")}
-              className="w-9 h-9 border border-gray-300 flex items-center justify-center hover:border-gray-900 transition-colors"
+              className="w-6 h-6 flex items-center justify-center hover:opacity-70 transition-opacity"
               aria-label="이전"
             >
-              <ChevronLeft size={18} />
+              <ChevronLeft size={16} />
             </button>
             <button
               onClick={() => scroll("right")}
-              className="w-9 h-9 border border-gray-300 flex items-center justify-center hover:border-gray-900 transition-colors"
+              className="w-6 h-6 flex items-center justify-center hover:opacity-70 transition-opacity ml-1"
               aria-label="다음"
             >
-              <ChevronRight size={18} />
+              <ChevronRight size={16} />
             </button>
+            <span className="w-px h-4 bg-[#e0e0e0] mx-4" aria-hidden="true" />
             <a
               href="https://www.youtube.com/@jungyoulTV"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[1.125rem] font-bold text-[#1A1A1A] hover:text-[#0E41AD] ml-2 transition-colors"
+              className="text-[1.125rem] font-bold text-[#1A1A1A] hover:text-[#0E41AD] transition-colors"
             >
               더보기
             </a>
@@ -68,15 +72,18 @@ export function MediaLibrary({ videos }: MediaLibraryProps) {
         {/* Video Carousel */}
         <div
           ref={scrollRef}
-          className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-2"
+          className="flex gap-5 overflow-x-auto scrollbar-hide scroll-smooth"
           style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
         >
           {videos.map((video) => (
-            <div key={video.id} className="relative shrink-0 w-[280px] md:w-[320px]">
+            <div
+              key={video.id}
+              className="relative shrink-0 w-[calc(20%-16px)] min-w-[200px]"
+            >
               <div className="absolute top-2 right-2 z-10">
                 <AdminEditButton type="video" data={video} />
               </div>
-              <div className="relative aspect-video bg-gray-200 overflow-hidden rounded-sm">
+              <div className="relative aspect-square bg-gray-200 overflow-hidden rounded-lg group">
                 {playingId === video.id ? (
                   <iframe
                     src={`https://www.youtube.com/embed/${video.youtubeId}?autoplay=1&mute=1`}
@@ -88,11 +95,11 @@ export function MediaLibrary({ videos }: MediaLibraryProps) {
                 ) : (
                   <button
                     onClick={() => setPlayingId(video.id)}
-                    className="group block w-full h-full"
+                    className="block w-full h-full"
                     aria-label={`${video.title} 재생`}
                   >
                     <div
-                      className="absolute inset-0 transition-transform duration-300 group-hover:scale-105"
+                      className="absolute inset-0 transition-transform duration-300 group-hover:scale-110"
                       style={{
                         background: placeholderGradient(video.id, "video"),
                       }}
@@ -103,22 +110,24 @@ export function MediaLibrary({ videos }: MediaLibraryProps) {
                         alt={video.title}
                         fill
                         unoptimized
-                        className="object-cover transition-transform duration-300 group-hover:scale-105"
+                        className="object-cover transition-transform duration-300 group-hover:scale-110"
                       />
                     )}
                     {/* Play Icon */}
-                    <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="absolute inset-0 flex items-center justify-center z-[1]">
                       <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center group-hover:bg-white/30 transition-colors">
                         <Play size={18} className="text-white ml-0.5" fill="white" />
                       </div>
                     </div>
+                    {/* Title overlay with gradient */}
+                    <div className="absolute bottom-0 left-0 w-full min-h-[24%] flex items-end p-5 rounded-b-lg bg-gradient-to-t from-black/80 to-transparent z-[1]">
+                      <span className="block w-full text-white text-lg md:text-2xl font-bold truncate leading-snug">
+                        {video.title}
+                      </span>
+                    </div>
                   </button>
                 )}
               </div>
-              {/* Title below image — Samsung Newsroom style */}
-              <p className="mt-2 text-[#1A1A1A] text-[0.9375rem] md:text-[1rem] font-bold line-clamp-2 leading-snug">
-                {video.title}
-              </p>
             </div>
           ))}
         </div>
