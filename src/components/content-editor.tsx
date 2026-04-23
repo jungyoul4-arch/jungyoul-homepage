@@ -34,6 +34,20 @@ function parseVideoUrl(text: string): VideoEmbed | null {
   return null;
 }
 
+// base64 data URL → File 변환. 붙여넣은 HTML 의 inline 이미지를 업로드하기 위해 사용.
+function dataUrlToFile(dataUrl: string, name: string): File {
+  const commaIdx = dataUrl.indexOf(",");
+  const header = dataUrl.slice(0, commaIdx);
+  const b64 = dataUrl.slice(commaIdx + 1);
+  const mime = /data:([^;]+);base64/.exec(header)?.[1] ?? "image/png";
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  const ext = (mime.split("/")[1] || "png").replace(/\+.*$/, "");
+  const safeName = (name || "image").replace(/[^\w.-]/g, "_");
+  return new File([bytes], `${safeName}.${ext}`, { type: mime });
+}
+
 function buildEmbedHtml(embed: VideoEmbed): string {
   const src =
     embed.platform === "youtube"
@@ -256,6 +270,37 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
     }
   }
 
+  // 붙여넣은 HTML 안의 data:URL 이미지를 추출해 R2 에 업로드하고 src 를 영구 URL 로 치환.
+  // 이후 서버 sanitize 가 data:URL 을 스트립해도 이미지가 살아남는다.
+  async function inlineDataUrlsToUploads(html: string): Promise<string> {
+    const doc = new DOMParser().parseFromString(html, "text/html");
+
+    // 안전: inline event handler 제거 (XSS 방어 — contenteditable 내에서는 실행되지
+    // 않지만 저장/재렌더 단계 방어용)
+    doc.querySelectorAll("*").forEach((el) => {
+      for (const attr of Array.from(el.attributes)) {
+        if (attr.name.startsWith("on")) el.removeAttribute(attr.name);
+      }
+    });
+
+    const imgs = Array.from(
+      doc.querySelectorAll('img[src^="data:"]'),
+    ) as HTMLImageElement[];
+    for (const img of imgs) {
+      const dataUrl = img.getAttribute("src")!;
+      try {
+        const file = dataUrlToFile(dataUrl, img.getAttribute("alt") || "image");
+        const url = await uploadImage(file);
+        if (url) img.setAttribute("src", url);
+        else img.remove();
+      } catch {
+        img.remove();
+      }
+    }
+
+    return doc.body.innerHTML;
+  }
+
   // 클립보드 붙여넣기
   async function handlePaste(e: React.ClipboardEvent) {
     const items = e.clipboardData.items;
@@ -284,6 +329,20 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
         insertHtmlAtCursor(buildEmbedHtml(embed));
         return;
       }
+    }
+
+    // 2.5. HTML 페이스트 (jungyoul-interview 내보내기 등): data:URL 이미지가 들어있으면
+    //      R2 로 업로드하여 영구 URL 로 치환 후 삽입. data:URL 이 없는 일반 HTML 은
+    //      이 분기를 타지 않고 기존 plain-text 정규화 경로(3번) 로 떨어진다.
+    const htmlFromClipboard = e.clipboardData.getData("text/html");
+    if (
+      htmlFromClipboard &&
+      /<img[^>]+src=["']data:/i.test(htmlFromClipboard)
+    ) {
+      e.preventDefault();
+      const processed = await inlineDataUrlsToUploads(htmlFromClipboard);
+      insertHtmlAtCursor(processed);
+      return;
     }
 
     // 3. 일반 텍스트: 외부 서식 제거 후 <p> 태그로 정규화
