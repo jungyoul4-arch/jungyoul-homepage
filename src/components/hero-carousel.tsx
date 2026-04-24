@@ -162,18 +162,21 @@ export function HeroCarousel({ slides }: HeroCarouselProps) {
           </div>
         )}
 
-        {/* Slide area */}
-        <div className="relative overflow-hidden">
+        {/* Slide area — 모바일: -mr-[35px]로 우측 padding 영역까지 확장 + overflow-hidden으로 좌측 clip, 우측은 peek 43px 허용 */}
+        <div className="relative overflow-hidden -mr-[35px] md:mr-0 [--slide-w:calc(100vw_-_75px)] [--slide-step:calc(100vw_-_63px)] md:[--slide-w:100%] md:[--slide-step:100%]">
           <div
             className={`flex ${noTransition ? "" : "transition-transform ease-out"}`}
             style={{
-              transform: `translateX(-${currentSlide * 100}%)`,
+              transform: `translateX(calc(${-currentSlide} * var(--slide-step)))`,
               transitionDuration: noTransition ? "0ms" : "350ms",
             }}
             onTransitionEnd={handleTransitionEnd}
           >
             {extendedSlides.map((slide, slideIdx) => (
-              <div key={`${slide.id}-${slideIdx}`} className="w-full flex-shrink-0">
+              <div
+                key={`${slide.id}-${slideIdx}`}
+                className="shrink-0 mr-3 md:mr-0 w-[var(--slide-w)]"
+              >
                 <SlideContent slide={slide} priority={slideIdx === (hasMultiple ? 1 : 0)} />
               </div>
             ))}
