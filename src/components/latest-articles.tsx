@@ -44,7 +44,7 @@ export function LatestArticles({ articles, pinnedArticleIds = [] }: LatestArticl
               <button
                 key={cat.value}
                 onClick={() => setActiveTab(cat.value)}
-                className={`pb-2 mr-6 text-[1rem] transition-colors relative whitespace-nowrap shrink-0 ${
+                className={`pb-2 md:py-2 mr-6 text-[1rem] md:text-[1.125rem] transition-colors relative whitespace-nowrap shrink-0 ${
                   activeTab === cat.value
                     ? "text-[#1E64FA] font-bold"
                     : "text-[#666666] hover:text-[#1A1A1A] font-medium"
