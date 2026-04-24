@@ -64,16 +64,8 @@ export function Header() {
   const [navGroups, setNavGroups] = useState<NavGroup[]>(fallbackNavItems);
   const [mobileSubmenu, setMobileSubmenu] = useState<string | null>(null);
   const [hoveredNav, setHoveredNav] = useState<string | null>(null);
-  const [scrolled, setScrolled] = useState(false);
   const hasAnyChildren = navGroups.some((g) => g.children.length > 0);
   const showMegaMenu = !!hoveredNav && hasAnyChildren;
-
-  // 스크롤 감지 — 삼성 뉴스룸처럼 스크롤 시에만 하단 보더 표시
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 0);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
 
   // DB에서 메뉴 데이터 로드
   useEffect(() => {
@@ -93,11 +85,11 @@ export function Header() {
 
   return (
     <header
-      className={`sticky top-0 z-50 bg-white relative transition-shadow ${scrolled ? "border-b border-gray-200 shadow-sm" : ""}`}
+      className="sticky top-0 z-[999] bg-white relative"
       onMouseLeave={() => setHoveredNav(null)}
     >
       {/* Top bar */}
-      <div className="max-w-[1480px] mx-auto px-4 lg:px-10">
+      <div className="max-w-[1480px] mx-auto px-5 lg:px-10">
         <div className="flex items-center justify-between h-16 lg:h-[104px]">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 shrink-0">

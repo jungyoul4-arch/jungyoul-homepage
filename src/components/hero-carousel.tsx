@@ -126,10 +126,10 @@ export function HeroCarousel({ slides }: HeroCarouselProps) {
   if (slides.length === 0) return null;
 
   return (
-    <section className="relative bg-white pt-6 mb-20" aria-label="주요 교육정보">
+    <section className="relative bg-white pt-4 mb-10 md:pt-6 md:mb-20" aria-label="주요 교육정보">
       <div
         ref={containerRef}
-        className="relative max-w-[1480px] mx-auto px-4 md:px-8 lg:px-10"
+        className="relative max-w-[1480px] mx-auto pl-5 pr-[35px] md:px-8 lg:px-10"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -274,7 +274,7 @@ function Case05({ main, priority }: { main: HeroSlideItem; priority: boolean }) 
       {/* Mobile */}
       <Link
         href={`/articles/${a.slug}`}
-        className="group relative block rounded-xl overflow-hidden md:hidden"
+        className="group relative block overflow-hidden md:hidden"
         style={{ paddingTop: "139.144%" }}
       >
         <ImageBg src={a.thumbnail} alt={a.title} hasImage={hasImage} id={a.id} priority={priority} />
@@ -322,7 +322,7 @@ function Case03({
       {/* Mobile */}
       <Link
         href={`/articles/${a.slug}`}
-        className="group relative block rounded-xl overflow-hidden md:hidden"
+        className="group relative block overflow-hidden md:hidden"
         style={{ paddingTop: "139.144%" }}
       >
         <ImageBg src={a.thumbnail} alt={a.title} hasImage={hasA} id={a.id} priority={priority} />
@@ -376,7 +376,7 @@ function Case01({
       {/* Mobile */}
       <Link
         href={`/articles/${a.slug}`}
-        className="group relative block rounded-xl overflow-hidden md:hidden"
+        className="group relative block overflow-hidden md:hidden"
         style={{ paddingTop: "139.144%" }}
       >
         <ImageBg src={a.thumbnail} alt={a.title} hasImage={hasA} id={a.id} priority={priority} />
@@ -590,8 +590,8 @@ function MobileContent({ title, category }: { title: string; category: string })
         {category}
       </p>
       <p
-        className="text-white leading-tight"
-        style={{ fontWeight: 700, letterSpacing: "-0.03em", fontSize: "1.375rem" }}
+        className="text-white"
+        style={{ fontWeight: 700, letterSpacing: "-0.03em", fontSize: "1.375rem", lineHeight: 1.4 }}
       >
         {title}
       </p>

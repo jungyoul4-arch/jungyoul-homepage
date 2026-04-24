@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { categories, type Article, type Category } from "@/lib/data";
@@ -15,8 +15,6 @@ interface LatestArticlesProps {
 
 export function LatestArticles({ articles, pinnedArticleIds = [] }: LatestArticlesProps) {
   const [activeTab, setActiveTab] = useState<Category>("all");
-  const [isSticky, setIsSticky] = useState(false);
-  const headerRef = useRef<HTMLDivElement>(null);
 
   const filtered = (() => {
     if (activeTab !== "all") {
@@ -31,37 +29,22 @@ export function LatestArticles({ articles, pinnedArticleIds = [] }: LatestArticl
     return [...pinned, ...rest];
   })();
 
-  // Sticky 탭 바 감지 — 삼성 뉴스룸 스타일
-  useEffect(() => {
-    const el = headerRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => setIsSticky(!entry.isIntersecting),
-      { rootMargin: "-104px 0px 0px 0px", threshold: 0 }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
   return (
     <section className="pb-[120px]" aria-label="최신 교육정보">
-      <div className="max-w-[1480px] mx-auto px-4 lg:px-10">
-        {/* Sticky sentinel */}
-        <div ref={headerRef} />
-
-        {/* Section Header + Tab — sticky on scroll */}
-        <div className={`${isSticky ? "sticky top-16 lg:top-[104px] z-40 bg-white" : ""}`}>
-          <h2 className="text-[1.25rem] md:text-[1.5rem] font-bold text-[#1A1A1A] mb-6">
+      <div className="max-w-[1480px] mx-auto px-5 lg:px-10">
+        {/* Section Header + Tab — 삼성 뉴스룸 원본은 static (sticky 아님) */}
+        <div>
+          <h2 className="text-[1.25rem] md:text-[1.5rem] font-bold text-[#1A1A1A] mb-6" style={{ letterSpacing: "-0.03em", lineHeight: 1.6 }}>
             최신 교육정보
           </h2>
 
-          {/* Tab Filter — 삼성 뉴스룸 탭 스타일 */}
+          {/* Tab Filter — 삼성 뉴스룸 탭 스타일 (16px, pb-2, border 4px) */}
           <div className="flex border-b border-[#d9d9d9] overflow-x-auto" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
             {categories.map((cat) => (
               <button
                 key={cat.value}
                 onClick={() => setActiveTab(cat.value)}
-                className={`py-2 mr-6 text-[1.125rem] transition-colors relative whitespace-nowrap shrink-0 ${
+                className={`pb-2 mr-6 text-[1rem] transition-colors relative whitespace-nowrap shrink-0 ${
                   activeTab === cat.value
                     ? "text-[#1E64FA] font-bold"
                     : "text-[#666666] hover:text-[#1A1A1A] font-medium"
@@ -69,7 +52,7 @@ export function LatestArticles({ articles, pinnedArticleIds = [] }: LatestArticl
               >
                 {cat.label}
                 {activeTab === cat.value && (
-                  <span className="absolute bottom-0 left-0 right-0 h-1 bg-[#1E64FA]" />
+                  <span className="absolute -bottom-px left-0 right-0 h-1 bg-[#1E64FA]" />
                 )}
               </button>
             ))}
