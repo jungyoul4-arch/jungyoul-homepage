@@ -60,14 +60,14 @@ export function LatestArticles({ articles, pinnedArticleIds = [] }: LatestArticl
         </div>
 
         {/* Article Grid — PC: 4열×3행=12개, 태블릿: 3열, 모바일: 1열 */}
-        <div key={activeTab} className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-14 mt-8">
+        <div key={activeTab} className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-14 max-sm:gap-y-0 mt-8">
           {filtered.slice(0, 12).map((article, index) => (
             <div
               key={article.id}
               className={index >= 9 ? "hidden lg:block card-animate" : "card-animate"}
               style={{ animationDelay: `${index * 70}ms` }}
             >
-              <ArticleCard article={article} />
+              <ArticleCard article={article} headlineMode={index < 4} />
             </div>
           ))}
         </div>
@@ -89,7 +89,7 @@ export function LatestArticles({ articles, pinnedArticleIds = [] }: LatestArticl
   );
 }
 
-function ArticleCard({ article }: { article: Article }) {
+function ArticleCard({ article, headlineMode = false }: { article: Article; headlineMode?: boolean }) {
   return (
     <article className="relative">
       <div className="absolute top-2 right-2 z-10">
@@ -129,35 +129,49 @@ function ArticleCard({ article }: { article: Article }) {
           </div>
         </div>
 
-        {/* Mobile: horizontal layout (썸네일:제목 = 5:5) */}
-        <div className="flex gap-3 sm:hidden">
-          <div className="w-1/2 aspect-[16/9] shrink-0 rounded-lg overflow-hidden relative">
-            <div
-              className="absolute inset-0"
-              style={{
-                background: placeholderGradient(article.id, "article"),
-              }}
-            />
-            {isValidThumbnail(article.thumbnail) && (
-              <Image
-                src={article.thumbnail}
-                alt={article.title}
-                fill
-                unoptimized
-                className="object-cover"
-              />
-            )}
-          </div>
-          <div className="flex-1 min-w-0 flex flex-col justify-center">
+        {/* Mobile: 상위 4개는 풀폭 헤드라인, 5번째부터는 가로 리스트 */}
+        {headlineMode ? (
+          <div className="sm:hidden flex flex-col gap-1.5 py-5 border-b border-[#E0E0E0]">
             <span className="text-[1rem] font-bold text-[#666666] tracking-[-0.03em]">
               {article.categoryLabel}
             </span>
-            <h3 className="text-[0.875rem] font-medium text-[#1A1A1A] leading-[1.286] tracking-[-0.03em] line-clamp-3 mt-1">
+            <h3 className="text-[1.125rem] font-bold text-[#1A1A1A] leading-[1.4] tracking-[-0.03em] line-clamp-2 group-hover:text-[#1E64FA] transition-colors">
               {article.title}
             </h3>
-            <time className="text-[0.875rem] font-medium text-[#666666] mt-1 block">{article.date}</time>
+            <time className="text-[0.875rem] font-medium text-[#666666] mt-0.5 block">
+              {article.date}
+            </time>
           </div>
-        </div>
+        ) : (
+          <div className="flex gap-3 sm:hidden py-5 border-b border-[#E0E0E0]">
+            <div className="w-1/2 aspect-[16/9] shrink-0 rounded-lg overflow-hidden relative">
+              <div
+                className="absolute inset-0"
+                style={{
+                  background: placeholderGradient(article.id, "article"),
+                }}
+              />
+              {isValidThumbnail(article.thumbnail) && (
+                <Image
+                  src={article.thumbnail}
+                  alt={article.title}
+                  fill
+                  unoptimized
+                  className="object-cover"
+                />
+              )}
+            </div>
+            <div className="flex-1 min-w-0 flex flex-col justify-center">
+              <span className="text-[1rem] font-bold text-[#666666] tracking-[-0.03em]">
+                {article.categoryLabel}
+              </span>
+              <h3 className="text-[0.875rem] font-medium text-[#1A1A1A] leading-[1.286] tracking-[-0.03em] line-clamp-3 mt-1">
+                {article.title}
+              </h3>
+              <time className="text-[0.875rem] font-medium text-[#666666] mt-1 block">{article.date}</time>
+            </div>
+          </div>
+        )}
       </Link>
     </article>
   );
