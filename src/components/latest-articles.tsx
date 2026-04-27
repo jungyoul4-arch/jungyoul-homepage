@@ -149,13 +149,13 @@ function ArticleCard({ article }: { article: Article }) {
             )}
           </div>
           <div className="flex-1 min-w-0 flex flex-col justify-center">
-            <span className="text-[0.75rem] font-bold text-[#1E64FA]">
+            <span className="text-[1rem] font-bold text-[#666666] tracking-[-0.03em]">
               {article.categoryLabel}
             </span>
-            <h3 className="text-[0.875rem] font-medium text-[#1A1A1A] leading-snug line-clamp-2 mt-1">
+            <h3 className="text-[0.875rem] font-medium text-[#1A1A1A] leading-[1.286] tracking-[-0.03em] line-clamp-3 mt-1">
               {article.title}
             </h3>
-            <time className="text-[0.75rem] font-medium text-[#767676] mt-1 block">{article.date}</time>
+            <time className="text-[0.875rem] font-medium text-[#666666] mt-1 block">{article.date}</time>
           </div>
         </div>
       </Link>

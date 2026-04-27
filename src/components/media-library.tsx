@@ -84,7 +84,7 @@ export function MediaLibrary({ videos }: MediaLibraryProps) {
               <div className="absolute top-2 right-2 z-10">
                 <AdminEditButton type="video" data={video} />
               </div>
-              <div className="relative aspect-video bg-gray-200 overflow-hidden rounded-lg group">
+              <div className="relative aspect-square md:aspect-video bg-gray-200 overflow-hidden rounded-lg group">
                 {playingId === video.id ? (
                   <iframe
                     src={`https://www.youtube.com/embed/${video.youtubeId}?autoplay=1&mute=1`}
