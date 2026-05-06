@@ -138,9 +138,6 @@ function ArticleCard({ article, headlineMode = false }: { article: Article; head
             <h3 className="text-[1.125rem] font-bold text-[#1A1A1A] leading-[1.4] tracking-[-0.03em] line-clamp-2 group-hover:text-[#1E64FA] transition-colors">
               {article.title}
             </h3>
-            <time className="text-[0.875rem] font-medium text-[#666666] mt-0.5 block">
-              {article.date}
-            </time>
           </div>
         ) : (
           <div className="flex gap-3 sm:hidden py-5 border-b border-[#E0E0E0]">
