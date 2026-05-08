@@ -312,10 +312,107 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
       }
     }
 
-    const files = e.dataTransfer.files;
-    if (files.length > 0) {
-      await handleImageFiles(files);
+    const files = Array.from(e.dataTransfer.files);
+    // macOS 일부 환경에서 file.type 이 빈 문자열이라 확장자 fallback 도 함께 사용.
+    const isPdf = (f: File) =>
+      f.type === "application/pdf" || /\.pdf$/i.test(f.name);
+    const pdfs = files.filter(isPdf);
+    const images = files.filter((f) => f.type.startsWith("image/"));
+
+    for (const pdf of pdfs) {
+      await handlePdfFile(pdf);
     }
+    if (images.length > 0) {
+      await handleImageFiles(images);
+    }
+  }
+
+  // PDF 페이지 → PNG 이미지 → R2 업로드 → <figure> 순차 삽입.
+  // - HWPX 내부 이미지의 클립보드 페이스트가 일관되지 않아, PDF 우회로로 시각 정확도 100% 보존.
+  // - 표·수식·도형은 본문 검색이 불가하지만 시각적으로는 그대로 들어옴.
+  async function handlePdfFile(file: File) {
+    const placeholderId = `pdf-upload-${Date.now()}`;
+    insertHtmlAtCursor(
+      `<span id="${placeholderId}" style="color:#999;font-style:italic;">[PDF 변환 준비 중...]</span>`,
+    );
+
+    let blobs: Blob[];
+    try {
+      const { pdfToPngBlobs } = await import("./pdf-to-images");
+      blobs = await pdfToPngBlobs(file, {
+        scale: 2.0,
+        onStart: (total) => {
+          if (total > 30) {
+            return window.confirm(
+              `이 PDF 는 ${total} 페이지입니다. 모두 본문에 이미지로 삽입할까요?\n(취소하면 본문에 추가되지 않습니다.)`,
+            );
+          }
+          return true;
+        },
+        onProgress: (done, total) => {
+          const ph = document.getElementById(placeholderId);
+          if (ph) ph.textContent = `[PDF 변환 중... ${done}/${total}]`;
+        },
+      });
+    } catch (err) {
+      const placeholder = document.getElementById(placeholderId);
+      const msg = err instanceof Error ? err.message : "PDF 처리 실패";
+      if (placeholder) {
+        placeholder.textContent = `[PDF 처리 실패: ${msg}]`;
+        placeholder.removeAttribute("id");
+      }
+      syncToParent();
+      return;
+    }
+
+    // 사용자가 onStart 에서 취소했거나 빈 PDF 인 경우.
+    if (blobs.length === 0) {
+      const placeholder = document.getElementById(placeholderId);
+      placeholder?.remove();
+      syncToParent();
+      return;
+    }
+
+    // 변환된 페이지 PNG 들을 순차 업로드 → <figure> 로 삽입.
+    const figures: HTMLElement[] = [];
+    for (let i = 0; i < blobs.length; i++) {
+      const ph = document.getElementById(placeholderId);
+      if (ph) ph.textContent = `[PDF 업로드 중... ${i + 1}/${blobs.length}]`;
+
+      const pageFile = new File([blobs[i]], `pdf-page-${i + 1}.png`, {
+        type: "image/png",
+      });
+      const url = await uploadImage(pageFile);
+      if (!url) {
+        // 단일 페이지 실패 시 안내만 남기고 계속 진행.
+        const fail = document.createElement("span");
+        fail.style.color = "#c00";
+        fail.style.fontStyle = "italic";
+        fail.textContent = `[페이지 ${i + 1} 업로드 실패]`;
+        figures.push(fail);
+        continue;
+      }
+      const figure = document.createElement("figure");
+      const img = document.createElement("img");
+      img.src = url;
+      img.alt = `${file.name} - 페이지 ${i + 1}`;
+      const figcaption = document.createElement("figcaption");
+      figcaption.textContent = "▲ ";
+      figcaption.setAttribute("contenteditable", "true");
+      figure.appendChild(img);
+      figure.appendChild(figcaption);
+      figures.push(figure);
+    }
+
+    const placeholder = document.getElementById(placeholderId);
+    if (placeholder) {
+      const parent = placeholder.parentNode;
+      if (parent) {
+        for (const node of figures) parent.insertBefore(node, placeholder);
+        placeholder.remove();
+      }
+    }
+    syncToParent();
   }
 
   // 붙여넣은 HTML 정규화 + data:URL 이미지 R2 업로드.

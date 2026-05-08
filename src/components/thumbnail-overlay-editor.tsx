@@ -235,6 +235,10 @@ export function ThumbnailOverlayEditor({
                 aspectRatio: naturalSize
                   ? `${naturalSize.w} / ${naturalSize.h}`
                   : "16 / 9",
+                // 자식 텍스트 박스의 cqw 단위가 이 미리보기 박스의 inline-size 를 기준으로
+                // 환산되도록. 캔버스 자연 너비 ↔ 미리보기 너비 비율을 따라가며 fontSize·max-width
+                // 가 비례 표시되어 저장 결과(JPEG) 와 시각적으로 일치한다.
+                containerType: "inline-size",
               }}
               onClick={() => setSelectedId(null)}
             >
@@ -269,6 +273,11 @@ export function ThumbnailOverlayEditor({
               )}
               {overlays.map((o) => {
                 const pos = ANCHOR_POSITIONS[o.anchor];
+                // 캔버스 자연 너비를 기준으로 fontSize 와 max-width 를 cqw 비율로 환산.
+                // refW = 1280 일 때 56px → (56/1280*100)cqw = 4.375cqw → 미리보기 박스가 720px 이면 ≈31.5px,
+                // 360px 이면 ≈15.75px 로 정확히 비례 축소됨. 저장 결과(JPEG) 와 시각적으로 일치.
+                const refW = naturalSize?.w ?? FALLBACK_SIZE.w;
+                const fontSizeCqw = (o.fontSize / refW) * 100;
                 return (
                   <div
                     key={o.id}
@@ -282,14 +291,18 @@ export function ThumbnailOverlayEditor({
                       top: `${pos.yPct}%`,
                       transform: pos.transform,
                       fontFamily: FONT_FAMILY,
-                      fontSize: `clamp(12px, ${o.fontSize / 7.2}cqw, ${o.fontSize}px)`,
+                      fontSize: `max(8px, ${fontSizeCqw}cqw)`,
                       color: o.color,
                       fontWeight: o.fontWeight,
                       textAlign: o.textAlign,
                       textShadow: o.shadow
                         ? "0 2px 8px rgba(0,0,0,0.55)"
                         : "none",
-                      whiteSpace: "pre",
+                      // 8/92% 가장자리 패딩 사이 영역(84%) 을 max-width 로 강제해 어떤 앵커에서도
+                      // 텍스트가 컨테이너 밖으로 빠지지 않도록. pre-wrap + word-break 로 자동 줄바꿈 허용.
+                      maxWidth: "84cqw",
+                      whiteSpace: "pre-wrap",
+                      wordBreak: "break-word",
                       cursor: "pointer",
                       userSelect: "none",
                       padding: "2px 6px",
@@ -297,7 +310,6 @@ export function ThumbnailOverlayEditor({
                         selectedId === o.id
                           ? "1px dashed rgba(30,100,250,0.9)"
                           : "none",
-                      containerType: "inline-size",
                     }}
                   >
                     {o.text || " "}
@@ -581,7 +593,14 @@ async function renderToBlob(
       ctx.shadowOffsetX = 0;
       ctx.shadowOffsetY = 2;
     }
-    const lines = o.text.split(/\r?\n/);
+    // DOM 미리보기의 max-width: 84cqw 와 동일한 비율로 캔버스에서도 줄바꿈.
+    // → 미리보기 ↔ 저장 결과 시각적 일치 + 텍스트가 가장자리 패딩 안쪽에 머무름.
+    const maxWidth = size.w * 0.84;
+    const rawLines = o.text.split(/\r?\n/);
+    const lines: string[] = [];
+    for (const raw of rawLines) {
+      lines.push(...wrapByMaxWidth(ctx, raw, maxWidth));
+    }
     const lineHeight = o.fontSize * 1.2;
     const totalHeight = lineHeight * lines.length;
     let startY: number;
@@ -611,4 +630,50 @@ function loadImage(src: string): Promise<HTMLImageElement | null> {
     img.onerror = () => resolve(null);
     img.src = src;
   });
+}
+
+// 캔버스 텍스트를 maxW 너비 안에 들어가도록 줄바꿈.
+// 1) 공백 split 으로 단어 단위 wrap (영문·혼용 텍스트 대응)
+// 2) 단일 단어가 maxW 를 초과하면 문자 단위로 강제 분리 (한국어·긴 URL 대응)
+function wrapByMaxWidth(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  maxW: number,
+): string[] {
+  if (!text) return [""];
+  const words = text.split(/(\s+)/); // 공백을 보존해서 줄 안에서는 원본 간격 유지
+  const lines: string[] = [];
+  let current = "";
+
+  const pushChar = (ch: string) => {
+    if (ctx.measureText(current + ch).width <= maxW) {
+      current += ch;
+    } else {
+      if (current) lines.push(current);
+      current = ch;
+    }
+  };
+
+  for (const w of words) {
+    if (!w) continue;
+    if (ctx.measureText(current + w).width <= maxW) {
+      current += w;
+      continue;
+    }
+    // 현재 줄이 비어있지 않으면 일단 마감하고 새 줄에서 단어 시도.
+    if (current.trim()) {
+      lines.push(current);
+      current = "";
+    } else {
+      current = "";
+    }
+    if (ctx.measureText(w).width <= maxW) {
+      current = w;
+    } else {
+      // 단일 단어가 너무 길면 문자 단위 분리.
+      for (const ch of w) pushChar(ch);
+    }
+  }
+  if (current) lines.push(current);
+  return lines.length > 0 ? lines : [""];
 }
