@@ -1,5 +1,6 @@
 import type { Article, Highlight, Teacher, Video, Category, SlideRole, HeroSlideItem, HeroSlide } from "./data";
 
+// thumbnailOverlays 는 어드민 편집기 전용. 공개 페이지(toArticle 등) 에서는 노출하지 않음.
 type DbArticle = {
   id: string;
   title: string;
@@ -8,6 +9,7 @@ type DbArticle = {
   category: string;
   categoryLabel: string;
   thumbnail: string | null;
+  thumbnailOverlays?: string | null;
   date: string;
   slug: string;
   featured: boolean | null;
@@ -19,6 +21,7 @@ type DbHighlight = {
   id: string;
   title: string;
   thumbnail: string | null;
+  thumbnailOverlays?: string | null;
   slug: string;
 };
 
@@ -27,6 +30,7 @@ type DbTeacher = {
   name: string;
   subject: string;
   photo: string | null;
+  thumbnailOverlays?: string | null;
   slug: string;
 };
 
@@ -35,6 +39,7 @@ type DbVideo = {
   title: string;
   youtubeId: string;
   thumbnail: string | null;
+  thumbnailOverlays?: string | null;
   sortOrder: number | null;
 };
 

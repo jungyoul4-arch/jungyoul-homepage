@@ -2,13 +2,25 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { X, Plus, Trash2, Type } from "lucide-react";
+import {
+  X,
+  Plus,
+  Trash2,
+  Type,
+  ArrowUpLeft,
+  ArrowUpRight,
+  ArrowDownLeft,
+  ArrowDownRight,
+  Square,
+} from "lucide-react";
 
-interface TextOverlay {
+export type OverlayAnchor = "tl" | "tr" | "center" | "bl" | "br";
+
+export interface TextOverlay {
   id: string;
   text: string;
-  xPct: number;
-  yPct: number;
+  // 5단계 위치 프리셋 — 좌상/우상/중앙/좌하/우하.
+  anchor: OverlayAnchor;
   fontSize: number;
   color: string;
   fontWeight: "normal" | "bold";
@@ -16,13 +28,21 @@ interface TextOverlay {
   shadow: boolean;
 }
 
+export interface ThumbnailOverlayMeta {
+  version: 1;
+  baseImageUrl: string | null;
+  overlays: TextOverlay[];
+}
+
 interface Props {
   imageUrl: string | null;
-  onSave: (newUrl: string) => void;
+  // 재편집 모드: 이전에 저장된 overlays 가 있으면 그대로 시드.
+  existingOverlays?: TextOverlay[] | null;
+  // onSave 시 합성된 새 썸네일 URL + 메타 JSON 직렬화 문자열을 함께 돌려준다.
+  onSave: (newUrl: string, overlaysJson: string) => void;
   onCancel: () => void;
 }
 
-// 이미지 없이 텍스트만으로 만든 썸네일의 기본 캔버스 크기 / 그라디언트.
 const FALLBACK_SIZE = { w: 1280, h: 720 };
 const FALLBACK_GRADIENT_CSS =
   "linear-gradient(135deg, hsl(220,40%,70%) 0%, hsl(240,50%,50%) 100%)";
@@ -30,12 +50,24 @@ const FALLBACK_GRADIENT_CSS =
 const FONT_FAMILY =
   '"Pretendard","Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif';
 
+// anchor 별 좌표(% 기준) + CSS transform.
+// 8/92% 가장자리 패딩으로 컨테이너 안쪽에 위치 — 텍스트가 잘리지 않도록.
+const ANCHOR_POSITIONS: Record<
+  OverlayAnchor,
+  { xPct: number; yPct: number; transform: string }
+> = {
+  tl: { xPct: 8, yPct: 12, transform: "translate(0,0)" },
+  tr: { xPct: 92, yPct: 12, transform: "translate(-100%,0)" },
+  center: { xPct: 50, yPct: 50, transform: "translate(-50%,-50%)" },
+  bl: { xPct: 8, yPct: 88, transform: "translate(0,-100%)" },
+  br: { xPct: 92, yPct: 88, transform: "translate(-100%,-100%)" },
+};
+
 function makeOverlay(): TextOverlay {
   return {
     id: `t-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     text: "텍스트를 입력하세요",
-    xPct: 50,
-    yPct: 50,
+    anchor: "center",
     fontSize: 56,
     color: "#ffffff",
     fontWeight: "bold",
@@ -44,23 +76,62 @@ function makeOverlay(): TextOverlay {
   };
 }
 
-export function ThumbnailOverlayEditor({ imageUrl, onSave, onCancel }: Props) {
-  const previewRef = useRef<HTMLDivElement>(null);
+// 구버전(xPct/yPct) 메타가 들어오면 가장 가까운 anchor 로 매핑해 호환.
+function migrateLegacyOverlay(o: unknown): TextOverlay {
+  const raw = o as Partial<TextOverlay> & { xPct?: number; yPct?: number };
+  if (raw.anchor && ANCHOR_POSITIONS[raw.anchor]) {
+    return {
+      id: raw.id || `t-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      text: raw.text ?? "",
+      anchor: raw.anchor,
+      fontSize: raw.fontSize ?? 56,
+      color: raw.color ?? "#ffffff",
+      fontWeight: raw.fontWeight ?? "bold",
+      textAlign: raw.textAlign ?? "center",
+      shadow: raw.shadow ?? true,
+    };
+  }
+  // legacy xPct/yPct → 가장 가까운 5분면 anchor.
+  const x = raw.xPct ?? 50;
+  const y = raw.yPct ?? 50;
+  let anchor: OverlayAnchor = "center";
+  if (x < 33 && y < 33) anchor = "tl";
+  else if (x > 66 && y < 33) anchor = "tr";
+  else if (x < 33 && y > 66) anchor = "bl";
+  else if (x > 66 && y > 66) anchor = "br";
+  return {
+    id: raw.id || `t-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    text: raw.text ?? "",
+    anchor,
+    fontSize: raw.fontSize ?? 56,
+    color: raw.color ?? "#ffffff",
+    fontWeight: raw.fontWeight ?? "bold",
+    textAlign: raw.textAlign ?? "center",
+    shadow: raw.shadow ?? true,
+  };
+}
+
+export function ThumbnailOverlayEditor({
+  imageUrl,
+  existingOverlays,
+  onSave,
+  onCancel,
+}: Props) {
   const imgRef = useRef<HTMLImageElement>(null);
-  const [overlays, setOverlays] = useState<TextOverlay[]>([makeOverlay()]);
+  const [overlays, setOverlays] = useState<TextOverlay[]>(() =>
+    existingOverlays && existingOverlays.length > 0
+      ? existingOverlays.map(migrateLegacyOverlay)
+      : [makeOverlay()],
+  );
   const [selectedId, setSelectedId] = useState<string | null>(
     overlays[0]?.id ?? null,
   );
-  // 이미지가 있으면 onLoad 시 자연 크기로 채워지고, 없으면 FALLBACK_SIZE 로 즉시 시작.
   const [naturalSize, setNaturalSize] = useState<{ w: number; h: number } | null>(
     imageUrl ? null : FALLBACK_SIZE,
   );
   const [imgError, setImgError] = useState(false);
   const [saving, setSaving] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const dragState = useRef<{ id: string; offsetX: number; offsetY: number } | null>(
-    null,
-  );
 
   const selected = overlays.find((o) => o.id === selectedId) ?? null;
 
@@ -80,40 +151,6 @@ export function ThumbnailOverlayEditor({ imageUrl, onSave, onCancel }: Props) {
     if (!selectedId) return;
     setOverlays((prev) => prev.filter((o) => o.id !== selectedId));
     setSelectedId(null);
-  }
-
-  function onPointerDown(e: React.PointerEvent, id: string) {
-    e.preventDefault();
-    e.stopPropagation();
-    setSelectedId(id);
-    const rect = previewRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const overlay = overlays.find((o) => o.id === id);
-    if (!overlay) return;
-    const cx = (overlay.xPct / 100) * rect.width;
-    const cy = (overlay.yPct / 100) * rect.height;
-    dragState.current = {
-      id,
-      offsetX: e.clientX - rect.left - cx,
-      offsetY: e.clientY - rect.top - cy,
-    };
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
-  }
-
-  function onPointerMove(e: React.PointerEvent) {
-    const ds = dragState.current;
-    if (!ds) return;
-    const rect = previewRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const cx = e.clientX - rect.left - ds.offsetX;
-    const cy = e.clientY - rect.top - ds.offsetY;
-    const xPct = Math.max(0, Math.min(100, (cx / rect.width) * 100));
-    const yPct = Math.max(0, Math.min(100, (cy / rect.height) * 100));
-    update(ds.id, { xPct, yPct });
-  }
-
-  function onPointerUp() {
-    dragState.current = null;
   }
 
   // Portal 마운트 가드 (SSR 회피)
@@ -155,7 +192,12 @@ export function ThumbnailOverlayEditor({ imageUrl, onSave, onCancel }: Props) {
         return;
       }
       const { url } = await res.json();
-      onSave(url);
+      const meta: ThumbnailOverlayMeta = {
+        version: 1,
+        baseImageUrl: imageUrl,
+        overlays,
+      };
+      onSave(url, JSON.stringify(meta));
     } catch {
       alert("저장 중 오류가 발생했습니다.");
     } finally {
@@ -187,7 +229,6 @@ export function ThumbnailOverlayEditor({ imageUrl, onSave, onCancel }: Props) {
           {/* Preview */}
           <div className="flex-1 bg-gray-100 p-4 overflow-auto flex items-center justify-center">
             <div
-              ref={previewRef}
               className="relative bg-white shadow"
               style={{
                 width: "min(100%, 720px)",
@@ -195,9 +236,6 @@ export function ThumbnailOverlayEditor({ imageUrl, onSave, onCancel }: Props) {
                   ? `${naturalSize.w} / ${naturalSize.h}`
                   : "16 / 9",
               }}
-              onPointerMove={onPointerMove}
-              onPointerUp={onPointerUp}
-              onPointerCancel={onPointerUp}
               onClick={() => setSelectedId(null)}
             >
               {imageUrl ? (
@@ -224,47 +262,48 @@ export function ThumbnailOverlayEditor({ imageUrl, onSave, onCancel }: Props) {
                   )}
                 </>
               ) : (
-                // 이미지 없이 텍스트만으로 썸네일 만들 때의 그라디언트 배경.
                 <div
                   className="absolute inset-0"
                   style={{ background: FALLBACK_GRADIENT_CSS }}
                 />
               )}
-              {overlays.map((o) => (
-                <div
-                  key={o.id}
-                  onPointerDown={(e) => onPointerDown(e, o.id)}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedId(o.id);
-                  }}
-                  style={{
-                    position: "absolute",
-                    left: `${o.xPct}%`,
-                    top: `${o.yPct}%`,
-                    transform: "translate(-50%, -50%)",
-                    fontFamily: FONT_FAMILY,
-                    fontSize: `clamp(12px, ${o.fontSize / 7.2}cqw, ${o.fontSize}px)`,
-                    color: o.color,
-                    fontWeight: o.fontWeight,
-                    textAlign: o.textAlign,
-                    textShadow: o.shadow
-                      ? "0 2px 8px rgba(0,0,0,0.55)"
-                      : "none",
-                    whiteSpace: "pre",
-                    cursor: "move",
-                    userSelect: "none",
-                    padding: "2px 6px",
-                    outline:
-                      selectedId === o.id
-                        ? "1px dashed rgba(30,100,250,0.9)"
+              {overlays.map((o) => {
+                const pos = ANCHOR_POSITIONS[o.anchor];
+                return (
+                  <div
+                    key={o.id}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedId(o.id);
+                    }}
+                    style={{
+                      position: "absolute",
+                      left: `${pos.xPct}%`,
+                      top: `${pos.yPct}%`,
+                      transform: pos.transform,
+                      fontFamily: FONT_FAMILY,
+                      fontSize: `clamp(12px, ${o.fontSize / 7.2}cqw, ${o.fontSize}px)`,
+                      color: o.color,
+                      fontWeight: o.fontWeight,
+                      textAlign: o.textAlign,
+                      textShadow: o.shadow
+                        ? "0 2px 8px rgba(0,0,0,0.55)"
                         : "none",
-                    containerType: "inline-size",
-                  }}
-                >
-                  {o.text || " "}
-                </div>
-              ))}
+                      whiteSpace: "pre",
+                      cursor: "pointer",
+                      userSelect: "none",
+                      padding: "2px 6px",
+                      outline:
+                        selectedId === o.id
+                          ? "1px dashed rgba(30,100,250,0.9)"
+                          : "none",
+                      containerType: "inline-size",
+                    }}
+                  >
+                    {o.text || " "}
+                  </div>
+                );
+              })}
             </div>
           </div>
 
@@ -298,6 +337,12 @@ export function ThumbnailOverlayEditor({ imageUrl, onSave, onCancel }: Props) {
                     }
                     rows={2}
                     className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm resize-none focus:outline-none focus:border-blue-600"
+                  />
+                </Field>
+                <Field label="위치">
+                  <PositionGrid
+                    value={selected.anchor}
+                    onChange={(a) => update(selected.id, { anchor: a })}
                   />
                 </Field>
                 <Field label={`폰트 크기 (${selected.fontSize}px)`}>
@@ -385,7 +430,7 @@ export function ThumbnailOverlayEditor({ imageUrl, onSave, onCancel }: Props) {
 
         <div className="flex items-center justify-between px-5 py-3 border-t border-gray-200">
           <p className="text-xs text-gray-500">
-            텍스트를 드래그해 위치를 조정할 수 있습니다.
+            오른쪽 패널의 위치 버튼으로 텍스트 위치를 조정할 수 있습니다.
           </p>
           <div className="flex gap-2">
             <button
@@ -429,6 +474,51 @@ function Field({
   );
 }
 
+// 5개 활성 + 4개 spacer 의 3×3 그리드. 좌상/우상/중앙/좌하/우하.
+function PositionGrid({
+  value,
+  onChange,
+}: {
+  value: OverlayAnchor;
+  onChange: (a: OverlayAnchor) => void;
+}) {
+  const cells: ({ a: OverlayAnchor; icon: React.ReactNode; label: string } | null)[] = [
+    { a: "tl", icon: <ArrowUpLeft size={14} />, label: "좌상" },
+    null,
+    { a: "tr", icon: <ArrowUpRight size={14} />, label: "우상" },
+    null,
+    { a: "center", icon: <Square size={12} />, label: "중앙" },
+    null,
+    { a: "bl", icon: <ArrowDownLeft size={14} />, label: "좌하" },
+    null,
+    { a: "br", icon: <ArrowDownRight size={14} />, label: "우하" },
+  ];
+  return (
+    <div className="grid grid-cols-3 grid-rows-3 gap-1 w-32 mx-auto">
+      {cells.map((c, i) =>
+        c === null ? (
+          <div key={i} aria-hidden className="w-9 h-9" />
+        ) : (
+          <button
+            key={c.a}
+            type="button"
+            onClick={() => onChange(c.a)}
+            title={c.label}
+            aria-label={c.label}
+            className={`w-9 h-9 rounded border flex items-center justify-center transition-colors ${
+              value === c.a
+                ? "bg-gray-900 text-white border-gray-900"
+                : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+            }`}
+          >
+            {c.icon}
+          </button>
+        ),
+      )}
+    </div>
+  );
+}
+
 async function renderToBlob(
   imageUrl: string | null,
   overlays: TextOverlay[],
@@ -449,7 +539,6 @@ async function renderToBlob(
       return null;
     }
   } else {
-    // 이미지 없는 텍스트 단독 썸네일: 그라디언트 배경을 캔버스에 그려넣음.
     const grad = ctx.createLinearGradient(0, 0, size.w, size.h);
     grad.addColorStop(0, "hsl(220,40%,70%)");
     grad.addColorStop(1, "hsl(240,50%,50%)");
@@ -466,17 +555,26 @@ async function renderToBlob(
   }
 
   for (const o of overlays) {
-    const px = (o.xPct / 100) * size.w;
-    const py = (o.yPct / 100) * size.h;
+    const pos = ANCHOR_POSITIONS[o.anchor];
+    const px = (pos.xPct / 100) * size.w;
+    const py = (pos.yPct / 100) * size.h;
     ctx.save();
     ctx.font = `${o.fontWeight} ${o.fontSize}px ${FONT_FAMILY}`;
     ctx.fillStyle = o.color;
-    ctx.textAlign = o.textAlign === "left"
-      ? "left"
-      : o.textAlign === "right"
-        ? "right"
-        : "center";
-    ctx.textBaseline = "middle";
+    // Canvas textAlign 은 anchor 기준으로 자동 결정 (DOM transform 과 일관되게).
+    // 사용자의 textAlign(좌/중/우) 은 다중 줄 입력 시 행 정렬에 영향을 주므로 별도로 사용.
+    ctx.textAlign =
+      o.anchor === "tl" || o.anchor === "bl"
+        ? "left"
+        : o.anchor === "tr" || o.anchor === "br"
+          ? "right"
+          : "center";
+    ctx.textBaseline =
+      o.anchor === "tl" || o.anchor === "tr"
+        ? "top"
+        : o.anchor === "bl" || o.anchor === "br"
+          ? "bottom"
+          : "middle";
     if (o.shadow) {
       ctx.shadowColor = "rgba(0,0,0,0.55)";
       ctx.shadowBlur = 8;
@@ -486,7 +584,14 @@ async function renderToBlob(
     const lines = o.text.split(/\r?\n/);
     const lineHeight = o.fontSize * 1.2;
     const totalHeight = lineHeight * lines.length;
-    const startY = py - totalHeight / 2 + lineHeight / 2;
+    let startY: number;
+    if (ctx.textBaseline === "top") {
+      startY = py;
+    } else if (ctx.textBaseline === "bottom") {
+      startY = py - totalHeight + lineHeight;
+    } else {
+      startY = py - totalHeight / 2 + lineHeight / 2;
+    }
     lines.forEach((line, i) => {
       ctx.fillText(line, px, startY + i * lineHeight);
     });

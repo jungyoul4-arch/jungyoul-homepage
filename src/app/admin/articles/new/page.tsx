@@ -18,11 +18,20 @@ export default function NewArticlePage() {
     category: "strategy",
     slug: "",
     thumbnail: "",
+    thumbnailOverlays: "",
     date: new Date().toISOString().slice(0, 10).replace(/-/g, "/"),
   });
 
   function update(field: string, value: string | boolean) {
     setForm((prev) => ({ ...prev, [field]: value }));
+  }
+  // 썸네일은 합성 결과 URL + 메타 JSON 을 한 번에 갱신해야 일관됨.
+  function updateThumbnail(url: string, overlaysJson?: string) {
+    setForm((prev) => ({
+      ...prev,
+      thumbnail: url,
+      thumbnailOverlays: overlaysJson ?? "",
+    }));
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -120,7 +129,8 @@ export default function NewArticlePage() {
           <label className="block text-sm font-medium text-gray-700 mb-1">썸네일</label>
           <ThumbnailUploader
             value={form.thumbnail}
-            onChange={(url) => update("thumbnail", url)}
+            overlays={form.thumbnailOverlays}
+            onChange={updateThumbnail}
           />
         </div>
 

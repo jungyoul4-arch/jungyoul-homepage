@@ -378,6 +378,34 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
     // <font> 도 unwrap
     Array.from(doc.querySelectorAll("font")).forEach(unwrap);
 
+    // <img src="file://..."> 같이 로컬 파일 참조는 브라우저가 못 가져오므로 placeholder 로 교체.
+    // Mac 한컴오피스 한글 뷰어가 본문 이미지를 file:// 절대 경로로 참조하는 케이스 대응.
+    Array.from(doc.querySelectorAll('img[src^="file:"]')).forEach((img) => {
+      const placeholder = doc.createElement("span");
+      placeholder.setAttribute(
+        "style",
+        "padding:2px 6px;background-color:#fef3c7;color:#92400e;font-size:12px;border-radius:2px;",
+      );
+      placeholder.textContent =
+        "[원본 이미지 — 이미지 영역만 다시 클립보드에 복사해 별도로 붙여넣어 주세요]";
+      img.replaceWith(placeholder);
+    });
+
+    // <div> 가 표/이미지/리스트 같은 블록 자식 없이 텍스트만 갖고 있으면 <p> 로 교체.
+    // 한컴 한글 뷰어/일부 브라우저 페이스트가 본문 단락을 div 로 감싸는 경우 대응.
+    Array.from(doc.querySelectorAll("div")).forEach((div) => {
+      const hasBlockChild = div.querySelector(
+        "div, table, figure, ul, ol, blockquote, h1, h2, h3, h4, h5, h6, p",
+      );
+      if (hasBlockChild) return;
+      const p = doc.createElement("p");
+      while (div.firstChild) p.appendChild(div.firstChild);
+      // 정렬 등 핵심 인라인 스타일은 보존
+      const style = div.getAttribute("style");
+      if (style) p.setAttribute("style", style);
+      div.replaceWith(p);
+    });
+
     // 클래스/스타일에서 mso-*, Mso*, Hwp* 흔적 제거
     doc.querySelectorAll("*").forEach((el) => {
       const cls = el.getAttribute("class");
@@ -446,26 +474,34 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
   // 분기 우선순위 (HWPX/MS Word/Google Docs 같은 "구조 있는 페이스트"가 단독 이미지보다
   // 먼저 처리되도록 — HWPX 클립보드는 image item + text/html 을 동시에 제공하기 때문에
   // image 가 먼저 매칭되면 표 구조가 통째 폐기됨):
-  //   1. text/html 에 의미마크업(<table|img|p|h1-6|ul|ol|figure|blockquote>) 보유
-  //      → normalizePastedHtml 후 삽입. data:URL 이미지는 R2 로 업로드되어 영구 URL 로 치환.
-  //   2. clipboardData.items 에 image/* 단독 → 이미지 업로드 후 figure 삽입
-  //   3. text/plain 이 동영상 URL → 임베드
-  //   4. plain text fallback → 줄단위 <p> 정규화
+  //   1a. text/html 에 의미마크업(<table|img|figure|blockquote|h1-6|ul|ol>) 보유
+  //       → normalizePastedHtml 후 삽입. image item 이 동시에 있으면 본문 끝에 figure 추가.
+  //   1b. text/html 에 (p|div|span|br) 위주 일반 마크업이 100자 이상 있어도 normalize 통과
+  //       → Mac 한컴오피스 한글 뷰어 같이 div/span 으로 감싸진 페이스트 대응.
+  //   2.  clipboardData.items 에 image/* 단독 → 이미지 업로드 후 figure 삽입
+  //   3.  text/plain 이 동영상 URL → 임베드
+  //   4.  plain text fallback → 줄단위 <p> 정규화
   async function handlePaste(e: React.ClipboardEvent) {
-    // 1. HTML 페이스트 우선 — 한컴(HWP/HWPX), MS Word 등에서 들어오는 표·이미지·서식 보존
     const htmlFromClipboard = e.clipboardData.getData("text/html");
-    if (
-      htmlFromClipboard &&
-      /<(table|img|p|h[1-6]|ul|ol|figure|blockquote)\b/i.test(htmlFromClipboard)
-    ) {
-      e.preventDefault();
-      const processed = await normalizePastedHtml(htmlFromClipboard);
-      insertHtmlAtCursor(processed);
-      return;
+    const plainFromClipboard = e.clipboardData.getData("text/plain");
+    const items = e.clipboardData.items;
+    const itemTypes = Array.from(items).map((i) => i.type);
+
+    // 진단 로깅 — Mac 한컴오피스 한글 뷰어 등 다양한 클립보드 페이로드 형식 분석용.
+    // 실제 사용자 환경에서 어떤 MIME 이 들어오는지 확인되면 분기 로직 보강 후 제거.
+    if (typeof console !== "undefined") {
+      console.info("[paste]", {
+        types: Array.from(e.clipboardData.types),
+        htmlLen: htmlFromClipboard.length,
+        htmlSample: htmlFromClipboard.slice(0, 500),
+        plainLen: plainFromClipboard.length,
+        plainSample: plainFromClipboard.slice(0, 200),
+        itemTypes,
+        filesCount: e.clipboardData.files?.length ?? 0,
+      });
     }
 
-    // 2. 단독 이미지 페이스트 (스크린샷 등)
-    const items = e.clipboardData.items;
+    // 이미지 item 수집 (text/html 처리 후 부족한 이미지 보강용 + 단독 페이스트 분기 공유)
     const imageFiles: File[] = [];
     for (const item of Array.from(items)) {
       if (item.type.startsWith("image/")) {
@@ -473,6 +509,30 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
         if (file) imageFiles.push(file);
       }
     }
+
+    // 1a. 의미 마크업이 있는 HTML 페이스트 우선
+    const hasStructuralMarkup =
+      htmlFromClipboard &&
+      /<(table|img|figure|blockquote|h[1-6]|ul|ol)\b/i.test(htmlFromClipboard);
+    // 1b. 일반 마크업 (p/div/span/br) 도 길이 임계값 이상이면 normalize 통과
+    const hasGenericMarkup =
+      htmlFromClipboard.length >= 100 &&
+      /<(p|div|span|br)\b/i.test(htmlFromClipboard);
+
+    if (hasStructuralMarkup || hasGenericMarkup) {
+      e.preventDefault();
+      const processed = await normalizePastedHtml(htmlFromClipboard);
+      insertHtmlAtCursor(processed);
+      // text/html 에 <img> 가 0개인데 image item 이 따로 있는 케이스 (HWPX) 보강:
+      // 본문 끝에 figure 로 이미지 추가.
+      const htmlHadImg = /<img\b/i.test(htmlFromClipboard);
+      if (!htmlHadImg && imageFiles.length > 0) {
+        await handleImageFiles(imageFiles);
+      }
+      return;
+    }
+
+    // 2. 단독 이미지 페이스트 (스크린샷 등)
     if (imageFiles.length > 0) {
       e.preventDefault();
       await handleImageFiles(imageFiles);
@@ -480,9 +540,8 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
     }
 
     // 3. 텍스트에서 동영상 URL 감지
-    const text = e.clipboardData.getData("text/plain");
-    if (text) {
-      const embed = parseVideoUrl(text);
+    if (plainFromClipboard) {
+      const embed = parseVideoUrl(plainFromClipboard);
       if (embed) {
         e.preventDefault();
         insertHtmlAtCursor(buildEmbedHtml(embed));
@@ -491,10 +550,9 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
     }
 
     // 4. 일반 텍스트: 외부 서식 제거 후 <p> 태그로 정규화
-    const plain = e.clipboardData.getData("text/plain");
-    if (plain) {
+    if (plainFromClipboard) {
       e.preventDefault();
-      const paragraphs = plain
+      const paragraphs = plainFromClipboard
         .split(/\r?\n/)
         .filter((line) => line.trim() !== "");
       const html = paragraphs.map((line) => `<p>${line}</p>`).join("");

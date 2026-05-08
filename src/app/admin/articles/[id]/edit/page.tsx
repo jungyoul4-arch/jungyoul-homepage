@@ -21,6 +21,7 @@ export default function EditArticlePage() {
     categoryLabel: "입시전략",
     slug: "",
     thumbnail: "",
+    thumbnailOverlays: "",
     date: "",
     featured: false,
   });
@@ -39,6 +40,7 @@ export default function EditArticlePage() {
           categoryLabel: article.categoryLabel,
           slug: article.slug,
           thumbnail: article.thumbnail || "",
+          thumbnailOverlays: article.thumbnailOverlays || "",
           date: article.date,
           featured: !!article.featured,
         });
@@ -50,6 +52,13 @@ export default function EditArticlePage() {
 
   function update(field: string, value: string | boolean) {
     setForm((prev) => ({ ...prev, [field]: value }));
+  }
+  function updateThumbnail(url: string, overlaysJson?: string) {
+    setForm((prev) => ({
+      ...prev,
+      thumbnail: url,
+      thumbnailOverlays: overlaysJson ?? "",
+    }));
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -150,7 +159,8 @@ export default function EditArticlePage() {
           <label className="block text-sm font-medium text-gray-700 mb-1">썸네일</label>
           <ThumbnailUploader
             value={form.thumbnail}
-            onChange={(url) => update("thumbnail", url)}
+            overlays={form.thumbnailOverlays}
+            onChange={updateThumbnail}
           />
         </div>
 

@@ -292,7 +292,11 @@ function ArticleForm({
       <Field label="썸네일">
         <ThumbnailUploader
           value={(form.thumbnail as string) || ""}
-          onChange={(url) => update("thumbnail", url)}
+          overlays={(form.thumbnailOverlays as string) || ""}
+          onChange={(url, overlaysJson) => {
+            update("thumbnail", url);
+            update("thumbnailOverlays", overlaysJson ?? "");
+          }}
         />
       </Field>
     </>
@@ -328,7 +332,11 @@ function HighlightForm({
       <Field label="썸네일">
         <ThumbnailUploader
           value={(form.thumbnail as string) || ""}
-          onChange={(url) => update("thumbnail", url)}
+          overlays={(form.thumbnailOverlays as string) || ""}
+          onChange={(url, overlaysJson) => {
+            update("thumbnail", url);
+            update("thumbnailOverlays", overlaysJson ?? "");
+          }}
         />
       </Field>
     </>
@@ -377,7 +385,11 @@ function TeacherForm({
       <Field label="사진">
         <ThumbnailUploader
           value={(form.photo as string) || ""}
-          onChange={(url) => update("photo", url)}
+          overlays={(form.thumbnailOverlays as string) || ""}
+          onChange={(url, overlaysJson) => {
+            update("photo", url);
+            update("thumbnailOverlays", overlaysJson ?? "");
+          }}
         />
       </Field>
     </>

@@ -8,6 +8,8 @@ export const articles = sqliteTable("articles", {
   category: text("category").notNull(),
   categoryLabel: text("category_label").notNull(),
   thumbnail: text("thumbnail").default(""),
+  // 썸네일 텍스트 오버레이 메타 (JSON: { version, baseImageUrl, overlays }) — 어드민 편집 전용
+  thumbnailOverlays: text("thumbnail_overlays").default(""),
   date: text("date").notNull(),
   slug: text("slug").unique().notNull(),
   featured: integer("featured", { mode: "boolean" }).default(false),
@@ -19,6 +21,7 @@ export const highlights = sqliteTable("highlights", {
   id: text("id").primaryKey(),
   title: text("title").notNull(),
   thumbnail: text("thumbnail").default(""),
+  thumbnailOverlays: text("thumbnail_overlays").default(""),
   slug: text("slug").unique().notNull(),
 });
 
@@ -27,6 +30,8 @@ export const teachers = sqliteTable("teachers", {
   name: text("name").notNull(),
   subject: text("subject").notNull(),
   photo: text("photo").default(""),
+  // 사진 위 텍스트 오버레이 메타 — 컬럼명은 articles 와 통일하여 thumbnail_overlays 사용
+  thumbnailOverlays: text("thumbnail_overlays").default(""),
   slug: text("slug").unique().notNull(),
 });
 
@@ -35,6 +40,7 @@ export const videos = sqliteTable("videos", {
   title: text("title").notNull(),
   youtubeId: text("youtube_id").notNull(),
   thumbnail: text("thumbnail").default(""),
+  thumbnailOverlays: text("thumbnail_overlays").default(""),
   sortOrder: integer("sort_order").default(0),
 });
 

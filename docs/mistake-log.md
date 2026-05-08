@@ -36,3 +36,20 @@
 - 원인: `content-editor.tsx` `handlePaste` 가 `clipboardData.items` 의 image/* 를 먼저 검사하고 `return` → HWPX 의 `text/html`(표 마크업 + inline 이미지) 가 통째 폐기. 또 한컴 일부 버전은 text/html 미제공 → plain text fallback 으로 떨어짐. data:URL 이미지 업로드 실패 시 `img.remove()` 로 조용히 사라짐
 - 해결: 분기 순서를 `text/html` 우선 → 단독 이미지 → 동영상 URL → plain text fallback 으로 재정렬. `<v:imagedata>` 같은 한컴 전용 노드의 src 를 `<img>` 로 승격. 업로드 실패 시 placeholder span 으로 교체. 빈 `<p>` 안에 `<table>` 삽입 시 부모 분할
 - 교훈: 페이스트 분기는 "더 풍부한 구조" 를 가진 MIME 을 항상 먼저 검사. image item 은 단독 이미지 페이스트가 아닌 한 부수적 데이터로 취급
+
+## 2026-05-08 — 썸네일 오버레이 메타 미저장 → 빠른편집 모달에서 재편집 불가
+- 현상: 새 글 작성에서 썸네일에 텍스트 오버레이를 합성한 뒤, 빠른편집 모달에서 다시 열면 이전 텍스트/위치/색상 그대로 수정 불가. 새 오버레이 추가/삭제만 가능
+- 원인: ThumbnailOverlayEditor 가 `useState<TextOverlay[]>([makeOverlay()])` 로 매번 fresh 초기화. 합성된 JPEG 만 R2 에 저장되고 overlays 메타데이터가 어디에도 보존되지 않음
+- 해결: `articles/highlights/teachers/videos` 4개 테이블에 `thumbnail_overlays text` 컬럼 추가(드리즐 마이그 0004). JSON `{ version, baseImageUrl, overlays }` 직렬화. ThumbnailOverlayEditor 에 `existingOverlays` prop 추가, ThumbnailUploader 의 `onChange(url, overlaysJson?)` 시그니처 확장
+- 교훈: "합성된 결과만" 저장하는 설계는 재편집 자유도를 통째로 잃는다. 사용자 입력 메타와 렌더 결과를 분리 저장 (메타는 어드민 전용, 결과는 공개 페이지용)
+
+## 2026-05-08 — 썸네일 오버레이 드래그 UX → 5단계 위치 프리셋
+- 현상: 미리보기 박스가 작아 텍스트 위치 드래그 정밀 조작이 어려움. 모바일/터치 환경에서는 거의 불가
+- 해결: `xPct/yPct` 자유 좌표를 `anchor: "tl"|"tr"|"center"|"bl"|"br"` 5단계 enum 으로 교체. 우측 패널 3×3 그리드 버튼(귀퉁이 4 + 중앙 1, 빈 4셀은 spacer). 드래그 핸들러 일체 제거. ANCHOR_POSITIONS 에 8/92% 가장자리 패딩으로 잘림 방지. renderToBlob 에서 anchor 별로 ctx.textAlign/textBaseline 자동 결정
+- 교훈: 자유도가 높은 컨트롤이 항상 좋은 UX 는 아니다. 모바일/터치 사용자가 있으면 프리셋 기반이 정확도/속도 모두 우월
+
+## 2026-05-08 — Mac 한컴오피스 한글 뷰어 페이스트 — div/span 위주 마크업 + file:// 이미지
+- 현상: 이전 분기 우선순위 수정 후에도 Mac 한컴오피스 한글 뷰어로 연 .hwpx 의 표·이미지가 본문에 들어오지 않음
+- 원인 후보: (a) text/html 이 `<div>/<span>` 위주라 `/<(table|img|p|h1-6|...)>/` 정규식 미매치 → plain text fallback. (b) 이미지 src 가 `file://` 절대경로라 브라우저가 못 가져옴. (c) 표는 HTML, 이미지는 별도 image item 으로 분리되어 도착
+- 해결: handlePaste 분기를 1a(구조 마크업)/1b(일반 마크업, 길이≥100 + p|div|span|br) 두 단계로. normalizePastedHtml 에 `<div>` → `<p>` 변환 + `file://` src placeholder 교체. text/html 에 `<img>` 0개인데 image item 있으면 본문 끝 figure 추가. 진단 `console.info("[paste]", ...)` 도 함께 추가해 실제 페이로드 형식 추후 확인
+- 교훈: 비표준 페이스트는 정규식 임계값을 헐겁게 + 진단 로깅으로 실측 데이터 수집 → 패턴 확인 후 분기 정제. 이미지 item 은 HTML 처리 후에도 보강 검사가 필요

@@ -10,6 +10,9 @@ const allowedCategoryValues = categories
 const categoryRefine = (v: string) => allowedCategoryValues.includes(v as (typeof allowedCategoryValues)[number]);
 const categoryRefineMsg = { message: "허용되지 않은 카테고리입니다." };
 
+// 썸네일 텍스트 오버레이 메타 JSON 길이 한도. {version, baseImageUrl, overlays[]} 의 직렬화 길이.
+const OVERLAY_JSON_MAX = 50_000;
+
 // Articles
 export const insertArticleSchema = createInsertSchema(articles, {
   title: (schema) => schema.max(500),
@@ -19,6 +22,7 @@ export const insertArticleSchema = createInsertSchema(articles, {
   categoryLabel: (schema) => schema.max(50),
   slug: (schema) => schema.max(200),
   thumbnail: (schema) => schema.max(500),
+  thumbnailOverlays: (schema) => schema.max(OVERLAY_JSON_MAX),
   date: (schema) => schema.max(50),
 }).omit({
   id: true,
@@ -33,6 +37,7 @@ export const updateArticleSchema = createUpdateSchema(articles, {
   categoryLabel: (schema) => schema.max(50),
   slug: (schema) => schema.max(200),
   thumbnail: (schema) => schema.max(500),
+  thumbnailOverlays: (schema) => schema.max(OVERLAY_JSON_MAX),
   date: (schema) => schema.max(50),
 }).omit({
   id: true,
@@ -44,11 +49,13 @@ export const insertHighlightSchema = createInsertSchema(highlights, {
   title: (schema) => schema.max(500),
   slug: (schema) => schema.max(200),
   thumbnail: (schema) => schema.max(500),
+  thumbnailOverlays: (schema) => schema.max(OVERLAY_JSON_MAX),
 }).omit({ id: true });
 export const updateHighlightSchema = createUpdateSchema(highlights, {
   title: (schema) => schema.max(500),
   slug: (schema) => schema.max(200),
   thumbnail: (schema) => schema.max(500),
+  thumbnailOverlays: (schema) => schema.max(OVERLAY_JSON_MAX),
 }).omit({ id: true });
 
 // Teachers
@@ -57,12 +64,14 @@ export const insertTeacherSchema = createInsertSchema(teachers, {
   subject: (schema) => schema.max(50),
   slug: (schema) => schema.max(200),
   photo: (schema) => schema.max(500),
+  thumbnailOverlays: (schema) => schema.max(OVERLAY_JSON_MAX),
 }).omit({ id: true });
 export const updateTeacherSchema = createUpdateSchema(teachers, {
   name: (schema) => schema.max(100),
   subject: (schema) => schema.max(50),
   slug: (schema) => schema.max(200),
   photo: (schema) => schema.max(500),
+  thumbnailOverlays: (schema) => schema.max(OVERLAY_JSON_MAX),
 }).omit({ id: true });
 
 // Videos
@@ -70,11 +79,13 @@ export const insertVideoSchema = createInsertSchema(videos, {
   title: (schema) => schema.max(500),
   youtubeId: (schema) => schema.max(50),
   thumbnail: (schema) => schema.max(500),
+  thumbnailOverlays: (schema) => schema.max(OVERLAY_JSON_MAX),
 }).omit({ id: true });
 export const updateVideoSchema = createUpdateSchema(videos, {
   title: (schema) => schema.max(500),
   youtubeId: (schema) => schema.max(50),
   thumbnail: (schema) => schema.max(500),
+  thumbnailOverlays: (schema) => schema.max(OVERLAY_JSON_MAX),
 }).omit({ id: true });
 
 // Tracking Codes

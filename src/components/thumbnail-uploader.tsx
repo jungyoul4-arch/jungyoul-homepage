@@ -1,16 +1,38 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { ImageIcon, X, Upload, Type } from "lucide-react";
 import Image from "next/image";
-import { ThumbnailOverlayEditor } from "./thumbnail-overlay-editor";
+import {
+  ThumbnailOverlayEditor,
+  type TextOverlay,
+  type ThumbnailOverlayMeta,
+} from "./thumbnail-overlay-editor";
 
 interface ThumbnailUploaderProps {
   value: string;
-  onChange: (url: string) => void;
+  // 이전 합성 시 저장된 오버레이 메타 JSON 문자열. 있으면 ThumbnailOverlayEditor 가
+  // baseImageUrl + overlays 로 시드되어 재편집 가능.
+  overlays?: string;
+  // 일반 이미지 변경 시 url 만 변경 (overlays 인자는 빈 문자열로 메타 무효화).
+  // 텍스트 오버레이 합성 저장 시 url 과 함께 새 메타 JSON 문자열 전달.
+  onChange: (url: string, overlays?: string) => void;
 }
 
-export function ThumbnailUploader({ value, onChange }: ThumbnailUploaderProps) {
+// 메타 JSON 파싱. 손상되거나 빈 문자열이면 null.
+function parseMeta(json: string | undefined): ThumbnailOverlayMeta | null {
+  if (!json) return null;
+  try {
+    const parsed = JSON.parse(json) as ThumbnailOverlayMeta;
+    if (!parsed || typeof parsed !== "object") return null;
+    if (!Array.isArray(parsed.overlays)) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+export function ThumbnailUploader({ value, overlays, onChange }: ThumbnailUploaderProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -39,7 +61,9 @@ export function ThumbnailUploader({ value, onChange }: ThumbnailUploaderProps) {
       }
 
       const { url } = await res.json();
-      onChange(url);
+      // 새 이미지로 교체되면 기존 오버레이 메타는 무효 (baseImageUrl 이 달라짐).
+      // 빈 문자열을 넘겨 호출자에게 메타 초기화를 알림.
+      onChange(url, "");
     } catch {
       alert("업로드 중 오류가 발생했습니다.");
     } finally {
@@ -74,11 +98,25 @@ export function ThumbnailUploader({ value, onChange }: ThumbnailUploaderProps) {
     const text = e.clipboardData.getData("text/plain").trim();
     if (text && (text.startsWith("http") || text.startsWith("/"))) {
       e.preventDefault();
-      onChange(text);
+      onChange(text, "");
     }
   }
 
   const hasImage = !!(value && value.length > 0);
+
+  // 이전 합성 메타가 있으면 baseImageUrl 위에 overlays 를 시드해 재편집 모드로 진입.
+  // 없으면 현재 미리보기 이미지(value) 위에 신규 overlay 추가 모드로 진입.
+  const meta = useMemo(() => parseMeta(overlays), [overlays]);
+  function openOverlayEditor() {
+    setEditingOverlay(true);
+  }
+  // 편집기 호출 시 사용할 imageUrl / 시드 overlays
+  const editorImageUrl: string | null = meta
+    ? meta.baseImageUrl
+    : hasImage
+      ? value
+      : null;
+  const editorSeedOverlays: TextOverlay[] | null = meta?.overlays ?? null;
 
   return (
     <div>
@@ -106,9 +144,9 @@ export function ThumbnailUploader({ value, onChange }: ThumbnailUploaderProps) {
           <div className="absolute top-2 right-2 flex gap-1">
             <button
               type="button"
-              onClick={() => setEditingOverlay(true)}
+              onClick={openOverlayEditor}
               className="w-7 h-7 bg-white/90 rounded-full flex items-center justify-center shadow hover:bg-white transition-colors"
-              title="텍스트 오버레이"
+              title={meta ? "텍스트 오버레이 재편집" : "텍스트 오버레이"}
             >
               <Type size={13} className="text-gray-700" />
             </button>
@@ -122,7 +160,7 @@ export function ThumbnailUploader({ value, onChange }: ThumbnailUploaderProps) {
             </button>
             <button
               type="button"
-              onClick={() => onChange("")}
+              onClick={() => onChange("", "")}
               className="w-7 h-7 bg-white/90 rounded-full flex items-center justify-center shadow hover:bg-white transition-colors"
               title="삭제"
             >
@@ -164,7 +202,7 @@ export function ThumbnailUploader({ value, onChange }: ThumbnailUploaderProps) {
           {/* 이미지 없이도 텍스트만으로 썸네일 만들기 진입점 */}
           <button
             type="button"
-            onClick={() => setEditingOverlay(true)}
+            onClick={openOverlayEditor}
             className="mt-2 inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 hover:underline"
           >
             <Type size={12} />
@@ -183,9 +221,10 @@ export function ThumbnailUploader({ value, onChange }: ThumbnailUploaderProps) {
 
       {editingOverlay && (
         <ThumbnailOverlayEditor
-          imageUrl={hasImage ? value : null}
-          onSave={(newUrl) => {
-            onChange(newUrl);
+          imageUrl={editorImageUrl}
+          existingOverlays={editorSeedOverlays}
+          onSave={(newUrl, newOverlaysJson) => {
+            onChange(newUrl, newOverlaysJson);
             setEditingOverlay(false);
           }}
           onCancel={() => setEditingOverlay(false)}
