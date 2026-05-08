@@ -7,6 +7,7 @@ import { X, Trash2 } from "lucide-react";
 import { useAuth, type EditModalType } from "./auth-provider";
 import { ContentEditor } from "./content-editor";
 import { ThumbnailUploader } from "./thumbnail-uploader";
+import { categories } from "@/lib/data";
 
 function extractYoutubeId(input: string): string {
   const trimmed = input.trim();
@@ -23,12 +24,7 @@ function youtubeThumbnail(youtubeId: string): string {
 
 const subjectOptions = ["국어", "수학", "영어", "탐구", "컨설팅"] as const;
 
-const categoryOptions = [
-  { value: "strategy", label: "입시전략" },
-  { value: "column", label: "교육칼럼" },
-  { value: "success", label: "합격스토리" },
-  { value: "news", label: "공지사항" },
-];
+const categoryOptions = categories.filter((c) => c.value !== "all");
 
 const apiMap: Record<EditModalType, string> = {
   article: "/api/admin/articles",

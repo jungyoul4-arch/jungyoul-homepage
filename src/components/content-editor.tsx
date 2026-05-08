@@ -270,19 +270,82 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
     }
   }
 
-  // 붙여넣은 HTML 안의 data:URL 이미지를 추출해 R2 에 업로드하고 src 를 영구 URL 로 치환.
-  // 이후 서버 sanitize 가 data:URL 을 스트립해도 이미지가 살아남는다.
-  async function inlineDataUrlsToUploads(html: string): Promise<string> {
+  // 붙여넣은 HTML 정규화 + data:URL 이미지 R2 업로드.
+  //  - HWP/한컴오피스/MS Word 잡 마크업 정리 (Office namespace 태그 unwrap, mso-* 제거 등)
+  //  - 표(<table>...) 구조 보존
+  //  - data:URL 이미지는 R2 업로드 후 영구 URL 로 치환 → 서버 sanitize 의 data:URL 스트립
+  //    이후에도 이미지가 살아남는다.
+  async function normalizePastedHtml(html: string): Promise<string> {
     const doc = new DOMParser().parseFromString(html, "text/html");
 
-    // 안전: inline event handler 제거 (XSS 방어 — contenteditable 내에서는 실행되지
-    // 않지만 저장/재렌더 단계 방어용)
+    // 위험·잡 노드 통째 제거
+    doc
+      .querySelectorAll("script, style, meta, link, xml, title")
+      .forEach((n) => n.remove());
+
+    // inline event handler / javascript: URL 제거 (XSS 방어)
     doc.querySelectorAll("*").forEach((el) => {
       for (const attr of Array.from(el.attributes)) {
-        if (attr.name.startsWith("on")) el.removeAttribute(attr.name);
+        const name = attr.name;
+        if (name.startsWith("on")) {
+          el.removeAttribute(name);
+          continue;
+        }
+        if (
+          (name === "href" || name === "src") &&
+          /^\s*javascript:/i.test(attr.value)
+        ) {
+          el.removeAttribute(name);
+        }
       }
     });
 
+    // Office/HWP namespace 태그 unwrap — 텍스트 보존, 컨테이너만 제거
+    function unwrap(el: Element) {
+      const parent = el.parentNode;
+      if (!parent) return;
+      while (el.firstChild) parent.insertBefore(el.firstChild, el);
+      parent.removeChild(el);
+    }
+    Array.from(doc.querySelectorAll("*")).forEach((el) => {
+      const tag = el.tagName.toLowerCase();
+      if (tag.includes(":") && /^(o|w|m|v):/.test(tag)) unwrap(el);
+    });
+
+    // <font> 도 unwrap
+    Array.from(doc.querySelectorAll("font")).forEach(unwrap);
+
+    // 클래스/스타일에서 mso-*, Mso*, Hwp* 흔적 제거
+    doc.querySelectorAll("*").forEach((el) => {
+      const cls = el.getAttribute("class");
+      if (cls) {
+        const cleaned = cls
+          .split(/\s+/)
+          .filter((c) => !/^(mso|Mso|Hwp|hancell)/.test(c))
+          .join(" ")
+          .trim();
+        if (cleaned) el.setAttribute("class", cleaned);
+        else el.removeAttribute("class");
+      }
+      const style = el.getAttribute("style");
+      if (style && /mso-/i.test(style)) {
+        const cleaned = style
+          .split(/;\s*/)
+          .filter((decl) => !/^\s*mso-/i.test(decl))
+          .join("; ")
+          .trim();
+        if (cleaned) el.setAttribute("style", cleaned);
+        else el.removeAttribute("style");
+      }
+    });
+
+    // 빈 <p> 제거 (이미지·표·br 가 없고 텍스트도 없는 경우)
+    Array.from(doc.querySelectorAll("p")).forEach((p) => {
+      const hasMedia = p.querySelector("img, br, table, figure");
+      if (!hasMedia && !(p.textContent || "").trim()) p.remove();
+    });
+
+    // data:URL 이미지를 R2 업로드 후 영구 URL 로 치환
     const imgs = Array.from(
       doc.querySelectorAll('img[src^="data:"]'),
     ) as HTMLImageElement[];
@@ -331,16 +394,17 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
       }
     }
 
-    // 2.5. HTML 페이스트 (jungyoul-interview 내보내기 등): data:URL 이미지가 들어있으면
-    //      R2 로 업로드하여 영구 URL 로 치환 후 삽입. data:URL 이 없는 일반 HTML 은
-    //      이 분기를 타지 않고 기존 plain-text 정규화 경로(3번) 로 떨어진다.
+    // 2.5. HTML 페이스트: 표·이미지·서식 등 의미 있는 마크업이 있으면 정규화 후 삽입.
+    //      한컴(HWP/HWPX), MS Word, jungyoul-interview 내보내기 등에서 들어오는 HTML 을
+    //      포괄적으로 처리. data:URL 이미지는 R2 로 업로드되어 영구 URL 로 치환된다.
+    //      구조 마크업이 전혀 없으면 plain-text 분기(3번) 로 떨어진다.
     const htmlFromClipboard = e.clipboardData.getData("text/html");
     if (
       htmlFromClipboard &&
-      /<img[^>]+src=["']data:/i.test(htmlFromClipboard)
+      /<(table|img|p|h[1-6]|ul|ol|figure|blockquote)\b/i.test(htmlFromClipboard)
     ) {
       e.preventDefault();
-      const processed = await inlineDataUrlsToUploads(htmlFromClipboard);
+      const processed = await normalizePastedHtml(htmlFromClipboard);
       insertHtmlAtCursor(processed);
       return;
     }

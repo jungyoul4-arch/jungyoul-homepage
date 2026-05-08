@@ -18,6 +18,8 @@
 
 ## 작업별 참조 문서 (필요 시 열람)
 - 페이지/링크/메타데이터/sitemap 추가 → [`docs/seo-checklist.md`](docs/seo-checklist.md)
+- 카테고리·네비게이션 추가 절차(단일 소스, /exam 같은 별도 라우트) → [`docs/categories.md`](docs/categories.md)
+- 빠른편집 에디터(페이스트 파이프라인·HWPX·sanitize·썸네일 오버레이) → [`docs/editor.md`](docs/editor.md)
 - 사업자 정보(JSON-LD Organization·푸터·연락처) → [`docs/business-info.md`](docs/business-info.md)
 - 빌드/타입 에러 디버깅 회고 → [`docs/mistake-log.md`](docs/mistake-log.md)
 - 워크트리간 큐 프로토콜(content ↔ UI) → [`docs/worktree-protocol.md`](docs/worktree-protocol.md)

@@ -40,7 +40,7 @@ export function LatestArticles({ articles, pinnedArticleIds = [] }: LatestArticl
 
           {/* Tab Filter — 삼성 뉴스룸 탭 스타일 (16px, pb-2, border 4px) */}
           <div className="flex border-b border-[#d9d9d9] overflow-x-auto" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
-            {categories.map((cat) => (
+            {categories.filter((cat) => cat.value !== "exam").map((cat) => (
               <button
                 key={cat.value}
                 onClick={() => setActiveTab(cat.value)}

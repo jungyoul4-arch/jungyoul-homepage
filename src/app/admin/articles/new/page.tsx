@@ -4,13 +4,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ContentEditor } from "@/components/content-editor";
 import { ThumbnailUploader } from "@/components/thumbnail-uploader";
+import { categories } from "@/lib/data";
 
-const categoryOptions = [
-  { value: "strategy", label: "입시전략" },
-  { value: "column", label: "교육칼럼" },
-  { value: "success", label: "합격스토리" },
-  { value: "news", label: "공지사항" },
-];
+const categoryOptions = categories.filter((c) => c.value !== "all");
 
 export default function NewArticlePage() {
   const router = useRouter();

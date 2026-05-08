@@ -1,0 +1,68 @@
+export const dynamic = "force-dynamic";
+
+import type { Metadata } from "next";
+import { ArticleList } from "@/components/article-list";
+import { HeroBanner } from "@/components/hero-banner";
+import { getDb } from "@/db";
+import { articles as articlesTable } from "@/db/schema";
+import { desc, eq } from "drizzle-orm";
+import { toArticle } from "@/lib/mappers";
+
+export const metadata: Metadata = {
+  title: "시험지 분석",
+  description:
+    "정율사관 시험지 분석 — 모의고사·내신 기출 분석과 풀이 전략을 정리한 콘텐츠 모음.",
+  openGraph: {
+    title: "시험지 분석 | 정율 교육정보",
+    description:
+      "정율사관 시험지 분석 — 모의고사·내신 기출 분석과 풀이 전략을 정리한 콘텐츠 모음.",
+    images: [{ url: "/images/hero-articles.jpg", width: 1200, height: 514 }],
+  },
+  alternates: {
+    canonical: "/exam",
+  },
+};
+
+export default async function ExamPage() {
+  const db = await getDb();
+  const raw = await db
+    .select()
+    .from(articlesTable)
+    .where(eq(articlesTable.category, "exam"))
+    .orderBy(desc(articlesTable.date));
+  const articles = raw.map(toArticle);
+
+  return (
+    <>
+      <HeroBanner src="/images/hero-articles.jpg" alt="시험지 분석" />
+      <div className="max-w-[1480px] mx-auto px-4 lg:px-10 py-10">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "CollectionPage",
+              name: "시험지 분석",
+              description:
+                "정율사관 시험지 분석 — 모의고사·내신 기출 분석과 풀이 전략을 정리한 콘텐츠 모음.",
+              url: "https://www.jungyoul.net/exam",
+              mainEntity: {
+                "@type": "ItemList",
+                itemListElement: articles.slice(0, 10).map((a, i) => ({
+                  "@type": "ListItem",
+                  position: i + 1,
+                  url: `https://www.jungyoul.net/articles/${a.slug}`,
+                })),
+              },
+            }).replace(/</g, "\\u003c"),
+          }}
+        />
+
+        <h1 className="text-[1.5rem] md:text-[1.875rem] font-bold text-[#1A1A1A] mt-10 md:mt-20 pb-5 border-b border-[#E0E0E0] mb-10">
+          시험지 분석
+        </h1>
+        <ArticleList articles={articles} hideTabs />
+      </div>
+    </>
+  );
+}

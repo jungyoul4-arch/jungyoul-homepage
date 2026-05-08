@@ -1,8 +1,9 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { ImageIcon, X, Upload } from "lucide-react";
+import { ImageIcon, X, Upload, Type } from "lucide-react";
 import Image from "next/image";
+import { ThumbnailOverlayEditor } from "./thumbnail-overlay-editor";
 
 interface ThumbnailUploaderProps {
   value: string;
@@ -13,6 +14,7 @@ export function ThumbnailUploader({ value, onChange }: ThumbnailUploaderProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [editingOverlay, setEditingOverlay] = useState(false);
 
   async function uploadFile(file: File) {
     if (!file.type.startsWith("image/")) {
@@ -104,6 +106,14 @@ export function ThumbnailUploader({ value, onChange }: ThumbnailUploaderProps) {
           <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
             <button
               type="button"
+              onClick={() => setEditingOverlay(true)}
+              className="w-7 h-7 bg-white/90 rounded-full flex items-center justify-center shadow hover:bg-white transition-colors"
+              title="텍스트 오버레이"
+            >
+              <Type size={13} className="text-gray-700" />
+            </button>
+            <button
+              type="button"
               onClick={() => fileInputRef.current?.click()}
               className="w-7 h-7 bg-white/90 rounded-full flex items-center justify-center shadow hover:bg-white transition-colors"
               title="변경"
@@ -159,6 +169,17 @@ export function ThumbnailUploader({ value, onChange }: ThumbnailUploaderProps) {
         className="hidden"
         onChange={handleFileSelect}
       />
+
+      {editingOverlay && hasImage && (
+        <ThumbnailOverlayEditor
+          imageUrl={value}
+          onSave={(newUrl) => {
+            onChange(newUrl);
+            setEditingOverlay(false);
+          }}
+          onCancel={() => setEditingOverlay(false)}
+        />
+      )}
     </div>
   );
 }

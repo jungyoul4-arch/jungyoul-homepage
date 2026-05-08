@@ -19,12 +19,13 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - 키워드 자연 삽입 (SEO 고려)
 
 ### 카테고리
-| 코드 | 라벨 | 용도 |
-|------|------|------|
-| `strategy` | 입시전략 | 대입 분석, 입시 전략 |
-| `column` | 교육칼럼 | 교육 트렌드, 학습법 |
-| `success` | 합격스토리 | 합격 사례, 후기 |
-| `news` | 공지사항 | 학원 소식, 일정 |
+| 코드 | 라벨 | 용도 | 노출 라우트 |
+|------|------|------|------|
+| `strategy` | 입시전략 | 대입 분석, 입시 전략 | `/articles?category=strategy` |
+| `column` | 교육칼럼 | 교육 트렌드, 학습법 | `/articles?category=column` |
+| `success` | 합격스토리 | 합격 사례, 후기 | `/articles?category=success` |
+| `news` | 공지사항 | 학원 소식, 일정 | `/articles?category=news` |
+| `exam` | 시험지 분석 | 모의고사·내신 기출 분석, 풀이 전략 | `/exam` (정율사관 하위 — 교육정보 탭에는 미노출) |
 
 ### 원고 작성 위치
 - `content/drafts/` 폴더에 마크다운 파일 생성

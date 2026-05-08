@@ -14,9 +14,10 @@ const ITEMS_PER_PAGE = 12;
 
 interface ArticleListProps {
   articles: Article[];
+  hideTabs?: boolean;
 }
 
-export function ArticleList({ articles }: ArticleListProps) {
+export function ArticleList({ articles, hideTabs = false }: ArticleListProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const param = searchParams.get("category") as Category | null;
@@ -59,24 +60,26 @@ export function ArticleList({ articles }: ArticleListProps) {
   return (
     <>
       {/* Tab Filter */}
-      <div className="flex border-b border-[#d9d9d9] overflow-x-auto" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
-        {categories.map((cat) => (
-          <button
-            key={cat.value}
-            onClick={() => handleTab(cat.value)}
-            className={`py-2 mr-6 text-[1.125rem] transition-colors relative whitespace-nowrap shrink-0 ${
-              activeTab === cat.value
-                ? "text-[#1E64FA] font-bold"
-                : "text-[#666666] hover:text-[#1A1A1A] font-medium"
-            }`}
-          >
-            {cat.label}
-            {activeTab === cat.value && (
-              <span className="absolute bottom-0 left-0 right-0 h-1 bg-[#1E64FA]" />
-            )}
-          </button>
-        ))}
-      </div>
+      {!hideTabs && (
+        <div className="flex border-b border-[#d9d9d9] overflow-x-auto" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
+          {categories.filter((cat) => cat.value !== "exam").map((cat) => (
+            <button
+              key={cat.value}
+              onClick={() => handleTab(cat.value)}
+              className={`py-2 mr-6 text-[1.125rem] transition-colors relative whitespace-nowrap shrink-0 ${
+                activeTab === cat.value
+                  ? "text-[#1E64FA] font-bold"
+                  : "text-[#666666] hover:text-[#1A1A1A] font-medium"
+              }`}
+            >
+              {cat.label}
+              {activeTab === cat.value && (
+                <span className="absolute bottom-0 left-0 right-0 h-1 bg-[#1E64FA]" />
+              )}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Article Grid — 삼성 뉴스룸: 데스크톱 3열, row-gap 60px, col-gap 22px */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-x-[22px] gap-y-[60px] mt-10">

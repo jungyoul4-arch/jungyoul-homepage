@@ -1,5 +1,5 @@
 // 타입 정의 및 카테고리 상수 (DB 전환 후에도 공유)
-export type Category = "all" | "strategy" | "column" | "success" | "news";
+export type Category = "all" | "strategy" | "column" | "success" | "news" | "exam";
 
 export interface Article {
   id: string;
@@ -57,4 +57,5 @@ export const categories: { value: Category; label: string }[] = [
   { value: "column", label: "교육칼럼" },
   { value: "success", label: "합격스토리" },
   { value: "news", label: "공지사항" },
+  { value: "exam", label: "시험지 분석" },
 ];
