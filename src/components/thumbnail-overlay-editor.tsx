@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { X, Plus, Trash2, Type } from "lucide-react";
 
 interface TextOverlay {
@@ -16,10 +17,15 @@ interface TextOverlay {
 }
 
 interface Props {
-  imageUrl: string;
+  imageUrl: string | null;
   onSave: (newUrl: string) => void;
   onCancel: () => void;
 }
+
+// 이미지 없이 텍스트만으로 만든 썸네일의 기본 캔버스 크기 / 그라디언트.
+const FALLBACK_SIZE = { w: 1280, h: 720 };
+const FALLBACK_GRADIENT_CSS =
+  "linear-gradient(135deg, hsl(220,40%,70%) 0%, hsl(240,50%,50%) 100%)";
 
 const FONT_FAMILY =
   '"Pretendard","Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif';
@@ -45,11 +51,13 @@ export function ThumbnailOverlayEditor({ imageUrl, onSave, onCancel }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(
     overlays[0]?.id ?? null,
   );
+  // 이미지가 있으면 onLoad 시 자연 크기로 채워지고, 없으면 FALLBACK_SIZE 로 즉시 시작.
   const [naturalSize, setNaturalSize] = useState<{ w: number; h: number } | null>(
-    null,
+    imageUrl ? null : FALLBACK_SIZE,
   );
   const [imgError, setImgError] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const dragState = useRef<{ id: string; offsetX: number; offsetY: number } | null>(
     null,
   );
@@ -108,7 +116,17 @@ export function ThumbnailOverlayEditor({ imageUrl, onSave, onCancel }: Props) {
     dragState.current = null;
   }
 
+  // Portal 마운트 가드 (SSR 회피)
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!imageUrl) {
+      setNaturalSize(FALLBACK_SIZE);
+      setImgError(false);
+      return;
+    }
     const img = imgRef.current;
     if (!img) return;
     if (img.complete && img.naturalWidth > 0) {
@@ -145,8 +163,12 @@ export function ThumbnailOverlayEditor({ imageUrl, onSave, onCancel }: Props) {
     }
   }
 
-  return (
-    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+  if (!mounted) return null;
+
+  const dialog = (
+    // z-[2000] 으로 InlineEditModal(z-[1000]) 보다 위에 렌더. document.body 직속 portal
+    // 이라 부모의 transform/overflow 영향에서 벗어남.
+    <div className="fixed inset-0 z-[2000] bg-black/60 flex items-center justify-center p-4">
       <div className="bg-white w-full max-w-5xl max-h-[90vh] rounded-lg shadow-xl flex flex-col">
         <div className="flex items-center justify-between px-5 py-3 border-b border-gray-200">
           <h2 className="text-base font-semibold text-gray-900 flex items-center gap-2">
@@ -178,25 +200,35 @@ export function ThumbnailOverlayEditor({ imageUrl, onSave, onCancel }: Props) {
               onPointerCancel={onPointerUp}
               onClick={() => setSelectedId(null)}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                ref={imgRef}
-                src={imageUrl}
-                alt="썸네일 원본"
-                crossOrigin="anonymous"
-                onLoad={(e) => {
-                  const t = e.currentTarget;
-                  setNaturalSize({ w: t.naturalWidth, h: t.naturalHeight });
-                  setImgError(false);
-                }}
-                onError={() => setImgError(true)}
-                className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none"
-                draggable={false}
-              />
-              {imgError && (
-                <div className="absolute inset-0 flex items-center justify-center text-sm text-gray-500">
-                  이미지를 불러오지 못했습니다.
-                </div>
+              {imageUrl ? (
+                <>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    ref={imgRef}
+                    src={imageUrl}
+                    alt="썸네일 원본"
+                    crossOrigin="anonymous"
+                    onLoad={(e) => {
+                      const t = e.currentTarget;
+                      setNaturalSize({ w: t.naturalWidth, h: t.naturalHeight });
+                      setImgError(false);
+                    }}
+                    onError={() => setImgError(true)}
+                    className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none"
+                    draggable={false}
+                  />
+                  {imgError && (
+                    <div className="absolute inset-0 flex items-center justify-center text-sm text-gray-500">
+                      이미지를 불러오지 못했습니다.
+                    </div>
+                  )}
+                </>
+              ) : (
+                // 이미지 없이 텍스트만으로 썸네일 만들 때의 그라디언트 배경.
+                <div
+                  className="absolute inset-0"
+                  style={{ background: FALLBACK_GRADIENT_CSS }}
+                />
               )}
               {overlays.map((o) => (
                 <div
@@ -366,7 +398,7 @@ export function ThumbnailOverlayEditor({ imageUrl, onSave, onCancel }: Props) {
             <button
               type="button"
               onClick={handleSave}
-              disabled={saving || imgError || !naturalSize}
+              disabled={saving || (!!imageUrl && imgError) || !naturalSize}
               className="h-9 px-4 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
             >
               {saving ? "저장 중..." : "저장"}
@@ -376,6 +408,8 @@ export function ThumbnailOverlayEditor({ imageUrl, onSave, onCancel }: Props) {
       </div>
     </div>
   );
+
+  return createPortal(dialog, document.body);
 }
 
 function Field({
@@ -396,23 +430,31 @@ function Field({
 }
 
 async function renderToBlob(
-  imageUrl: string,
+  imageUrl: string | null,
   overlays: TextOverlay[],
   size: { w: number; h: number },
 ): Promise<Blob | null> {
-  const img = await loadImage(imageUrl);
-  if (!img) return null;
-
   const canvas = document.createElement("canvas");
   canvas.width = size.w;
   canvas.height = size.h;
   const ctx = canvas.getContext("2d");
   if (!ctx) return null;
 
-  try {
-    ctx.drawImage(img, 0, 0, size.w, size.h);
-  } catch {
-    return null;
+  if (imageUrl) {
+    const img = await loadImage(imageUrl);
+    if (!img) return null;
+    try {
+      ctx.drawImage(img, 0, 0, size.w, size.h);
+    } catch {
+      return null;
+    }
+  } else {
+    // 이미지 없는 텍스트 단독 썸네일: 그라디언트 배경을 캔버스에 그려넣음.
+    const grad = ctx.createLinearGradient(0, 0, size.w, size.h);
+    grad.addColorStop(0, "hsl(220,40%,70%)");
+    grad.addColorStop(1, "hsl(240,50%,50%)");
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, size.w, size.h);
   }
 
   if (document.fonts && typeof document.fonts.ready?.then === "function") {

@@ -78,7 +78,7 @@ export function ThumbnailUploader({ value, onChange }: ThumbnailUploaderProps) {
     }
   }
 
-  const hasImage = value && value.length > 0;
+  const hasImage = !!(value && value.length > 0);
 
   return (
     <div>
@@ -133,33 +133,44 @@ export function ThumbnailUploader({ value, onChange }: ThumbnailUploaderProps) {
         </div>
       ) : (
         /* 업로드 영역 */
-        <div
-          onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-          onDragLeave={(e) => { e.preventDefault(); setIsDragging(false); }}
-          onDrop={handleDrop}
-          onPaste={handlePaste}
-          tabIndex={0}
-          className={`relative aspect-[16/9] border-2 border-dashed rounded-sm flex flex-col items-center justify-center cursor-pointer transition-colors ${
-            isDragging
-              ? "border-blue-400 bg-blue-50"
-              : "border-gray-300 hover:border-gray-400 bg-gray-50"
-          }`}
-          onClick={() => fileInputRef.current?.click()}
-        >
-          {uploading ? (
-            <p className="text-sm text-blue-600">업로드 중...</p>
-          ) : (
-            <>
-              <ImageIcon size={28} className="text-gray-300 mb-2" />
-              <p className="text-xs text-gray-500">
-                클릭, 드래그 앤 드롭, 또는 Ctrl+V
-              </p>
-              <p className="text-xs text-gray-400 mt-0.5">
-                이미지 파일 또는 URL
-              </p>
-            </>
-          )}
-        </div>
+        <>
+          <div
+            onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+            onDragLeave={(e) => { e.preventDefault(); setIsDragging(false); }}
+            onDrop={handleDrop}
+            onPaste={handlePaste}
+            tabIndex={0}
+            className={`relative aspect-[16/9] border-2 border-dashed rounded-sm flex flex-col items-center justify-center cursor-pointer transition-colors ${
+              isDragging
+                ? "border-blue-400 bg-blue-50"
+                : "border-gray-300 hover:border-gray-400 bg-gray-50"
+            }`}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            {uploading ? (
+              <p className="text-sm text-blue-600">업로드 중...</p>
+            ) : (
+              <>
+                <ImageIcon size={28} className="text-gray-300 mb-2" />
+                <p className="text-xs text-gray-500">
+                  클릭, 드래그 앤 드롭, 또는 Ctrl+V
+                </p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  이미지 파일 또는 URL
+                </p>
+              </>
+            )}
+          </div>
+          {/* 이미지 없이도 텍스트만으로 썸네일 만들기 진입점 */}
+          <button
+            type="button"
+            onClick={() => setEditingOverlay(true)}
+            className="mt-2 inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 hover:underline"
+          >
+            <Type size={12} />
+            텍스트만으로 썸네일 만들기
+          </button>
+        </>
       )}
 
       <input
@@ -170,9 +181,9 @@ export function ThumbnailUploader({ value, onChange }: ThumbnailUploaderProps) {
         onChange={handleFileSelect}
       />
 
-      {editingOverlay && hasImage && (
+      {editingOverlay && (
         <ThumbnailOverlayEditor
-          imageUrl={value}
+          imageUrl={hasImage ? value : null}
           onSave={(newUrl) => {
             onChange(newUrl);
             setEditingOverlay(false);

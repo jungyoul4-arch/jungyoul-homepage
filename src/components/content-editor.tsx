@@ -179,7 +179,10 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
     }
   }
 
-  // 커서 위치에 HTML 삽입
+  // 커서 위치에 HTML 삽입.
+  //  - 삽입 fragment 가 <table> 등 블록 미디어를 포함하고 커서가 빈 <p><br></p> 안에 있으면
+  //    그 빈 <p> 를 fragment 로 교체한다 (브라우저가 <p> 안 <table> 을 자동 변형하면서
+  //    구조가 깨지는 문제 방지).
   function insertHtmlAtCursor(html: string) {
     const editor = editorRef.current;
     if (!editor) return;
@@ -197,12 +200,57 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
     while (temp.firstChild) {
       frag.appendChild(temp.firstChild);
     }
-    range.insertNode(frag);
 
-    // 커서를 삽입된 요소 뒤로 이동
-    range.collapse(false);
-    selection.removeAllRanges();
-    selection.addRange(range);
+    const blockChildSelector = "table, figure, ul, ol, blockquote, h1, h2, h3, h4";
+    const fragHasBlock = Array.from(frag.childNodes).some((n) => {
+      if (n.nodeType !== Node.ELEMENT_NODE) return false;
+      const el = n as HTMLElement;
+      const t = el.tagName.toLowerCase();
+      return (
+        ["table", "figure", "ul", "ol", "blockquote", "h1", "h2", "h3", "h4"].includes(t) ||
+        !!el.querySelector(blockChildSelector)
+      );
+    });
+
+    let parentP: HTMLElement | null = null;
+    {
+      let n: Node | null = range.startContainer;
+      while (n && n !== editor) {
+        if (n.nodeType === Node.ELEMENT_NODE) {
+          const el = n as HTMLElement;
+          if (el.tagName.toLowerCase() === "p") {
+            parentP = el;
+            break;
+          }
+        }
+        n = n.parentNode;
+      }
+    }
+    const isEmptyP =
+      parentP &&
+      (parentP.textContent || "").trim() === "" &&
+      !parentP.querySelector("img, table, figure, iframe");
+
+    if (fragHasBlock && parentP && isEmptyP && parentP.parentNode === editor) {
+      // 빈 단락을 통째로 fragment 로 교체. 마지막 노드 뒤에 캐럿 빈 <p> 삽입해 후속 입력 보장.
+      const lastInserted = frag.lastChild;
+      const trailingP = document.createElement("p");
+      trailingP.innerHTML = "<br>";
+      frag.appendChild(trailingP);
+      parentP.replaceWith(frag);
+      const nextRange = document.createRange();
+      if (lastInserted) nextRange.setStartAfter(lastInserted);
+      else nextRange.setStart(editor, editor.childNodes.length);
+      nextRange.collapse(true);
+      selection.removeAllRanges();
+      selection.addRange(nextRange);
+    } else {
+      range.insertNode(frag);
+      // 커서를 삽입된 요소 뒤로 이동
+      range.collapse(false);
+      selection.removeAllRanges();
+      selection.addRange(range);
+    }
 
     syncToParent();
   }
@@ -300,7 +348,9 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
       }
     });
 
-    // Office/HWP namespace 태그 unwrap — 텍스트 보존, 컨테이너만 제거
+    // Office/HWP namespace 태그 unwrap — 텍스트 보존, 컨테이너만 제거.
+    // 단, <v:imagedata src=...> 같이 이미지 src 를 들고 있는 노드는 <img> 로 승격해
+    // 후속 data:URL 업로드 파이프라인에 태운다.
     function unwrap(el: Element) {
       const parent = el.parentNode;
       if (!parent) return;
@@ -309,7 +359,20 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
     }
     Array.from(doc.querySelectorAll("*")).forEach((el) => {
       const tag = el.tagName.toLowerCase();
-      if (tag.includes(":") && /^(o|w|m|v):/.test(tag)) unwrap(el);
+      if (!(tag.includes(":") && /^(o|w|m|v):/.test(tag))) return;
+      const src =
+        el.getAttribute("src") ||
+        el.getAttribute("href") ||
+        // v:imagedata 는 namespace prefix 가 붙은 속성에 들어가 있을 수 있음
+        el.getAttributeNS("urn:schemas-microsoft-com:vml", "src") ||
+        el.getAttributeNS("http://www.w3.org/1999/xlink", "href");
+      if (src) {
+        const img = doc.createElement("img");
+        img.setAttribute("src", src);
+        el.replaceWith(img);
+      } else {
+        unwrap(el);
+      }
     });
 
     // <font> 도 unwrap
@@ -345,59 +408,51 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
       if (!hasMedia && !(p.textContent || "").trim()) p.remove();
     });
 
-    // data:URL 이미지를 R2 업로드 후 영구 URL 로 치환
+    // data:URL 이미지를 R2 업로드 후 영구 URL 로 치환.
+    // 업로드 실패 시 조용히 제거하지 않고 placeholder 로 교체해 사용자가 인지 가능하도록.
     const imgs = Array.from(
       doc.querySelectorAll('img[src^="data:"]'),
     ) as HTMLImageElement[];
     for (const img of imgs) {
       const dataUrl = img.getAttribute("src")!;
+      let success = false;
       try {
         const file = dataUrlToFile(dataUrl, img.getAttribute("alt") || "image");
         const url = await uploadImage(file);
-        if (url) img.setAttribute("src", url);
-        else img.remove();
+        if (url) {
+          img.setAttribute("src", url);
+          success = true;
+        }
       } catch {
-        img.remove();
+        /* fallthrough — placeholder 처리 */
+      }
+      if (!success) {
+        const placeholder = doc.createElement("span");
+        // sanitize 화이트리스트 통과 가능한 속성만 사용 (display 는 허용 목록 외라 생략).
+        placeholder.setAttribute(
+          "style",
+          "padding:2px 6px;background-color:#fef3c7;color:#92400e;font-size:12px;border-radius:2px;",
+        );
+        placeholder.textContent = "[이미지 업로드 실패 — 다시 붙여넣어 주세요]";
+        img.replaceWith(placeholder);
       }
     }
 
     return doc.body.innerHTML;
   }
 
-  // 클립보드 붙여넣기
+  // 클립보드 붙여넣기.
+  //
+  // 분기 우선순위 (HWPX/MS Word/Google Docs 같은 "구조 있는 페이스트"가 단독 이미지보다
+  // 먼저 처리되도록 — HWPX 클립보드는 image item + text/html 을 동시에 제공하기 때문에
+  // image 가 먼저 매칭되면 표 구조가 통째 폐기됨):
+  //   1. text/html 에 의미마크업(<table|img|p|h1-6|ul|ol|figure|blockquote>) 보유
+  //      → normalizePastedHtml 후 삽입. data:URL 이미지는 R2 로 업로드되어 영구 URL 로 치환.
+  //   2. clipboardData.items 에 image/* 단독 → 이미지 업로드 후 figure 삽입
+  //   3. text/plain 이 동영상 URL → 임베드
+  //   4. plain text fallback → 줄단위 <p> 정규화
   async function handlePaste(e: React.ClipboardEvent) {
-    const items = e.clipboardData.items;
-    const imageFiles: File[] = [];
-
-    // 1. 이미지 파일 체크
-    for (const item of Array.from(items)) {
-      if (item.type.startsWith("image/")) {
-        const file = item.getAsFile();
-        if (file) imageFiles.push(file);
-      }
-    }
-
-    if (imageFiles.length > 0) {
-      e.preventDefault();
-      await handleImageFiles(imageFiles);
-      return;
-    }
-
-    // 2. 텍스트에서 동영상 URL 감지
-    const text = e.clipboardData.getData("text/plain");
-    if (text) {
-      const embed = parseVideoUrl(text);
-      if (embed) {
-        e.preventDefault();
-        insertHtmlAtCursor(buildEmbedHtml(embed));
-        return;
-      }
-    }
-
-    // 2.5. HTML 페이스트: 표·이미지·서식 등 의미 있는 마크업이 있으면 정규화 후 삽입.
-    //      한컴(HWP/HWPX), MS Word, jungyoul-interview 내보내기 등에서 들어오는 HTML 을
-    //      포괄적으로 처리. data:URL 이미지는 R2 로 업로드되어 영구 URL 로 치환된다.
-    //      구조 마크업이 전혀 없으면 plain-text 분기(3번) 로 떨어진다.
+    // 1. HTML 페이스트 우선 — 한컴(HWP/HWPX), MS Word 등에서 들어오는 표·이미지·서식 보존
     const htmlFromClipboard = e.clipboardData.getData("text/html");
     if (
       htmlFromClipboard &&
@@ -409,7 +464,33 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
       return;
     }
 
-    // 3. 일반 텍스트: 외부 서식 제거 후 <p> 태그로 정규화
+    // 2. 단독 이미지 페이스트 (스크린샷 등)
+    const items = e.clipboardData.items;
+    const imageFiles: File[] = [];
+    for (const item of Array.from(items)) {
+      if (item.type.startsWith("image/")) {
+        const file = item.getAsFile();
+        if (file) imageFiles.push(file);
+      }
+    }
+    if (imageFiles.length > 0) {
+      e.preventDefault();
+      await handleImageFiles(imageFiles);
+      return;
+    }
+
+    // 3. 텍스트에서 동영상 URL 감지
+    const text = e.clipboardData.getData("text/plain");
+    if (text) {
+      const embed = parseVideoUrl(text);
+      if (embed) {
+        e.preventDefault();
+        insertHtmlAtCursor(buildEmbedHtml(embed));
+        return;
+      }
+    }
+
+    // 4. 일반 텍스트: 외부 서식 제거 후 <p> 태그로 정규화
     const plain = e.clipboardData.getData("text/plain");
     if (plain) {
       e.preventDefault();
