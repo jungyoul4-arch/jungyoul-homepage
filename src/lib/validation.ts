@@ -1,14 +1,21 @@
 import { z } from "zod";
 import { createInsertSchema, createUpdateSchema } from "drizzle-zod";
 import { articles, highlights, teachers, videos, trackingCodes, navMenus } from "@/db/schema";
+import { categories } from "@/lib/data";
 import { NextResponse } from "next/server";
+
+const allowedCategoryValues = categories
+  .filter((c) => c.value !== "all")
+  .map((c) => c.value);
+const categoryRefine = (v: string) => allowedCategoryValues.includes(v as (typeof allowedCategoryValues)[number]);
+const categoryRefineMsg = { message: "허용되지 않은 카테고리입니다." };
 
 // Articles
 export const insertArticleSchema = createInsertSchema(articles, {
   title: (schema) => schema.max(500),
   excerpt: (schema) => schema.max(1000),
   content: (schema) => schema.max(2_000_000),
-  category: (schema) => schema.max(50),
+  category: (schema) => schema.max(50).refine(categoryRefine, categoryRefineMsg),
   categoryLabel: (schema) => schema.max(50),
   slug: (schema) => schema.max(200),
   thumbnail: (schema) => schema.max(500),
@@ -22,7 +29,7 @@ export const updateArticleSchema = createUpdateSchema(articles, {
   title: (schema) => schema.max(500),
   excerpt: (schema) => schema.max(1000),
   content: (schema) => schema.max(2_000_000),
-  category: (schema) => schema.max(50),
+  category: (schema) => schema.max(50).refine((v) => v === undefined || categoryRefine(v), categoryRefineMsg),
   categoryLabel: (schema) => schema.max(50),
   slug: (schema) => schema.max(200),
   thumbnail: (schema) => schema.max(500),

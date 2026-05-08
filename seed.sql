@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS articles (
   title TEXT NOT NULL,
   excerpt TEXT NOT NULL,
   content TEXT DEFAULT '',
-  category TEXT NOT NULL CHECK(category IN ('strategy','column','success','news','exam')),
+  category TEXT NOT NULL,
   category_label TEXT NOT NULL,
   thumbnail TEXT DEFAULT '',
   date TEXT NOT NULL,
