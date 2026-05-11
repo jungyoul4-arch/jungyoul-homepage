@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { createInsertSchema, createUpdateSchema } from "drizzle-zod";
-import { articles, highlights, teachers, videos, trackingCodes, navMenus } from "@/db/schema";
+import { articles, highlights, teachers, videos, trackingCodes, navMenus, headerLinks } from "@/db/schema";
 import { categories } from "@/lib/data";
 import { NextResponse } from "next/server";
 
@@ -118,6 +118,18 @@ export const insertNavMenuSchema = createInsertSchema(navMenus, {
 export const updateNavMenuSchema = createUpdateSchema(navMenus, {
   label: (schema) => schema.max(100),
   href: (schema) => schema.max(300).refine((v) => v === undefined || hrefRefine(v), hrefMsg),
+}).omit({ id: true, sortOrder: true });
+
+// Header Links — 헤더 우측 상단 외부/내부 링크 버튼
+export const insertHeaderLinkSchema = createInsertSchema(headerLinks, {
+  label: (schema) => schema.min(1).max(100),
+  href: (schema) => schema.min(1).max(300).refine(hrefRefine, hrefMsg),
+  icon: (schema) => schema.max(50).optional(),
+}).omit({ id: true, sortOrder: true });
+export const updateHeaderLinkSchema = createUpdateSchema(headerLinks, {
+  label: (schema) => schema.max(100),
+  href: (schema) => schema.max(300).refine((v) => v === undefined || hrefRefine(v), hrefMsg),
+  icon: (schema) => schema.max(50).optional(),
 }).omit({ id: true, sortOrder: true });
 
 export function validationError(e: unknown) {

@@ -14,6 +14,7 @@ import {
   Layers,
   Navigation,
   Pin,
+  ExternalLink,
 } from "lucide-react";
 import { SiteLogo } from "@/components/site-logo";
 
@@ -26,6 +27,7 @@ const sidebarItems = [
   { label: "강사 관리", href: "/admin/teachers", icon: Users },
   { label: "영상 관리", href: "/admin/videos", icon: Video },
   { label: "메뉴 관리", href: "/admin/nav-menus", icon: Navigation },
+  { label: "헤더 링크 버튼", href: "/admin/header-links", icon: ExternalLink },
   { label: "추적 코드", href: "/admin/tracking-codes", icon: Code },
   { label: "웹사이트 로고 설정", href: "/admin/settings", icon: Settings },
 ];

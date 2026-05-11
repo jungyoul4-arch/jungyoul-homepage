@@ -15,6 +15,14 @@
 - 부모 메뉴 catch-all: `src/app/[slug]/page.tsx` 가 `nav_menus` DB 기반으로 부모/자식을 조회해 인덱스 페이지(HeroBanner + H1 + NavTabs + JSON-LD)를 자동 렌더. **어드민 `/admin/nav-menus` 에 부모 행만 등록하면 코드 변경 없이 새 라우트가 동작**
 - 명시 라우트(`/articles`, `/exam`, `/teachers`, `/faq`, `/about`, `/contact`, `/location`, ...)는 Next.js 우선순위에 의해 catch-all 보다 먼저 매칭. 별도 hero/콘텐츠/카테고리 필터가 필요할 때만 명시 페이지를 추가 → 절차 [`docs/categories.md`](docs/categories.md)
 
+## 헤더 링크 버튼 (외부/내부)
+- `nav_menus` 와 별개. 헤더 우측 상단 돋보기 왼편(`lg≥`) / 상단 바 아래 우측 행(`<lg`)에 N개 노출, 모두 `target="_blank"` 새 탭
+- 데이터: `header_links` (label, href, icon, sort_order) — `src/db/schema.ts`
+- 어드민: `/admin/header-links` (CRUD + Up/Down reorder), 사이드바 "헤더 링크 버튼"
+- 공개 API: `GET /api/header-links` (인증 없음, sort_order ASC)
+- 아이콘은 lucide-react 화이트리스트(`src/lib/header-link-icons.ts`, 15종) 안에서 이름 매핑. 미등록 이름은 `ExternalLink` 폴백
+- href 검증: `/` 또는 `http(s)://` 만 허용 (`hrefRefine` 재사용)
+
 ## 코드베이스 탐색 규칙
 - 모든 코드 질문/작업 전: `graphify-out/GRAPH_REPORT.md` 먼저 읽기
 - `graphify-out/wiki/index.md` 있으면 raw 파일 대신 그쪽 우선

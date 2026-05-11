@@ -37,6 +37,9 @@ graphify-out/             코드 그래프 (탐색 우선 자료)
 
 → **콘텐츠 관리자가 어드민 `/admin/nav-menus` 에서 부모 메뉴 행만 추가하면 코드 변경 없이 즉시 라우트가 동작합니다.** 별도 hero/콘텐츠가 필요한 경우에만 `src/app/<slug>/page.tsx` 명시 페이지를 추가하면 됩니다. 자세한 절차는 [`docs/categories.md`](docs/categories.md).
 
+## 헤더 링크 버튼 (외부/내부)
+`nav_menus` 와 별개로 헤더 우측 상단 돋보기 왼편(데스크탑) 또는 상단 바 아래 우측 행(모바일)에 외부 사이트 링크 버튼을 N개까지 노출 가능. 어드민 `/admin/header-links` 에서 라벨·URL·아이콘·순서 편집. 모든 버튼은 `target="_blank"` 새 탭으로 열림. DB: `header_links` (`src/db/schema.ts`). 아이콘은 lucide-react 화이트리스트(`src/lib/header-link-icons.ts`, 15종) 안에서 이름으로 매핑되고 미등록 이름은 `ExternalLink` 폴백.
+
 ## 보안 룰 (항상 적용)
 - **JSON-LD XSS escape**: 모든 `<script type="application/ld+json">` 출력은 `JSON.stringify(...).replace(/</g, "\\u003c")` 적용 필수
 - **어드민 인증**: `/api/admin/**` route handler 는 `requireAdmin()` (`src/lib/auth.ts`) 첫 줄 게이트. `/admin/*` 페이지는 `src/middleware.ts` 가 JWT 검증

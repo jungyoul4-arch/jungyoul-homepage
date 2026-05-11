@@ -92,3 +92,11 @@ export const siteSettings = sqliteTable("site_settings", {
   value: text("value").notNull(),
   updatedAt: text("updated_at").$defaultFn(() => new Date().toISOString()),
 });
+
+export const headerLinks = sqliteTable("header_links", {
+  id: text("id").primaryKey(),
+  label: text("label").notNull(),
+  href: text("href").notNull(),
+  icon: text("icon").default(""),        // lucide-react 아이콘 이름 (예: "ExternalLink")
+  sortOrder: integer("sort_order").default(0),
+});

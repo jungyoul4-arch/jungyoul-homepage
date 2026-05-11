@@ -7,6 +7,9 @@ import { Search, X, Menu, Lock, LayoutDashboard, ChevronDown } from "lucide-reac
 import { useAuth } from "./auth-provider";
 import { SiteLogo } from "./site-logo";
 import { DEFAULT_NAV, buildNavTree, type NavGroup, type NavMenuItem } from "@/lib/default-nav";
+import { getHeaderLinkIcon } from "@/lib/header-link-icons";
+
+type HeaderLink = { id: string; label: string; href: string; icon: string | null };
 
 /* ── 검색 추천 검색어 ── */
 const searchSuggestions = [
@@ -24,6 +27,7 @@ export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [navGroups, setNavGroups] = useState<NavGroup[]>(DEFAULT_NAV);
+  const [headerLinks, setHeaderLinks] = useState<HeaderLink[]>([]);
   const [mobileSubmenu, setMobileSubmenu] = useState<string | null>(null);
   const [hoveredNav, setHoveredNav] = useState<string | null>(null);
   const hasAnyChildren = navGroups.some((g) => g.children.length > 0);
@@ -41,6 +45,22 @@ export function Header() {
       })
       .catch(() => {
         // 네트워크 에러 시 폴백 유지
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  // 헤더 링크 버튼 로드
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/header-links")
+      .then((res) => res.json())
+      .then((data: HeaderLink[]) => {
+        if (!cancelled && Array.isArray(data)) {
+          setHeaderLinks(data);
+        }
+      })
+      .catch(() => {
+        // 실패 시 빈 배열 유지 — 헤더는 정상 동작
       });
     return () => { cancelled = true; };
   }, []);
@@ -103,6 +123,27 @@ export function Header() {
 
           {/* Search + Admin + Mobile Menu */}
           <div className="flex items-center gap-3">
+            {/* 데스크탑: 돋보기 왼편 인라인 헤더 링크 버튼 */}
+            {headerLinks.length > 0 && (
+              <div className="hidden lg:flex items-center gap-2">
+                {headerLinks.map((link) => {
+                  const Icon = getHeaderLinkIcon(link.icon);
+                  return (
+                    <a
+                      key={link.id}
+                      href={link.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1E64FA] text-white text-xs font-medium rounded-full hover:bg-[#0E41AD] transition-colors"
+                      aria-label={link.label}
+                    >
+                      <Icon size={14} />
+                      <span>{link.label}</span>
+                    </a>
+                  );
+                })}
+              </div>
+            )}
             <button
               onClick={() => setSearchOpen(!searchOpen)}
               className="p-2 hover:bg-gray-100 rounded-full transition-colors"
@@ -137,6 +178,28 @@ export function Header() {
             </button>
           </div>
         </div>
+
+        {/* 모바일: 상단 바 아래 우측 정렬 헤더 링크 행 */}
+        {headerLinks.length > 0 && (
+          <div className="lg:hidden flex flex-wrap justify-end gap-2 pb-2">
+            {headerLinks.map((link) => {
+              const Icon = getHeaderLinkIcon(link.icon);
+              return (
+                <a
+                  key={link.id}
+                  href={link.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1E64FA] text-white text-xs font-medium rounded-full hover:bg-[#0E41AD] transition-colors"
+                  aria-label={link.label}
+                >
+                  <Icon size={14} />
+                  <span>{link.label}</span>
+                </a>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* 풀와이드 메가메뉴 배경 — 가장 긴 그룹 기준 높이 */}
