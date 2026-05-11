@@ -2,6 +2,37 @@
 
 기록 형식: 날짜 / 현상 / 원인 / 해결 / 교훈
 
+## 2026-05-11 — "정율사관" 부모 메뉴 404 + catch-all 라우팅 도입 (메타 부채 해소)
+- 현상: 헤더의 "정율사관" 탭 클릭 시 404. 어드민 `/admin/nav-menus` 에서 부모 행(`href="/jungyoul"`)은 운영 D1 에 등록되어 있었으나 `src/app/jungyoul/page.tsx` 가 없었음
+- 원인 (메타): 어드민 nav_menus href 가 자유 입력인데, 입력된 href 에 해당하는 App Router 페이지를 개발자가 동시에 만들지 않으면 404. 어드민과 코드의 결합. `2026-05-08 nav_menus href 만 추가하고 라우트 누락` 회고와 동일 패턴이 재발한 셈
+- 단발성 해결: `src/app/jungyoul/page.tsx` 신설 (HeroBanner + H1 + DB-driven 자식 탭 + JSON-LD CollectionPage + 폴백)
+- **근본 해결**: catch-all 동적 라우트 `src/app/[slug]/page.tsx` 도입. `nav_menus` 부모/자식을 자동으로 인덱스 페이지로 렌더. `src/app/jungyoul/page.tsx` 는 catch-all 로 흡수되어 삭제. 명시 라우트는 Next.js 우선순위로 보호 → 충돌 없음. 어드민에서 새 부모 메뉴 등록 시 코드 변경 0 줄로 즉시 동작 (자세한 절차는 [`categories.md`](categories.md))
+- 교훈: 동일 부채가 재발하면 표면 수정 말고 메타 부채를 해소. "관리자 입력 → 코드 변경 필요" 결합은 자동 라우팅·단일 소스로 끊어 둘 것
+
+## 2026-05-11 — catch-all 변경 후 dev 서버 hot reload stale (.next 캐시 재발)
+- 현상: `[slug]/page.tsx` 의 `loadMenu` 반환 타입을 `{ parent, children }` 에서 `{ label, children }` 으로 평탄화한 직후, `/jungyoul` 이 200 → 404 로 회귀. 타입체크는 통과
+- 원인: Next.js 16 Turbopack dev 가 catch-all 디렉터리의 변경된 인터페이스를 hot reload 로 다시 잡지 못하고 이전 컴파일 결과를 사용
+- 해결: dev 서버 stop → `rm -rf .next` → `npm run dev` 재기동. 200 응답으로 복귀
+- 교훈: catch-all/동적 라우트의 *시그니처/타입 변경* 은 hot reload 가 약함. 변경 직후 동작이 이상하면 가장 먼저 `.next` 청소. `2026-04-08` 회고의 일반 원칙이 dev 단계에서도 적용됨
+
+## 2026-05-11 — JSON-LD XSS escape 누락 (location 페이지)
+- 현상: 부채 감사 중 `src/app/location/page.tsx` 의 Place JSON-LD 가 `.replace(/</g, "\\u003c")` 누락 발견. 다른 12 개 페이지는 모두 적용
+- 원인: 인라인 JSON.stringify 패턴이 12 곳에 복붙되어 있어 한 곳에서 escape 호출이 누락돼도 grep 외에 자동 감지 수단이 없음
+- 해결: `}),` → `}).replace(/</g, "\\u003c"),` 1 줄 수정
+- 교훈: 보안 룰의 적용 보장이 grep 의 인간 주의력에 의존하면 누락 재발 가능. 구조적으로 막으려면 `src/lib/json-ld.ts` 같은 헬퍼 (`renderJsonLd(schema)` 가 escape 까지 내장) 로 이행 — 별도 리팩토링 항목
+
+## 2026-05-11 — `admin/slides` 카테고리 옵션 단일 소스 위반 ("exam" 누락)
+- 현상: 슬라이드 빠른 글 생성 폼의 카테고리 드롭다운에서 "시험지 분석" 미노출. 다른 어드민 페이지(`InlineEditModal`, `/admin/articles/new`, `/admin/articles/[id]/edit`)는 정상
+- 원인: `src/app/admin/slides/page.tsx:28-33` 에서 `categoryOptions` 를 하드코딩 (4개). `src/lib/data.ts` 의 `categories` 단일 소스를 import 하지 않아 "exam" 추가 시 자동 반영 안 됨
+- 해결: `import { categories } from "@/lib/data"` 후 `categories.filter((c) => c.value !== "all" && c.value !== "exam")` 로 변경. 단, 슬라이드 메인 영역에 시험지 분석을 노출하지 않는 운영 정책상 exam 만 추가로 제외
+- 교훈: `2026-05-08` 의 categoryOptions 3 중 중복 통합 작업 시 slides 페이지가 누락됐던 것. 단일 소스로의 통합은 grep 으로 후보를 모두 추출한 뒤 일괄 적용해야 누락이 없음
+
+## 2026-05-11 — `layout.tsx` verification.google 빌드 placeholder 잔존
+- 현상: `metadata.verification.google` 값이 `"REPLACE_WITH_GOOGLE_VERIFICATION_CODE"` 인 채로 빌드/배포. 다행히 `layout.tsx` 본문의 `<meta name="google-site-verification">` 에 실제 코드가 박혀 있어 인증 자체는 동작
+- 원인: 초기 부트스트랩에서 `metadata.verification` 객체를 자리만 잡아두고 잊음. verification 정의가 두 곳(metadata + 직접 meta 태그)으로 중복
+- 해결: `metadata.verification` 항목 제거. 직접 `<meta>` 태그 1 곳을 단일 소스로 유지
+- 교훈: `REPLACE_WITH_` 같은 placeholder 는 lint 룰 또는 pre-deploy grep 으로 강제 검출. SEO 체크리스트에 명시했지만 실제 점검 자동화는 없는 상태
+
 ## 2026-04-08 — .next 캐시로 인한 거짓 타입 에러
 - 현상: `tsc --noEmit` 실행 시 `.next/types/routes.d 2.ts`에서 중복 선언 에러 발생
 - 원인: 이전 빌드의 `.next` 캐시가 현재 코드와 불일치

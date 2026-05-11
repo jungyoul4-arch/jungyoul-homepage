@@ -1,36 +1,96 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 정율 교육정보 홈페이지
 
-## Getting Started
+정율 교육정보 (운영: <https://www.jungyoul.net>) 미디어 사이트의 Next.js App Router 코드베이스. 포지셔닝은 "교육 정보 미디어" — 학원 홍보 사이트가 아닙니다. 레이아웃 기준은 <https://news.samsung.com/kr/> 의 구조/계층을 따릅니다.
 
-First, run the development server:
+## 기술 스택
+- Next.js 16 (App Router, Turbopack dev) + React 19
+- Cloudflare Pages + OpenNext (`@opennextjs/cloudflare`)
+- Cloudflare D1 (SQLite) + Drizzle ORM, Cloudflare R2 (이미지)
+- Tailwind CSS 4
+- 인증: JWT (`jose`) + HttpOnly 쿠키, login rate limiter (Cloudflare Ratelimit)
+- 라이트 모드 전용 (다크 모드 미지원)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## 디렉터리 핵심
+```
+src/app/                  Next.js App Router 페이지/라우트
+  ├ page.tsx              홈
+  ├ layout.tsx            루트 레이아웃 + Organization JSON-LD + 트래킹 코드 슬롯
+  ├ [slug]/page.tsx       동적 부모 메뉴 catch-all (nav_menus 기반 자동 인덱스)
+  ├ articles/, exam/, teachers/, faq/, ...  명시 라우트 (별도 hero·콘텐츠 가짐)
+  ├ admin/                어드민 UI (middleware 가 /admin/* 인증 보호)
+  └ api/                  Route handlers (admin/* 는 requireAdmin 게이트)
+src/components/           재사용 컴포넌트 (Header, ArticleList, NavTabs 등)
+src/db/                   Drizzle schema + D1 client
+src/lib/                  auth, data(카테고리 단일 소스), sanitize, mappers, validation
+drizzle/                  마이그레이션
+seed.sql                  초기 데이터 시드 (스키마 표류 주의 — docs/categories.md 참조)
+docs/                     작업별 가이드 (아래 "참조 문서")
+graphify-out/             코드 그래프 (탐색 우선 자료)
+.queue/                   content ↔ ui 워크트리 큐 (docs/worktree-protocol.md)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 라우팅 모델 (핵심)
+헤더 네비게이션은 D1 `nav_menus` 테이블에서 DB-driven 으로 빌드됩니다. 부모 메뉴 클릭 시 동작:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. **명시 라우트** (`/articles`, `/exam`, `/teachers`, `/faq`, `/about`, `/contact`, `/location`, `/privacy`, `/terms`) — 각자 고유한 hero·메타·콘텐츠를 갖는 페이지. Next.js 우선순위에 의해 catch-all 보다 먼저 매칭.
+2. **catch-all `[slug]/page.tsx`** — 위에 매칭되지 않은 단일 세그먼트 경로를 받아 `nav_menus` 에서 `href = "/{slug}"` 부모 행을 조회. 부모가 있으면 자식 행들을 자식 탭 인덱스로 자동 렌더 (HeroBanner + H1 + NavTabs + JSON-LD CollectionPage). 부모가 없으면 `notFound()`.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+→ **콘텐츠 관리자가 어드민 `/admin/nav-menus` 에서 부모 메뉴 행만 추가하면 코드 변경 없이 즉시 라우트가 동작합니다.** 별도 hero/콘텐츠가 필요한 경우에만 `src/app/<slug>/page.tsx` 명시 페이지를 추가하면 됩니다. 자세한 절차는 [`docs/categories.md`](docs/categories.md).
 
-## Learn More
+## 보안 룰 (항상 적용)
+- **JSON-LD XSS escape**: 모든 `<script type="application/ld+json">` 출력은 `JSON.stringify(...).replace(/</g, "\\u003c")` 적용 필수
+- **어드민 인증**: `/api/admin/**` route handler 는 `requireAdmin()` (`src/lib/auth.ts`) 첫 줄 게이트. `/admin/*` 페이지는 `src/middleware.ts` 가 JWT 검증
+- **HTML sanitize**: 사용자 입력 본문은 저장 시 `sanitizeContent()` (`src/lib/sanitize.ts`) 통과. iframe 허용 호스트는 YouTube/Vimeo 만
+- 자세한 SEO·보안 룰 → [`docs/seo-checklist.md`](docs/seo-checklist.md)
 
-To learn more about Next.js, take a look at the following resources:
+## 로컬 개발
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 사전 설치
+```bash
+npm install
+```
+- `.dev.vars` 에 로컬 D1 binding 과 `JWT_SECRET` 등을 설정 (Cloudflare wrangler 가 읽음)
+- 로컬 D1: `.wrangler/state/v3/d1/miniflare-D1DatabaseObject/*.sqlite`
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### dev 서버
+```bash
+npm run dev              # Next.js dev (Turbopack), http://localhost:3000
+```
 
-## Deploy on Vercel
+### 운영 환경 시뮬레이션
+```bash
+npm run preview          # opennextjs-cloudflare build + wrangler dev, http://localhost:8787
+```
+Node.js 런타임 차이로 dev 에서 안 잡히는 빌드 에러를 잡습니다. 배포 전 최소 1회 실행 권장.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### 검증
+```bash
+rm -rf .next && npx tsc --noEmit   # 타입체크 (.next 캐시 stale 회피)
+npm run lint                       # ESLint
+npm run build                      # Next.js production 빌드
+graphify update .                  # 코드 그래프 갱신 (코드 변경 후 필수)
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### 배포
+```bash
+npm run deploy           # opennextjs-cloudflare build + wrangler deploy
+```
+
+## 워크트리 큐 (content ↔ ui)
+콘텐츠 작성은 별도 워크트리에서 진행, `.queue/*.json` 으로 본 워크트리에 전달. → [`docs/worktree-protocol.md`](docs/worktree-protocol.md), [`AGENTS.md`](AGENTS.md)
+
+## 참조 문서
+- [`docs/categories.md`](docs/categories.md) — 카테고리·네비게이션 추가 절차 (catch-all 라우팅 포함)
+- [`docs/seo-checklist.md`](docs/seo-checklist.md) — 페이지 추가/메타데이터/JSON-LD/sitemap 체크리스트
+- [`docs/editor.md`](docs/editor.md) — 어드민 본문 에디터·페이스트 파이프라인·HWPX·썸네일 오버레이
+- [`docs/business-info.md`](docs/business-info.md) — 사업자 정보 (Organization JSON-LD·푸터·연락처)
+- [`docs/mistake-log.md`](docs/mistake-log.md) — 회고/실수 노트
+- [`docs/worktree-protocol.md`](docs/worktree-protocol.md) — 워크트리 큐 프로토콜
+- [`CLAUDE.md`](CLAUDE.md) — Claude 에이전트용 작업 가이드 (사람도 빠른 개요로 활용)
+- `graphify-out/GRAPH_REPORT.md` — 코드 그래프 (모든 코드 작업 전 우선 열람)
+
+## 기여 시
+1. `graphify-out/GRAPH_REPORT.md` 먼저 읽기
+2. 변경 후 `graphify update .` 실행
+3. `npm run preview` 로 운영과 동일한 번들 확인
+4. 보안 룰(JSON-LD escape, requireAdmin, sanitize) 위반 없는지 점검
