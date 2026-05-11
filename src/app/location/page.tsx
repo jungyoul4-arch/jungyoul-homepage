@@ -43,7 +43,7 @@ export default function LocationPage() {
               latitude: 37.4864,
               longitude: 126.7636,
             },
-          }),
+          }).replace(/</g, "\\u003c"),
         }}
       />
 

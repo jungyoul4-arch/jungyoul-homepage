@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { Plus, Trash2, Save, GripVertical, X, ChevronDown, FileText, Eye, EyeOff } from "lucide-react";
 import Image from "next/image";
+import { categories } from "@/lib/data";
 
 interface RawArticle {
   id: string;
@@ -25,12 +26,7 @@ interface Slide {
   sortOrder: number;
 }
 
-const categoryOptions = [
-  { value: "strategy", label: "입시전략" },
-  { value: "column", label: "교육칼럼" },
-  { value: "success", label: "합격스토리" },
-  { value: "news", label: "공지사항" },
-];
+const categoryOptions = categories.filter((c) => c.value !== "all" && c.value !== "exam");
 
 const roleLabels: Record<string, string> = {
   main: "메인",

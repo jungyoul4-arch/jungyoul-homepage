@@ -95,9 +95,6 @@ export const metadata: Metadata = {
       "max-video-preview": -1,
     },
   },
-  verification: {
-    google: "REPLACE_WITH_GOOGLE_VERIFICATION_CODE",
-  },
 };
 
 export default function RootLayout({
