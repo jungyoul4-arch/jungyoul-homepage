@@ -13,6 +13,7 @@ import { AdminEditButton } from "@/components/admin-edit-button";
 import { isValidThumbnail } from "@/lib/thumbnail";
 import { sanitizeContent } from "@/lib/sanitize";
 import { placeholderGradient } from "@/lib/utils";
+import { renderJsonLd } from "@/lib/json-ld";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -79,75 +80,71 @@ export default async function ArticlePage({ params }: Props) {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "Article",
-            headline: article.title,
-            description: article.excerpt,
-            image: article.thumbnail
-              ? [`https://www.jungyoul.net${article.thumbnail}`]
-              : ["https://www.jungyoul.net/og-image.png"],
-            datePublished: article.date.replace(/\//g, "-"),
-            dateModified: raw.updatedAt
-              ? raw.updatedAt.split("T")[0]
-              : article.date.replace(/\//g, "-"),
-            author: {
-              "@type": "Organization",
-              name: "정율 교육정보",
-              url: "https://www.jungyoul.net",
+        dangerouslySetInnerHTML={renderJsonLd({
+          "@context": "https://schema.org",
+          "@type": "Article",
+          headline: article.title,
+          description: article.excerpt,
+          image: article.thumbnail
+            ? [`https://www.jungyoul.net${article.thumbnail}`]
+            : ["https://www.jungyoul.net/og-image.png"],
+          datePublished: article.date.replace(/\//g, "-"),
+          dateModified: raw.updatedAt
+            ? raw.updatedAt.split("T")[0]
+            : article.date.replace(/\//g, "-"),
+          author: {
+            "@type": "Organization",
+            name: "정율 교육정보",
+            url: "https://www.jungyoul.net",
+          },
+          publisher: {
+            "@type": "Organization",
+            name: "정율 교육정보",
+            logo: {
+              "@type": "ImageObject",
+              url: "https://www.jungyoul.net/logo.png",
             },
-            publisher: {
-              "@type": "Organization",
-              name: "정율 교육정보",
-              logo: {
-                "@type": "ImageObject",
-                url: "https://www.jungyoul.net/logo.png",
-              },
-            },
-            mainEntityOfPage: {
-              "@type": "WebPage",
-              "@id": `https://www.jungyoul.net/articles/${article.slug}`,
-            },
-            articleSection: article.categoryLabel,
-            ...(article.content ? {
-              wordCount: article.content.replace(/<[^>]*>/g, "").trim().length,
-            } : {}),
-            keywords: [article.categoryLabel, "정율 교육정보", "입시", "교육"],
-            inLanguage: "ko",
-            isAccessibleForFree: true,
-          }).replace(/</g, "\\u003c"),
-        }}
+          },
+          mainEntityOfPage: {
+            "@type": "WebPage",
+            "@id": `https://www.jungyoul.net/articles/${article.slug}`,
+          },
+          articleSection: article.categoryLabel,
+          ...(article.content ? {
+            wordCount: article.content.replace(/<[^>]*>/g, "").trim().length,
+          } : {}),
+          keywords: [article.categoryLabel, "정율 교육정보", "입시", "교육"],
+          inLanguage: "ko",
+          isAccessibleForFree: true,
+        })}
       />
 
       {/* BreadcrumbList JSON-LD — 구글 리치 결과 */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "BreadcrumbList",
-            itemListElement: [
-              {
-                "@type": "ListItem",
-                position: 1,
-                name: "홈",
-                item: "https://www.jungyoul.net",
-              },
-              {
-                "@type": "ListItem",
-                position: 2,
-                name: "교육정보",
-                item: "https://www.jungyoul.net/articles",
-              },
-              {
-                "@type": "ListItem",
-                position: 3,
-                name: article.categoryLabel,
-              },
-            ],
-          }).replace(/</g, "\\u003c"),
-        }}
+        dangerouslySetInnerHTML={renderJsonLd({
+          "@context": "https://schema.org",
+          "@type": "BreadcrumbList",
+          itemListElement: [
+            {
+              "@type": "ListItem",
+              position: 1,
+              name: "홈",
+              item: "https://www.jungyoul.net",
+            },
+            {
+              "@type": "ListItem",
+              position: 2,
+              name: "교육정보",
+              item: "https://www.jungyoul.net/articles",
+            },
+            {
+              "@type": "ListItem",
+              position: 3,
+              name: article.categoryLabel,
+            },
+          ],
+        })}
       />
 
       <article className="max-w-[1080px] mx-auto px-4 lg:px-10">

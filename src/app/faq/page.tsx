@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { HeroBanner } from "@/components/hero-banner";
+import { renderJsonLd } from "@/lib/json-ld";
 
 export const metadata: Metadata = {
   title: "자주 묻는 질문(FAQ)",
@@ -84,20 +85,18 @@ export default function FAQPage() {
         {/* FAQPage JSON-LD — AEO 핵심 */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "FAQPage",
-            mainEntity: faqs.map((faq) => ({
-              "@type": "Question",
-              name: faq.question,
-              acceptedAnswer: {
-                "@type": "Answer",
-                text: faq.answer,
-              },
-            })),
-          }).replace(/</g, "\\u003c"),
-        }}
+        dangerouslySetInnerHTML={renderJsonLd({
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          mainEntity: faqs.map((faq) => ({
+            "@type": "Question",
+            name: faq.question,
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: faq.answer,
+            },
+          })),
+        })}
       />
 
       <h1 className="text-[1.5rem] md:text-[2.75rem] font-bold text-[#1A1A1A] mb-2">

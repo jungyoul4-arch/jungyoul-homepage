@@ -6,45 +6,7 @@ import { Search, X, Menu, Lock, LayoutDashboard, ChevronDown } from "lucide-reac
 // ChevronDown: 모바일 메뉴에서만 사용
 import { useAuth } from "./auth-provider";
 import { SiteLogo } from "./site-logo";
-
-/* ── 타입 ── */
-interface NavMenuItem {
-  id: string;
-  parentId: string | null;
-  label: string;
-  href: string;
-  sortOrder: number;
-}
-
-interface NavGroup {
-  parent: NavMenuItem;
-  children: NavMenuItem[];
-}
-
-/* ── 하드코딩 폴백 (DB 데이터 없을 때) ── */
-const fallbackNavItems: NavGroup[] = [
-  {
-    parent: { id: "f1", parentId: null, label: "교육정보", href: "/articles", sortOrder: 0 },
-    children: [
-      { id: "f1a", parentId: "f1", label: "전체", href: "/articles", sortOrder: 0 },
-      { id: "f1b", parentId: "f1", label: "입시전략", href: "/articles?category=strategy", sortOrder: 1 },
-      { id: "f1c", parentId: "f1", label: "교육칼럼", href: "/articles?category=column", sortOrder: 2 },
-      { id: "f1d", parentId: "f1", label: "합격스토리", href: "/articles?category=success", sortOrder: 3 },
-      { id: "f1e", parentId: "f1", label: "공지사항", href: "/articles?category=news", sortOrder: 4 },
-    ],
-  },
-  { parent: { id: "f2", parentId: null, label: "선생님", href: "/teachers", sortOrder: 1 }, children: [] },
-  { parent: { id: "f3", parentId: null, label: "FAQ", href: "/faq", sortOrder: 2 }, children: [] },
-  { parent: { id: "f4", parentId: null, label: "상담신청", href: "/contact", sortOrder: 3 }, children: [] },
-];
-
-function buildNavTree(items: NavMenuItem[]): NavGroup[] {
-  const parents = items.filter((i) => !i.parentId);
-  return parents.map((p) => ({
-    parent: p,
-    children: items.filter((c) => c.parentId === p.id),
-  }));
-}
+import { DEFAULT_NAV, buildNavTree, type NavGroup, type NavMenuItem } from "@/lib/default-nav";
 
 /* ── 검색 추천 검색어 ── */
 const searchSuggestions = [
@@ -61,7 +23,7 @@ export function Header() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [navGroups, setNavGroups] = useState<NavGroup[]>(fallbackNavItems);
+  const [navGroups, setNavGroups] = useState<NavGroup[]>(DEFAULT_NAV);
   const [mobileSubmenu, setMobileSubmenu] = useState<string | null>(null);
   const [hoveredNav, setHoveredNav] = useState<string | null>(null);
   const hasAnyChildren = navGroups.some((g) => g.children.length > 0);

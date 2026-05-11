@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { HeroBanner } from "@/components/hero-banner";
+import { renderJsonLd } from "@/lib/json-ld";
 
 export const metadata: Metadata = {
   title: "회사소개",
@@ -23,30 +24,28 @@ export default function AboutPage() {
         {/* AboutPage JSON-LD */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "AboutPage",
-            name: "회사소개 - 정율 교육정보",
-            description:
-              "주식회사정율은 학생 개개인에 맞는 맞춤형 교육을 제공하는 교육 전문 기업입니다.",
-            url: "https://www.jungyoul.net/about",
-            mainEntity: {
-              "@type": "EducationalOrganization",
-              name: "주식회사정율",
-              founder: { "@type": "Person", name: "곽정율" },
-              address: {
-                "@type": "PostalAddress",
-                streetAddress: "길주로91 601호(비잔티움 6층)",
-                addressLocality: "부천시",
-                addressRegion: "경기도",
-                postalCode: "14544",
-                addressCountry: "KR",
-              },
-              telephone: "032-321-9937",
+        dangerouslySetInnerHTML={renderJsonLd({
+          "@context": "https://schema.org",
+          "@type": "AboutPage",
+          name: "회사소개 - 정율 교육정보",
+          description:
+            "주식회사정율은 학생 개개인에 맞는 맞춤형 교육을 제공하는 교육 전문 기업입니다.",
+          url: "https://www.jungyoul.net/about",
+          mainEntity: {
+            "@type": "EducationalOrganization",
+            name: "주식회사정율",
+            founder: { "@type": "Person", name: "곽정율" },
+            address: {
+              "@type": "PostalAddress",
+              streetAddress: "길주로91 601호(비잔티움 6층)",
+              addressLocality: "부천시",
+              addressRegion: "경기도",
+              postalCode: "14544",
+              addressCountry: "KR",
             },
-          }).replace(/</g, "\\u003c"),
-        }}
+            telephone: "032-321-9937",
+          },
+        })}
       />
 
       <h1 className="text-[1.5rem] md:text-[2.75rem] font-bold text-[#1A1A1A] mb-2">

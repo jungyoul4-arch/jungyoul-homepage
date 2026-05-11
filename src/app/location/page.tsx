@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { MapPin, Train, Bus, Car } from "lucide-react";
 import { HeroBanner } from "@/components/hero-banner";
+import { renderJsonLd } from "@/lib/json-ld";
 
 export const metadata: Metadata = {
   title: "찾아오는 길",
@@ -24,27 +25,25 @@ export default function LocationPage() {
         {/* JSON-LD Place */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "Place",
-            name: "정율사관학원",
-            address: {
-              "@type": "PostalAddress",
-              streetAddress: "길주로91 601호(비잔티움 6층)",
-              addressLocality: "부천시 원미구",
-              addressRegion: "경기도",
-              postalCode: "14544",
-              addressCountry: "KR",
-            },
-            telephone: "032-321-9937",
-            geo: {
-              "@type": "GeoCoordinates",
-              latitude: 37.4864,
-              longitude: 126.7636,
-            },
-          }).replace(/</g, "\\u003c"),
-        }}
+        dangerouslySetInnerHTML={renderJsonLd({
+          "@context": "https://schema.org",
+          "@type": "Place",
+          name: "정율사관학원",
+          address: {
+            "@type": "PostalAddress",
+            streetAddress: "길주로91 601호(비잔티움 6층)",
+            addressLocality: "부천시 원미구",
+            addressRegion: "경기도",
+            postalCode: "14544",
+            addressCountry: "KR",
+          },
+          telephone: "032-321-9937",
+          geo: {
+            "@type": "GeoCoordinates",
+            latitude: 37.4864,
+            longitude: 126.7636,
+          },
+        })}
       />
 
       <h1 className="text-[1.5rem] md:text-[2.75rem] font-bold text-[#1A1A1A] mb-2">

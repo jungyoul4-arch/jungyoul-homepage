@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Phone, Mail, MapPin, MessageCircle } from "lucide-react";
 import { HeroBanner } from "@/components/hero-banner";
+import { renderJsonLd } from "@/lib/json-ld";
 
 export const metadata: Metadata = {
   title: "상담신청",
@@ -24,54 +25,52 @@ export default function ContactPage() {
         {/* JSON-LD ContactPage */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "LocalBusiness",
-            name: "정율사관학원",
-            telephone: "032-321-9937",
-            email: "jungyoul3@naver.com",
-            address: {
-              "@type": "PostalAddress",
-              streetAddress: "길주로91 601호(비잔티움 6층)",
-              addressLocality: "부천시",
-              addressRegion: "경기도",
-              postalCode: "14544",
-              addressCountry: "KR",
+        dangerouslySetInnerHTML={renderJsonLd({
+          "@context": "https://schema.org",
+          "@type": "LocalBusiness",
+          name: "정율사관학원",
+          telephone: "032-321-9937",
+          email: "jungyoul3@naver.com",
+          address: {
+            "@type": "PostalAddress",
+            streetAddress: "길주로91 601호(비잔티움 6층)",
+            addressLocality: "부천시",
+            addressRegion: "경기도",
+            postalCode: "14544",
+            addressCountry: "KR",
+          },
+          geo: {
+            "@type": "GeoCoordinates",
+            latitude: 37.4864,
+            longitude: 126.7636,
+          },
+          openingHoursSpecification: [
+            {
+              "@type": "OpeningHoursSpecification",
+              dayOfWeek: [
+                "Monday",
+                "Tuesday",
+                "Wednesday",
+                "Thursday",
+                "Friday",
+              ],
+              opens: "09:00",
+              closes: "22:00",
             },
-            geo: {
-              "@type": "GeoCoordinates",
-              latitude: 37.4864,
-              longitude: 126.7636,
+            {
+              "@type": "OpeningHoursSpecification",
+              dayOfWeek: ["Saturday"],
+              opens: "09:00",
+              closes: "18:00",
             },
-            openingHoursSpecification: [
-              {
-                "@type": "OpeningHoursSpecification",
-                dayOfWeek: [
-                  "Monday",
-                  "Tuesday",
-                  "Wednesday",
-                  "Thursday",
-                  "Friday",
-                ],
-                opens: "09:00",
-                closes: "22:00",
-              },
-              {
-                "@type": "OpeningHoursSpecification",
-                dayOfWeek: ["Saturday"],
-                opens: "09:00",
-                closes: "18:00",
-              },
-            ],
-            url: "https://www.jungyoul.net",
-            sameAs: [
-              "https://www.instagram.com/jysk_official/",
-              "https://blog.naver.com/jungyoul_edu",
-              "https://www.youtube.com/@jungyoulTV",
-            ],
-          }).replace(/</g, "\\u003c"),
-        }}
+          ],
+          url: "https://www.jungyoul.net",
+          sameAs: [
+            "https://www.instagram.com/jysk_official/",
+            "https://blog.naver.com/jungyoul_edu",
+            "https://www.youtube.com/@jungyoulTV",
+          ],
+        })}
       />
 
       <h1 className="text-[1.5rem] md:text-[2.75rem] font-bold text-[#1A1A1A] mb-2">

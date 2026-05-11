@@ -7,6 +7,8 @@ import { NavTabs } from "@/components/nav-tabs";
 import { getDb } from "@/db";
 import { navMenus } from "@/db/schema";
 import { and, asc, eq, isNull } from "drizzle-orm";
+import { renderJsonLd } from "@/lib/json-ld";
+import { getDefaultParentBySlug } from "@/lib/default-nav";
 
 interface RouteParams {
   params: Promise<{ slug: string }>;
@@ -22,21 +24,6 @@ interface MenuResult {
   label: string;
   children: MenuChild[];
 }
-
-// 로컬 dev / fresh-seed 환경에서 nav_menus 테이블이 비어있을 때 사용하는 폴백.
-// 운영 D1 에는 어드민이 등록한 데이터가 있어 이 폴백은 거의 호출되지 않는다.
-// 단일 소스 통합은 보고서 H5 (src/lib/default-nav.ts) 별도 작업에서 진행.
-const FALLBACK_PARENTS: Record<string, MenuResult> = {
-  jungyoul: {
-    label: "정율사관",
-    children: [
-      { id: "fb-teachers", label: "선생님", href: "/teachers" },
-      { id: "fb-faq", label: "FAQ", href: "/faq" },
-      { id: "fb-exam", label: "시험지 분석", href: "/exam" },
-      { id: "fb-success", label: "성장스토리", href: "/articles?category=success" },
-    ],
-  },
-};
 
 async function loadMenu(slug: string): Promise<MenuResult | null> {
   const db = await getDb();
@@ -59,14 +46,22 @@ async function loadMenu(slug: string): Promise<MenuResult | null> {
         children: rows.map((r) => ({ id: r.id, label: r.label, href: r.href })),
       };
     }
-    // 부모는 있지만 자식이 없음 → 폴백 자식이 있으면 사용
-    const fb = FALLBACK_PARENTS[slug];
-    if (fb) return { label: parent.label, children: fb.children };
+    const fb = getDefaultParentBySlug(slug);
+    if (fb) {
+      return {
+        label: parent.label,
+        children: fb.children.map((c) => ({ id: c.id, label: c.label, href: c.href })),
+      };
+    }
     return { label: parent.label, children: [] };
   }
 
-  // DB 에 부모 없음 → 알려진 폴백 부모(jungyoul 등) 이면 그대로 사용
-  return FALLBACK_PARENTS[slug] ?? null;
+  const fb = getDefaultParentBySlug(slug);
+  if (!fb) return null;
+  return {
+    label: fb.parent.label,
+    children: fb.children.map((c) => ({ id: c.id, label: c.label, href: c.href })),
+  };
 }
 
 export async function generateMetadata({ params }: RouteParams): Promise<Metadata> {
@@ -104,26 +99,24 @@ export default async function MenuIndexPage({ params }: RouteParams) {
       <div className="max-w-[1480px] mx-auto px-4 lg:px-10 py-10">
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "CollectionPage",
-              name: label,
-              description,
-              url: `https://www.jungyoul.net/${slug}`,
-              mainEntity: {
-                "@type": "ItemList",
-                itemListElement: children.map((c, i) => ({
-                  "@type": "ListItem",
-                  position: i + 1,
-                  name: c.label,
-                  url: c.href.startsWith("http")
-                    ? c.href
-                    : `https://www.jungyoul.net${c.href}`,
-                })),
-              },
-            }).replace(/</g, "\\u003c"),
-          }}
+          dangerouslySetInnerHTML={renderJsonLd({
+            "@context": "https://schema.org",
+            "@type": "CollectionPage",
+            name: label,
+            description,
+            url: `https://www.jungyoul.net/${slug}`,
+            mainEntity: {
+              "@type": "ItemList",
+              itemListElement: children.map((c, i) => ({
+                "@type": "ListItem",
+                position: i + 1,
+                name: c.label,
+                url: c.href.startsWith("http")
+                  ? c.href
+                  : `https://www.jungyoul.net${c.href}`,
+              })),
+            },
+          })}
         />
 
         <h1 className="text-[1.5rem] md:text-[1.875rem] font-bold text-[#1A1A1A] mt-10 md:mt-20 pb-5 border-b border-[#E0E0E0] mb-10">

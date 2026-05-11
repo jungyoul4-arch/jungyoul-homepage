@@ -7,6 +7,7 @@ import { AuthProvider } from "@/components/auth-provider";
 import { InlineEditModal } from "@/components/inline-edit-modal";
 import { TrackingCodeHead, TrackingCodeBodyStart, TrackingCodeBodyEnd } from "@/components/tracking-code-injector";
 import { ScrollTopButton } from "@/components/scroll-top-button";
+import { renderJsonLd } from "@/lib/json-ld";
 
 const notoSansKR = Noto_Sans_KR({
   variable: "--font-noto-sans-kr",
@@ -115,33 +116,31 @@ export default function RootLayout({
         />
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "EducationalOrganization",
-              name: "정율 교육정보",
-              alternateName: "정율사관학원",
-              url: "https://news.jung-youl.com",
-              logo: "https://news.jung-youl.com/logo.png",
-              description:
-                "대입 입시, 수능, 내신, 논술 등 교육 정보를 전문적으로 제공하는 미디어",
-              address: {
-                "@type": "PostalAddress",
-                streetAddress: "길주로91 601호(비잔티움 6층)",
-                addressLocality: "부천시",
-                addressRegion: "경기도",
-                postalCode: "14544",
-                addressCountry: "KR",
-              },
-              telephone: "032-321-9937",
-              email: "jungyoul3@naver.com",
-              sameAs: [
-                "https://www.instagram.com/jysk_official/",
-                "https://blog.naver.com/jungyoul_edu",
-                "https://www.youtube.com/@jungyoulTV",
-              ],
-            }).replace(/</g, "\\u003c"),
-          }}
+          dangerouslySetInnerHTML={renderJsonLd({
+            "@context": "https://schema.org",
+            "@type": "EducationalOrganization",
+            name: "정율 교육정보",
+            alternateName: "정율사관학원",
+            url: "https://news.jung-youl.com",
+            logo: "https://news.jung-youl.com/logo.png",
+            description:
+              "대입 입시, 수능, 내신, 논술 등 교육 정보를 전문적으로 제공하는 미디어",
+            address: {
+              "@type": "PostalAddress",
+              streetAddress: "길주로91 601호(비잔티움 6층)",
+              addressLocality: "부천시",
+              addressRegion: "경기도",
+              postalCode: "14544",
+              addressCountry: "KR",
+            },
+            telephone: "032-321-9937",
+            email: "jungyoul3@naver.com",
+            sameAs: [
+              "https://www.instagram.com/jysk_official/",
+              "https://blog.naver.com/jungyoul_edu",
+              "https://www.youtube.com/@jungyoulTV",
+            ],
+          })}
         />
         <TrackingCodeHead />
       </head>

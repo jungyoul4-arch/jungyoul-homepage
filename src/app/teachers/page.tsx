@@ -9,6 +9,7 @@ import { toTeacher } from "@/lib/mappers";
 import { AdminEditButton } from "@/components/admin-edit-button";
 import { isValidThumbnail } from "@/lib/thumbnail";
 import { HeroBanner } from "@/components/hero-banner";
+import { renderJsonLd } from "@/lib/json-ld";
 
 export const metadata: Metadata = {
   title: "선생님 소개",
@@ -39,19 +40,17 @@ export default async function TeachersPage() {
         {/* JSON-LD for teachers */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "EducationalOrganization",
-            name: "정율사관학원",
-            url: "https://www.jungyoul.net",
-            employee: teachers.map((t) => ({
-              "@type": "Person",
-              name: t.name,
-              jobTitle: `${t.subject} 강사`,
-            })),
-          }).replace(/</g, "\\u003c"),
-        }}
+        dangerouslySetInnerHTML={renderJsonLd({
+          "@context": "https://schema.org",
+          "@type": "EducationalOrganization",
+          name: "정율사관학원",
+          url: "https://www.jungyoul.net",
+          employee: teachers.map((t) => ({
+            "@type": "Person",
+            name: t.name,
+            jobTitle: `${t.subject} 강사`,
+          })),
+        })}
       />
 
       {/* Page Header — 삼성 뉴스룸 서브페이지 헤더 스타일 */}

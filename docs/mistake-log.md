@@ -2,6 +2,12 @@
 
 기록 형식: 날짜 / 현상 / 원인 / 해결 / 교훈
 
+## 2026-05-11 — JSON-LD escape · 폴백 네비 · sitemap 메타 부채 일괄 해소 (후속)
+- 현상: 같은 날 표면 부채 4건(catch-all, location escape, slides 단일 소스, verification placeholder) 을 수정한 커밋 `986c2bc` 직후, 동일 회고가 "별도 작업" 으로 미룬 메타 부채 3건이 그대로 남아있음을 검증. (1) 13개 페이지가 인라인 `.replace(/</g, "<")` 복붙 (2) 폴백 네비가 `header.tsx`/`[slug]/page.tsx` 두 곳 분산 (3) sitemap 9개 경로 하드코딩
+- 해결: (1) `src/lib/json-ld.ts` 의 `renderJsonLd(schema)` 헬퍼 1곳에 escape 내장 → 11개 페이지 14개 script 태그가 `dangerouslySetInnerHTML={renderJsonLd(...)}` 사용. (2) `src/lib/default-nav.ts` 신설 → `DEFAULT_NAV` 가 카테고리 자식을 `categories` 에서 derive (이중 동기화 방지). `header.tsx` 와 `[slug]/page.tsx` 가 동일 단일 소스 사용. (3) `sitemap.ts` 가 `nav_menus` 부모 행을 DB 에서 읽어 동적 추가, DB 빈 경우 `DEFAULT_NAV` 폴백. 정적 페이지는 `STATIC_ROUTES` 로 분리
+- 회귀: 1차 작업 후 ck 에이전트 검증에서 `/exam` 이 fresh-seed 시 sitemap 누락 발견(DEFAULT_NAV 부모에 없음). `STATIC_ROUTES` 에 `/exam` 명시 추가로 해결. 신규 부모 메뉴 추가 시 sitemap 자동 반영은 유지
+- 교훈: 표면 부채 fix 와 메타 부채 fix 는 동일 PR 에서 함께 끝내야 했음. 분리하면 잔존 부채가 "별도 작업" 으로 침전. 단일 소스 통합 후에는 폴백 경로 자체가 회귀 영역이라 항상 fresh-seed/DB-empty 시나리오를 명시적으로 점검할 것
+
 ## 2026-05-11 — "정율사관" 부모 메뉴 404 + catch-all 라우팅 도입 (메타 부채 해소)
 - 현상: 헤더의 "정율사관" 탭 클릭 시 404. 어드민 `/admin/nav-menus` 에서 부모 행(`href="/jungyoul"`)은 운영 D1 에 등록되어 있었으나 `src/app/jungyoul/page.tsx` 가 없었음
 - 원인 (메타): 어드민 nav_menus href 가 자유 입력인데, 입력된 href 에 해당하는 App Router 페이지를 개발자가 동시에 만들지 않으면 404. 어드민과 코드의 결합. `2026-05-08 nav_menus href 만 추가하고 라우트 누락` 회고와 동일 패턴이 재발한 셈
