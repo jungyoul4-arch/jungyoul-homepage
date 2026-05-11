@@ -53,3 +53,15 @@ export function buildNavTree(items: NavMenuItem[]): NavGroup[] {
     children: items.filter((c) => c.parentId === p.id),
   }));
 }
+
+export function extractCategorySlugsFromHrefs(hrefs: string[]): string[] {
+  const set = new Set<string>();
+  for (const href of hrefs) {
+    const idx = href.indexOf("?");
+    if (idx === -1) continue;
+    const params = new URLSearchParams(href.slice(idx));
+    const cat = params.get("category");
+    if (cat) set.add(cat);
+  }
+  return Array.from(set);
+}

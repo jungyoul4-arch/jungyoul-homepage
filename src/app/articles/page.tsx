@@ -4,10 +4,39 @@ import type { Metadata } from "next";
 import { ArticleList } from "@/components/article-list";
 import { HeroBanner } from "@/components/hero-banner";
 import { getDb } from "@/db";
-import { articles as articlesTable } from "@/db/schema";
-import { desc } from "drizzle-orm";
+import { articles as articlesTable, navMenus } from "@/db/schema";
+import { and, asc, desc, eq, inArray, isNull } from "drizzle-orm";
 import { toArticle } from "@/lib/mappers";
 import { renderJsonLd } from "@/lib/json-ld";
+import {
+  extractCategorySlugsFromHrefs,
+  getDefaultParentBySlug,
+} from "@/lib/default-nav";
+
+async function getAllowedCategoriesForArticlesPage(
+  db: Awaited<ReturnType<typeof getDb>>,
+): Promise<string[]> {
+  const parents = await db
+    .select()
+    .from(navMenus)
+    .where(and(isNull(navMenus.parentId), eq(navMenus.href, "/articles")))
+    .limit(1);
+
+  let hrefs: string[] = [];
+  if (parents.length > 0) {
+    const rows = await db
+      .select()
+      .from(navMenus)
+      .where(eq(navMenus.parentId, parents[0].id))
+      .orderBy(asc(navMenus.sortOrder));
+    hrefs = rows.map((r) => r.href);
+  }
+  if (hrefs.length === 0) {
+    const fb = getDefaultParentBySlug("articles");
+    hrefs = fb?.children.map((c) => c.href) ?? [];
+  }
+  return extractCategorySlugsFromHrefs(hrefs);
+}
 
 export const metadata: Metadata = {
   title: "교육정보",
@@ -26,7 +55,16 @@ export const metadata: Metadata = {
 
 export default async function ArticlesPage() {
   const db = await getDb();
-  const raw = await db.select().from(articlesTable).orderBy(desc(articlesTable.date));
+  const allowed = await getAllowedCategoriesForArticlesPage(db);
+
+  let query = db
+    .select()
+    .from(articlesTable)
+    .orderBy(desc(articlesTable.date));
+  if (allowed.length > 0) {
+    query = query.where(inArray(articlesTable.category, allowed)) as typeof query;
+  }
+  const raw = await query;
   const articles = raw.map(toArticle);
 
   return (
