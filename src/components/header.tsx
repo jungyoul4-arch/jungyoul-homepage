@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
+import { createElement, type ReactNode } from "react";
 import { useState, useEffect } from "react";
 import { Search, X, Menu, Lock, LayoutDashboard, ChevronDown } from "lucide-react";
 // ChevronDown: 모바일 메뉴에서만 사용
@@ -9,7 +11,32 @@ import { SiteLogo } from "./site-logo";
 import { DEFAULT_NAV, buildNavTree, type NavGroup, type NavMenuItem } from "@/lib/default-nav";
 import { getHeaderLinkIcon } from "@/lib/header-link-icons";
 
-type HeaderLink = { id: string; label: string; href: string; icon: string | null };
+type HeaderLink = {
+  id: string;
+  label: string;
+  href: string;
+  icon: string | null;
+  imageUrl: string | null;
+};
+
+// 헤더 버튼 좌측 글리프. imageUrl 우선, 없으면 레거시 lucide 아이콘 폴백.
+// 함수형 컴포넌트가 아닌 ReactNode 반환 헬퍼 — lucide 아이콘을 createElement 로 직접 만들어
+// react-hooks/static-components 룰(렌더 중 컴포넌트 변수 생성 금지) 회피.
+function renderHeaderLinkGlyph(link: HeaderLink): ReactNode {
+  if (link.imageUrl) {
+    return (
+      <Image
+        src={link.imageUrl}
+        alt=""
+        width={14}
+        height={14}
+        unoptimized
+        className="object-contain"
+      />
+    );
+  }
+  return createElement(getHeaderLinkIcon(link.icon), { size: 14 });
+}
 
 /* ── 검색 추천 검색어 ── */
 const searchSuggestions = [
@@ -126,22 +153,19 @@ export function Header() {
             {/* 데스크탑: 돋보기 왼편 인라인 헤더 링크 버튼 */}
             {headerLinks.length > 0 && (
               <div className="hidden lg:flex items-center gap-2">
-                {headerLinks.map((link) => {
-                  const Icon = getHeaderLinkIcon(link.icon);
-                  return (
-                    <a
-                      key={link.id}
-                      href={link.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1E64FA] text-white text-xs font-medium rounded-full hover:bg-[#0E41AD] transition-colors"
-                      aria-label={link.label}
-                    >
-                      <Icon size={14} />
-                      <span>{link.label}</span>
-                    </a>
-                  );
-                })}
+                {headerLinks.map((link) => (
+                  <a
+                    key={link.id}
+                    href={link.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 text-[#1A1A1A] text-xs font-medium rounded-full hover:border-gray-400 hover:bg-gray-50 transition-colors"
+                    aria-label={link.label}
+                  >
+                    {renderHeaderLinkGlyph(link)}
+                    <span>{link.label}</span>
+                  </a>
+                ))}
               </div>
             )}
             <button
@@ -179,25 +203,22 @@ export function Header() {
           </div>
         </div>
 
-        {/* 모바일: 상단 바 아래 우측 정렬 헤더 링크 행 */}
+        {/* 모바일: 상단 바 아래 좌측 정렬 헤더 링크 행 */}
         {headerLinks.length > 0 && (
-          <div className="lg:hidden flex flex-wrap justify-end gap-2 pb-2">
-            {headerLinks.map((link) => {
-              const Icon = getHeaderLinkIcon(link.icon);
-              return (
-                <a
-                  key={link.id}
-                  href={link.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1E64FA] text-white text-xs font-medium rounded-full hover:bg-[#0E41AD] transition-colors"
-                  aria-label={link.label}
-                >
-                  <Icon size={14} />
-                  <span>{link.label}</span>
-                </a>
-              );
-            })}
+          <div className="lg:hidden flex flex-wrap justify-start gap-2 pb-2">
+            {headerLinks.map((link) => (
+              <a
+                key={link.id}
+                href={link.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 text-[#1A1A1A] text-xs font-medium rounded-full hover:border-gray-400 hover:bg-gray-50 transition-colors"
+                aria-label={link.label}
+              >
+                {renderHeaderLinkGlyph(link)}
+                <span>{link.label}</span>
+              </a>
+            ))}
           </div>
         )}
       </div>

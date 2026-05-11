@@ -97,6 +97,7 @@ export const headerLinks = sqliteTable("header_links", {
   id: text("id").primaryKey(),
   label: text("label").notNull(),
   href: text("href").notNull(),
-  icon: text("icon").default(""),        // lucide-react 아이콘 이름 (예: "ExternalLink")
+  icon: text("icon").default(""),         // 레거시(deprecated): 어드민 신규 입력 받지 않음. 기존 데이터 보존 + image_url 미설정 시 폴백
+  imageUrl: text("image_url").default(""), // 사용자 업로드 이미지(/api/admin/upload/...), 헤더 버튼 좌측 아이콘 자리에 노출
   sortOrder: integer("sort_order").default(0),
 });

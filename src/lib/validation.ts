@@ -125,11 +125,13 @@ export const insertHeaderLinkSchema = createInsertSchema(headerLinks, {
   label: (schema) => schema.min(1).max(100),
   href: (schema) => schema.min(1).max(300).refine(hrefRefine, hrefMsg),
   icon: (schema) => schema.max(50).optional(),
+  imageUrl: (schema) => schema.max(500).optional(),
 }).omit({ id: true, sortOrder: true });
 export const updateHeaderLinkSchema = createUpdateSchema(headerLinks, {
   label: (schema) => schema.max(100),
   href: (schema) => schema.max(300).refine((v) => v === undefined || hrefRefine(v), hrefMsg),
   icon: (schema) => schema.max(50).optional(),
+  imageUrl: (schema) => schema.max(500).optional(),
 }).omit({ id: true, sortOrder: true });
 
 export function validationError(e: unknown) {

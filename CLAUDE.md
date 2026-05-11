@@ -16,12 +16,15 @@
 - 명시 라우트(`/articles`, `/exam`, `/teachers`, `/faq`, `/about`, `/contact`, `/location`, ...)는 Next.js 우선순위에 의해 catch-all 보다 먼저 매칭. 별도 hero/콘텐츠/카테고리 필터가 필요할 때만 명시 페이지를 추가 → 절차 [`docs/categories.md`](docs/categories.md)
 
 ## 헤더 링크 버튼 (외부/내부)
-- `nav_menus` 와 별개. 헤더 우측 상단 돋보기 왼편(`lg≥`) / 상단 바 아래 우측 행(`<lg`)에 N개 노출, 모두 `target="_blank"` 새 탭
-- 데이터: `header_links` (label, href, icon, sort_order) — `src/db/schema.ts`
+- `nav_menus` 와 별개. 헤더 우측 상단 돋보기 왼편(`lg≥`) / 상단 바 아래 **좌측** 행(`<lg`)에 N개 노출, 모두 `target="_blank"` 새 탭
+- 시안: 투명 배경 + `border-gray-200` 옅은 테두리 + `text-[#1A1A1A]`. 호버 시 테두리 진해지고 옅은 회색 배경. **파란 배경 캡슐은 사용하지 않음**
+- 데이터: `header_links` (label, href, **image_url**, icon[레거시], sort_order) — `src/db/schema.ts` (drizzle 마이그 `0006_huge_purple_man.sql`)
 - 어드민: `/admin/header-links` (CRUD + Up/Down reorder), 사이드바 "헤더 링크 버튼"
 - 공개 API: `GET /api/header-links` (인증 없음, sort_order ASC)
-- 아이콘은 lucide-react 화이트리스트(`src/lib/header-link-icons.ts`, 15종) 안에서 이름 매핑. 미등록 이름은 `ExternalLink` 폴백
-- href 검증: `/` 또는 `http(s)://` 만 허용 (`hrefRefine` 재사용)
+- **버튼 글리프(라벨 왼쪽)**: `imageUrl` 우선(어드민에서 직접 업로드), 비어 있으면 레거시 lucide 아이콘 폴백(`src/lib/header-link-icons.ts` 화이트리스트). 어드민 신규 입력 UI 는 이미지 업로드만 노출 — lucide 이름 입력은 deprecated
+- 이미지 업로드: 어드민 폼에서 `<input type="file">` → `/api/admin/upload` → R2 (`/api/admin/upload/{key}` 응답). 권장 크기 40×40 png/svg/webp
+- 헤더 컴포넌트(`src/components/header.tsx`)는 lucide 아이콘을 `createElement` + ReactNode 헬퍼(`renderHeaderLinkGlyph`)로 렌더 — ESLint `react-hooks/static-components` 룰(렌더 중 컴포넌트 변수 생성 금지) 회피
+- href 검증: `/` 또는 `http(s)://` 만 허용 (`hrefRefine` 재사용). `imageUrl` 은 max 500자 optional
 
 ## 코드베이스 탐색 규칙
 - 모든 코드 질문/작업 전: `graphify-out/GRAPH_REPORT.md` 먼저 읽기

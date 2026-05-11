@@ -2,6 +2,12 @@
 
 기록 형식: 날짜 / 현상 / 원인 / 해결 / 교훈
 
+## 2026-05-11 — 헤더 링크 버튼 모바일 정렬·이미지 첨부·정율사관 자식 라우팅 별도 진단
+- 현상: (a) 모바일에서 헤더 외부 링크 버튼(`QA 튜터링`·`클래스인-티처`)이 우측 정렬·파란 캡슐(`bg-[#1E64FA]`) 로 노출, (b) 어드민 폼은 lucide 아이콘 이름 입력만 받아 임의 로고/이미지 첨부 불가, (c) 사용자가 "정율사관 → 성장스토리" 자식 메뉴 클릭 시 404 가 *여전히* 재현됨을 보고
+- 해결 (a)+(b): `header.tsx` 모바일 컨테이너 `justify-end` → `justify-start`, 두 분기(데스크탑/모바일) 버튼 클래스를 `bg-[#1E64FA] text-white` → `border border-gray-200 text-[#1A1A1A]` (투명 + 옅은 테두리) 로 교체. `header_links.image_url` 컬럼 추가(drizzle `0006_*`) + 어드민 폼에서 `/api/admin/upload` 직접 업로드(`ThumbnailUploader` 는 오버레이 기능까지 들고 있어 과도 → 인라인 파일 input 사용). 헤더 글리프는 `imageUrl` 우선 + lucide 폴백 헬퍼(`renderHeaderLinkGlyph`)로 분리, `createElement` 로 ESLint `react-hooks/static-components` 룰 회피. 어드민 신규 UI 는 lucide 입력 제거하고 이미지 업로드만 노출, 레거시 데이터는 노란 안내 배지로 표시
+- 회귀 진단 (c): `986c2bc`(기술부채 수정 — catch-all 도입)와 `3d8fc9c`(메타 부채 수정 — 폴백 단일소스/JSON-LD 헬퍼) 모두 **부모 메뉴 404** 만 해결. 자식 라우팅은 처음부터 작업 범위 밖이었음. 폴백(`default-nav.ts:37`)의 성장스토리 href = `/articles?category=success` (정상). 자식 404 가 *발생* 한다는 것은 **운영 D1 의 `nav_menus` 자식 행 href 가 어드민 자유 입력 검증 부족(`trim()` 만)으로 잘못 입력되어 폴백을 덮은 상태**가 가장 유력. 진단 절차: `SELECT id,label,href FROM nav_menus WHERE parent_id=(SELECT id FROM nav_menus WHERE href='/jungyoul' AND parent_id IS NULL);` 후 어드민에서 정정
+- 교훈: (1) 회고 문서가 *부모/자식* 을 구분 명시하지 않으면 다음 회기에 "함께 해결되었을 것" 으로 오인됨 — 동일 도메인 작업이라도 라우팅 트리 깊이마다 별도 항목 권장. (2) lucide 아이콘 화이트리스트 같은 *코드-바운드* 입력은 외부 자산(이미지)으로 확장될 가능성이 높음 — 초기 설계 시 어드민이 자유 자산을 첨부할 수 있는 컬럼을 함께 두면 후속 마이그레이션 없이 확장. (3) ESLint 룰 위반은 인라인 `.map()` 콜백에서는 안 잡혀도 별도 함수형 컴포넌트로 추출하는 순간 잡힌다 — `createElement` + ReactNode 헬퍼 패턴을 기억할 것
+
 ## 2026-05-11 — JSON-LD escape · 폴백 네비 · sitemap 메타 부채 일괄 해소 (후속)
 - 현상: 같은 날 표면 부채 4건(catch-all, location escape, slides 단일 소스, verification placeholder) 을 수정한 커밋 `986c2bc` 직후, 동일 회고가 "별도 작업" 으로 미룬 메타 부채 3건이 그대로 남아있음을 검증. (1) 13개 페이지가 인라인 `.replace(/</g, "<")` 복붙 (2) 폴백 네비가 `header.tsx`/`[slug]/page.tsx` 두 곳 분산 (3) sitemap 9개 경로 하드코딩
 - 해결: (1) `src/lib/json-ld.ts` 의 `renderJsonLd(schema)` 헬퍼 1곳에 escape 내장 → 11개 페이지 14개 script 태그가 `dangerouslySetInnerHTML={renderJsonLd(...)}` 사용. (2) `src/lib/default-nav.ts` 신설 → `DEFAULT_NAV` 가 카테고리 자식을 `categories` 에서 derive (이중 동기화 방지). `header.tsx` 와 `[slug]/page.tsx` 가 동일 단일 소스 사용. (3) `sitemap.ts` 가 `nav_menus` 부모 행을 DB 에서 읽어 동적 추가, DB 빈 경우 `DEFAULT_NAV` 폴백. 정적 페이지는 `STATIC_ROUTES` 로 분리
