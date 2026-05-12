@@ -91,6 +91,13 @@
 - 해결: `xPct/yPct` 자유 좌표를 `anchor: "tl"|"tr"|"center"|"bl"|"br"` 5단계 enum 으로 교체. 우측 패널 3×3 그리드 버튼(귀퉁이 4 + 중앙 1, 빈 4셀은 spacer). 드래그 핸들러 일체 제거. ANCHOR_POSITIONS 에 8/92% 가장자리 패딩으로 잘림 방지. renderToBlob 에서 anchor 별로 ctx.textAlign/textBaseline 자동 결정
 - 교훈: 자유도가 높은 컨트롤이 항상 좋은 UX 는 아니다. 모바일/터치 사용자가 있으면 프리셋 기반이 정확도/속도 모두 우월
 
+## 2026-05-12 — Miniflare D1 UNIQUE 제약 에러가 `Error` 인스턴스가 아닐 수 있음
+- 현상: `exam_tag_options` 에 중복 값 삽입 시 API 가 409 대신 500 반환
+- 원인: Miniflare(로컬 D1 에뮬레이터)가 던지는 UNIQUE 제약 위반 에러가 표준 `Error` 인스턴스가 아닌 경우가 있어 `e instanceof Error && e.message.includes("UNIQUE")` 검사가 false 로 평가
+- 해결: `src/app/api/admin/exam-tag-options/route.ts` 에서 `String(e).includes("UNIQUE") || e?.cause?.message?.includes?.("UNIQUE")` 형태로 양쪽 체크. `instanceof Error` 의존 제거
+- 영향 범위: `src/app/api/admin/articles/[id]/route.ts` 등 D1 UNIQUE 에러를 `instanceof Error` 로만 검사하는 다른 route handler 에도 동일 취약점이 잠재. 운영 환경에서는 재현 빈도가 낮더라도 방어 코드 권장
+- 교훈: Miniflare 에뮬레이터는 `Error` 서브클래스가 아닌 객체를 throw 할 수 있다. D1 에러 체크는 항상 `String(e)` + `e?.cause?.message` 를 함께 확인
+
 ## 2026-05-08 — Mac 한컴오피스 한글 뷰어 페이스트 — div/span 위주 마크업 + file:// 이미지
 - 현상: 이전 분기 우선순위 수정 후에도 Mac 한컴오피스 한글 뷰어로 연 .hwpx 의 표·이미지가 본문에 들어오지 않음
 - 원인 후보: (a) text/html 이 `<div>/<span>` 위주라 `/<(table|img|p|h1-6|...)>/` 정규식 미매치 → plain text fallback. (b) 이미지 src 가 `file://` 절대경로라 브라우저가 못 가져옴. (c) 표는 HTML, 이미지는 별도 image item 으로 분리되어 도착

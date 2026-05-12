@@ -61,6 +61,15 @@
 5. 어드민에서 `/admin/nav-menus` 진입 → 부모 메뉴 아래에 자식 행 추가 (label, href=`/<slug>`, sortOrder)
    - DB 행은 코드와 무관하게 어드민 UI 로 관리
 
+## 카테고리 vs. 시험 태그 — 구분
+
+`articles.category` 는 `src/lib/data.ts` 에 코드로 정의된 enum 이고 고정적이다. 반면 `/exam` 페이지의 연도/학년/과목 태그는 `exam_tag_options` DB 테이블로 관리되는 별도 메타데이터 레이어다:
+
+- **카테고리**(strategy/column/success/news/exam/…): 코드에 정의, 새 값 추가 시 `src/lib/data.ts` 수정 필요 → 본 문서 절차 따름
+- **시험 태그**(exam_year/exam_grade/exam_subject): DB-driven, 어드민 `/admin/exam-tag-options` 에서 코드 변경 없이 옵션 관리. `category = "exam"` 기사에만 적용
+
+다른 카테고리에서 유사한 다차원 필터가 필요해지면 `exam_tag_options` 패턴(`tag_type` 컬럼으로 차원 구분, 공유 컴포넌트 `<ExamTagSelects>`)을 참조해 확장할 것.
+
 ### 카테고리 라벨 단일 소스
 `InlineEditModal`, `/admin/articles/new`, `/admin/articles/[id]/edit`, `/admin/slides` 의 `categoryOptions` 는 모두 `src/lib/data.ts` 의 `categories` 배열을 import 한 뒤 `filter` 로 통합되어 있다. 라벨/value 변경은 `src/lib/data.ts` 한 곳만 수정.
 

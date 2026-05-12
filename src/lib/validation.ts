@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { createInsertSchema, createUpdateSchema } from "drizzle-zod";
-import { articles, highlights, teachers, videos, trackingCodes, navMenus, headerLinks } from "@/db/schema";
+import { articles, highlights, teachers, videos, trackingCodes, navMenus, headerLinks, examTagOptions } from "@/db/schema";
 import { categories } from "@/lib/data";
 import { NextResponse } from "next/server";
 
@@ -24,6 +24,9 @@ export const insertArticleSchema = createInsertSchema(articles, {
   thumbnail: (schema) => schema.max(500),
   thumbnailOverlays: (schema) => schema.max(OVERLAY_JSON_MAX),
   date: (schema) => schema.max(50),
+  examYear: (schema) => schema.max(50),
+  examGrade: (schema) => schema.max(50),
+  examSubject: (schema) => schema.max(50),
 }).omit({
   id: true,
   createdAt: true,
@@ -39,6 +42,9 @@ export const updateArticleSchema = createUpdateSchema(articles, {
   thumbnail: (schema) => schema.max(500),
   thumbnailOverlays: (schema) => schema.max(OVERLAY_JSON_MAX),
   date: (schema) => schema.max(50),
+  examYear: (schema) => schema.max(50),
+  examGrade: (schema) => schema.max(50),
+  examSubject: (schema) => schema.max(50),
 }).omit({
   id: true,
   createdAt: true,
@@ -132,6 +138,18 @@ export const updateHeaderLinkSchema = createUpdateSchema(headerLinks, {
   href: (schema) => schema.max(300).refine((v) => v === undefined || hrefRefine(v), hrefMsg),
   icon: (schema) => schema.max(50).optional(),
   imageUrl: (schema) => schema.max(500).optional(),
+}).omit({ id: true, sortOrder: true });
+
+// Exam Tag Options — /exam 태그 셀렉트박스 옵션 (year/grade/subject)
+export const examTagTypes = ["year", "grade", "subject"] as const;
+export type ExamTagType = (typeof examTagTypes)[number];
+const examTagTypeRefine = (v: string): v is ExamTagType =>
+  (examTagTypes as readonly string[]).includes(v);
+const examTagTypeMsg = { message: "tagType은 year, grade, subject 중 하나여야 합니다." };
+
+export const insertExamTagOptionSchema = createInsertSchema(examTagOptions, {
+  tagType: (schema) => schema.refine(examTagTypeRefine, examTagTypeMsg),
+  value: (schema) => schema.min(1).max(50),
 }).omit({ id: true, sortOrder: true });
 
 export function validationError(e: unknown) {

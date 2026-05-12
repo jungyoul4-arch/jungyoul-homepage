@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ContentEditor } from "@/components/content-editor";
 import { ThumbnailUploader } from "@/components/thumbnail-uploader";
+import { ExamTagSelects } from "@/components/exam-tag-selects";
 import { categories } from "@/lib/data";
 
 const categoryOptions = categories.filter((c) => c.value !== "all");
@@ -20,6 +21,9 @@ export default function NewArticlePage() {
     thumbnail: "",
     thumbnailOverlays: "",
     date: new Date().toISOString().slice(0, 10).replace(/-/g, "/"),
+    examYear: "",
+    examGrade: "",
+    examSubject: "",
   });
 
   function update(field: string, value: string | boolean) {
@@ -105,6 +109,22 @@ export default function NewArticlePage() {
             />
           </div>
         </div>
+
+        {form.category === "exam" && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              시험 태그
+            </label>
+            <ExamTagSelects
+              value={{
+                examYear: form.examYear,
+                examGrade: form.examGrade,
+                examSubject: form.examSubject,
+              }}
+              onChange={(next) => setForm((p) => ({ ...p, ...next }))}
+            />
+          </div>
+        )}
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">요약</label>

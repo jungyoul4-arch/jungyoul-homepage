@@ -26,6 +26,16 @@
 - 헤더 컴포넌트(`src/components/header.tsx`)는 lucide 아이콘을 `createElement` + ReactNode 헬퍼(`renderHeaderLinkGlyph`)로 렌더 — ESLint `react-hooks/static-components` 룰(렌더 중 컴포넌트 변수 생성 금지) 회피
 - href 검증: `/` 또는 `http(s)://` 만 허용 (`hrefRefine` 재사용). `imageUrl` 은 max 500자 optional
 
+## /exam 페이지 태깅 시스템
+- `category = "exam"` 기사에만 적용되는 별도 메타데이터 레이어. 카테고리 enum 과 무관
+- 태그 3차원: **연도**(exam_year), **학년**(exam_grade, 고1/고2/고3), **과목**(exam_subject, 국어/영어/수학/과학)
+- 옵션 목록은 DB-driven — `exam_tag_options` 테이블에서 어드민이 관리 (drizzle 마이그 `0007_add_exam_tags.sql`)
+- 어드민: `/admin/exam-tag-options` (3개 tagType 별 섹션, add/delete/reorder), 사이드바 "시험 태그 옵션"
+- 공유 컴포넌트: `<ExamTagSelects>` — 옵션을 자동 fetch, 옵션이 0개인 차원은 자동 숨김. **`form.category === "exam"` 일 때만 렌더** (어드민 글 작성/수정, 빠른편집 모달 3곳 공통)
+- `/exam` 페이지 필터 UI: `<ExamArticleFilter>` — URL 쿼리 `?year=&grade=&subject=` 와 동기화되는 select 3개
+- 공개 API: `GET /api/exam-tag-options` (인증 없음, 선택적 `?type=` 필터)
+- strategy/news 등 다른 카테고리 기사는 `exam_*` 컬럼이 NULL — UI 노출 없음
+
 ## 코드베이스 탐색 규칙
 - 모든 코드 질문/작업 전: `graphify-out/GRAPH_REPORT.md` 먼저 읽기
 - `graphify-out/wiki/index.md` 있으면 raw 파일 대신 그쪽 우선

@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 export const articles = sqliteTable("articles", {
   id: text("id").primaryKey(),
@@ -13,6 +13,10 @@ export const articles = sqliteTable("articles", {
   date: text("date").notNull(),
   slug: text("slug").unique().notNull(),
   featured: integer("featured", { mode: "boolean" }).default(false),
+  // /exam 전용 태그 — category="exam" 일 때만 폼에 노출. 다른 카테고리에서는 빈 문자열로 남는 silent metadata.
+  examYear: text("exam_year").default(""),
+  examGrade: text("exam_grade").default(""),
+  examSubject: text("exam_subject").default(""),
   createdAt: text("created_at").$defaultFn(() => new Date().toISOString()),
   updatedAt: text("updated_at").$defaultFn(() => new Date().toISOString()),
 });
@@ -101,3 +105,16 @@ export const headerLinks = sqliteTable("header_links", {
   imageUrl: text("image_url").default(""), // 사용자 업로드 이미지(/api/admin/upload/...), 헤더 버튼 좌측 아이콘 자리에 노출
   sortOrder: integer("sort_order").default(0),
 });
+
+// /exam 페이지 태그 옵션 — 어드민이 추가/삭제/재정렬하는 셀렉트박스 후보값.
+// tag_type 으로 차원 구분(year|grade|subject), value 가 노출 라벨이자 articles.exam_* 컬럼에 저장되는 값.
+export const examTagOptions = sqliteTable(
+  "exam_tag_options",
+  {
+    id: text("id").primaryKey(),
+    tagType: text("tag_type").notNull(),  // "year" | "grade" | "subject"
+    value: text("value").notNull(),
+    sortOrder: integer("sort_order").default(0),
+  },
+  (t) => [uniqueIndex("exam_tag_options_type_value_idx").on(t.tagType, t.value)]
+);

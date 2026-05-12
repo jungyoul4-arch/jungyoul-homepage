@@ -25,7 +25,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 | `column` | 교육칼럼 | 교육 트렌드, 학습법 | `/articles?category=column` |
 | `success` | 합격스토리 | 합격 사례, 후기 | `/articles?category=success` |
 | `news` | 공지사항 | 학원 소식, 일정 | `/articles?category=news` |
-| `exam` | 시험지 분석 | 모의고사·내신 기출 분석, 풀이 전략 | `/exam` (정율사관 하위 — 교육정보 탭에는 미노출) |
+| `exam` | 시험지 분석 | 모의고사·내신 기출 분석, 풀이 전략 | `/exam` (정율사관 하위 — 교육정보 탭에는 미노출). **태그 3개(연도/학년/과목)를 frontmatter 에 선택 기재** — UI 워크트리가 어드민 폼에 반영 |
 
 ### 원고 작성 위치
 - `content/drafts/` 폴더에 마크다운 파일 생성
@@ -43,6 +43,13 @@ date: 2026-04-12
 slug: "url-slug"
 featured: false
 ---
+```
+
+`category: exam` 인 경우 아래 선택 필드를 추가로 기재하면 UI 워크트리가 어드민 폼에 반영한다:
+```yaml
+exam_year: "2026"       # 연도 (exam_tag_options 에 등록된 값)
+exam_grade: "고2"       # 학년 (고1/고2/고3 중 하나)
+exam_subject: "수학"    # 과목 (국어/영어/수학/과학 중 하나)
 ```
 
 ## 글 완성 후 → UI 워크트리로 전달

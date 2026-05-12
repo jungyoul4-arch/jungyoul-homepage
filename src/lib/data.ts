@@ -12,6 +12,17 @@ export interface Article {
   date: string;
   slug: string;
   featured?: boolean;
+  // /exam 전용 태그. category="exam" 이 아닌 글에서는 빈 문자열.
+  examYear?: string;
+  examGrade?: string;
+  examSubject?: string;
+}
+
+export interface ExamTagOption {
+  id: string;
+  tagType: "year" | "grade" | "subject";
+  value: string;
+  sortOrder: number;
 }
 
 export interface Highlight {

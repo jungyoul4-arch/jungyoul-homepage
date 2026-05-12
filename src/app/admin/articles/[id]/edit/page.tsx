@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { ContentEditor } from "@/components/content-editor";
 import { ThumbnailUploader } from "@/components/thumbnail-uploader";
+import { ExamTagSelects } from "@/components/exam-tag-selects";
 import { categories } from "@/lib/data";
 
 const categoryOptions = categories.filter((c) => c.value !== "all");
@@ -24,6 +25,9 @@ export default function EditArticlePage() {
     thumbnailOverlays: "",
     date: "",
     featured: false,
+    examYear: "",
+    examGrade: "",
+    examSubject: "",
   });
 
   useEffect(() => {
@@ -43,6 +47,9 @@ export default function EditArticlePage() {
           thumbnailOverlays: article.thumbnailOverlays || "",
           date: article.date,
           featured: !!article.featured,
+          examYear: article.examYear || "",
+          examGrade: article.examGrade || "",
+          examSubject: article.examSubject || "",
         });
       }
       setLoading(false);
@@ -135,6 +142,22 @@ export default function EditArticlePage() {
             />
           </div>
         </div>
+
+        {form.category === "exam" && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              시험 태그
+            </label>
+            <ExamTagSelects
+              value={{
+                examYear: form.examYear,
+                examGrade: form.examGrade,
+                examSubject: form.examSubject,
+              }}
+              onChange={(next) => setForm((p) => ({ ...p, ...next }))}
+            />
+          </div>
+        )}
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">요약</label>

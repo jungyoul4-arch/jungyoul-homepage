@@ -176,6 +176,7 @@ export default function AdminSlidesPage() {
     setQcForm({ title: "", excerpt: "", category: "strategy", thumbnail: "" });
   }
 
+  // exam 태그(연도/학년/과목)는 빈 값으로 생성됨. /admin/articles/{id}/edit 또는 빠른 편집에서 설정.
   async function handleQuickCreate(slideId: string, itemIndex: number) {
     if (!qcForm.title.trim()) {
       alert("제목을 입력하세요.");

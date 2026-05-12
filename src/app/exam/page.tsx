@@ -1,13 +1,14 @@
 export const dynamic = "force-dynamic";
 
 import type { Metadata } from "next";
-import { ArticleList } from "@/components/article-list";
+import { ExamArticleFilter } from "@/components/exam-article-filter";
 import { HeroBanner } from "@/components/hero-banner";
 import { getDb } from "@/db";
-import { articles as articlesTable } from "@/db/schema";
-import { desc, eq } from "drizzle-orm";
+import { articles as articlesTable, examTagOptions as examTagOptionsTable } from "@/db/schema";
+import { asc, desc, eq } from "drizzle-orm";
 import { toArticle } from "@/lib/mappers";
 import { renderJsonLd } from "@/lib/json-ld";
+import type { ExamTagOption } from "@/lib/data";
 
 export const metadata: Metadata = {
   title: "시험지 분석",
@@ -26,12 +27,21 @@ export const metadata: Metadata = {
 
 export default async function ExamPage() {
   const db = await getDb();
-  const raw = await db
-    .select()
-    .from(articlesTable)
-    .where(eq(articlesTable.category, "exam"))
-    .orderBy(desc(articlesTable.date));
+  const [raw, rawTagOptions] = await Promise.all([
+    db
+      .select()
+      .from(articlesTable)
+      .where(eq(articlesTable.category, "exam"))
+      .orderBy(desc(articlesTable.date)),
+    db.select().from(examTagOptionsTable).orderBy(asc(examTagOptionsTable.sortOrder)),
+  ]);
   const articles = raw.map(toArticle);
+  const tagOptions: ExamTagOption[] = rawTagOptions.map((row) => ({
+    id: row.id,
+    tagType: row.tagType as ExamTagOption["tagType"],
+    value: row.value,
+    sortOrder: row.sortOrder ?? 0,
+  }));
 
   return (
     <>
@@ -60,7 +70,7 @@ export default async function ExamPage() {
         <h1 className="text-[1.5rem] md:text-[1.875rem] font-bold text-[#1A1A1A] mt-10 md:mt-20 pb-5 border-b border-[#E0E0E0] mb-10">
           시험지 분석
         </h1>
-        <ArticleList articles={articles} hideTabs />
+        <ExamArticleFilter articles={articles} tagOptions={tagOptions} />
       </div>
     </>
   );

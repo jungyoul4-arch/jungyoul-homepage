@@ -7,6 +7,7 @@ import { X, Trash2 } from "lucide-react";
 import { useAuth, type EditModalType } from "./auth-provider";
 import { ContentEditor } from "./content-editor";
 import { ThumbnailUploader } from "./thumbnail-uploader";
+import { ExamTagSelects } from "./exam-tag-selects";
 import { categories } from "@/lib/data";
 
 function extractYoutubeId(input: string): string {
@@ -275,6 +276,22 @@ function ArticleForm({
           />
         </Field>
       </div>
+      {form.category === "exam" && (
+        <Field label="시험 태그">
+          <ExamTagSelects
+            value={{
+              examYear: (form.examYear as string) || "",
+              examGrade: (form.examGrade as string) || "",
+              examSubject: (form.examSubject as string) || "",
+            }}
+            onChange={(next) => {
+              if (next.examYear !== undefined) update("examYear", next.examYear);
+              if (next.examGrade !== undefined) update("examGrade", next.examGrade);
+              if (next.examSubject !== undefined) update("examSubject", next.examSubject);
+            }}
+          />
+        </Field>
+      )}
       <Field label="요약">
         <textarea
           value={(form.excerpt as string) || ""}

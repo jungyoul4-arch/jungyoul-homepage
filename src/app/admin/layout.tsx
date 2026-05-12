@@ -15,6 +15,7 @@ import {
   Navigation,
   Pin,
   ExternalLink,
+  Tags,
 } from "lucide-react";
 import { SiteLogo } from "@/components/site-logo";
 
@@ -28,6 +29,7 @@ const sidebarItems = [
   { label: "영상 관리", href: "/admin/videos", icon: Video },
   { label: "메뉴 관리", href: "/admin/nav-menus", icon: Navigation },
   { label: "헤더 링크 버튼", href: "/admin/header-links", icon: ExternalLink },
+  { label: "시험 태그 옵션", href: "/admin/exam-tag-options", icon: Tags },
   { label: "추적 코드", href: "/admin/tracking-codes", icon: Code },
   { label: "웹사이트 로고 설정", href: "/admin/settings", icon: Settings },
 ];

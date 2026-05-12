@@ -13,6 +13,9 @@ type DbArticle = {
   date: string;
   slug: string;
   featured: boolean | null;
+  examYear?: string | null;
+  examGrade?: string | null;
+  examSubject?: string | null;
   createdAt: string | null;
   updatedAt: string | null;
 };
@@ -55,6 +58,9 @@ export function toArticle(row: DbArticle): Article {
     date: row.date,
     slug: row.slug,
     featured: row.featured ?? false,
+    examYear: row.examYear ?? "",
+    examGrade: row.examGrade ?? "",
+    examSubject: row.examSubject ?? "",
   };
 }
 
