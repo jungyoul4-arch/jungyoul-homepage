@@ -28,42 +28,15 @@ const SECTIONS: {
 ];
 
 const selectClass =
-  "w-full h-9 px-3 border border-gray-300 rounded-sm text-sm focus:outline-none focus:border-blue-600 bg-white";
+  "w-full h-9 px-3 border border-gray-300 rounded-sm text-sm focus:outline-none focus:border-blue-600 bg-white disabled:bg-gray-50 disabled:text-gray-400";
 
-// DB에 옵션이 없는 차원도 즉시 사용 가능하도록 컴포넌트 내장 기본 목록 제공.
-// /admin/exam-tag-options 에서 추가 등록 시 DB 값이 우선하고, builtin 중 DB에 없는 값만 뒤에 합쳐서 노출.
-function buildYearFallback(): string[] {
-  const current = new Date().getFullYear();
-  const years: string[] = [];
-  for (let y = current + 1; y >= current - 3; y--) {
-    years.push(String(y));
-  }
-  return years;
-}
-
-const BUILTIN_OPTIONS: Record<ExamTagOption["tagType"], string[]> = {
-  year: buildYearFallback(),
-  grade: ["고1", "고2", "고3"],
-  subject: ["국어", "영어", "수학", "과학"],
-};
-
-function mergeOptions(
+function optionsForType(
   dbOptions: ExamTagOption[],
   tagType: ExamTagOption["tagType"]
 ): ExamTagOption[] {
-  const dbForType = dbOptions
+  return dbOptions
     .filter((o) => o.tagType === tagType)
     .sort((a, b) => a.sortOrder - b.sortOrder);
-  const dbValues = new Set(dbForType.map((o) => o.value));
-  const builtinTail = BUILTIN_OPTIONS[tagType]
-    .filter((v) => !dbValues.has(v))
-    .map((v, i) => ({
-      id: `builtin-${tagType}-${v}`,
-      tagType,
-      value: v,
-      sortOrder: dbForType.length + i,
-    }));
-  return [...dbForType, ...builtinTail];
 }
 
 export function ExamTagSelects({ value, onChange, options, className }: Props) {
@@ -98,7 +71,8 @@ export function ExamTagSelects({ value, onChange, options, className }: Props) {
     <div className={className}>
       <div className="grid grid-cols-3 gap-3">
         {SECTIONS.map((s) => {
-          const opts = mergeOptions(fetched, s.tagType);
+          const opts = optionsForType(fetched, s.tagType);
+          const empty = opts.length === 0;
           return (
             <div key={s.key}>
               <label className="block text-xs font-medium text-gray-600 mb-1">
@@ -108,6 +82,7 @@ export function ExamTagSelects({ value, onChange, options, className }: Props) {
                 value={value[s.key] || ""}
                 onChange={(e) => onChange({ [s.key]: e.target.value } as Partial<ExamTagValue>)}
                 className={selectClass}
+                disabled={empty}
               >
                 <option value="">선택 안 함</option>
                 {opts.map((o) => (
@@ -116,6 +91,11 @@ export function ExamTagSelects({ value, onChange, options, className }: Props) {
                   </option>
                 ))}
               </select>
+              {empty && (
+                <p className="text-xs text-gray-500 mt-1">
+                  어드민 → 시험 태그 옵션에서 먼저 등록하세요
+                </p>
+              )}
             </div>
           );
         })}

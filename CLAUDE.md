@@ -32,7 +32,7 @@
 - 태그 3차원: **연도**(exam_year), **학년**(exam_grade, 고1/고2/고3), **과목**(exam_subject, 국어/영어/수학/과학)
 - 옵션 목록은 DB-driven — `exam_tag_options` 테이블에서 어드민이 관리 (drizzle 마이그 `0007_add_exam_tags.sql`)
 - 어드민: `/admin/exam-tag-options` (3개 tagType 별 섹션, add/delete/reorder), 사이드바 "시험 태그 옵션"
-- 공유 컴포넌트: `<ExamTagSelects>` — DB 옵션을 자동 fetch하고, `BUILTIN_OPTIONS`(연도 현재±, 고1/2/3, 국어/영어/수학/과학)를 폴백으로 병합해 3개 select를 **항상** 노출. DB 값이 builtin과 겹치면 DB 우선, 없는 값만 뒤에 추가. `/admin/exam-tag-options`는 builtin 외 추가·커스텀 값이 필요할 때만 사용. **`form.category === "exam"` 일 때만 렌더** (어드민 글 작성/수정, 빠른편집 모달 3곳 공통)
+- 공유 컴포넌트: `<ExamTagSelects>` — `/api/exam-tag-options` 에서 **DB 옵션만** fetch 해 노출(builtin 폴백 없음, `<ExamArticleFilter>` 와 동일하게 어드민이 SSOT). 옵션이 0개인 tagType 의 select 는 disabled + "어드민 → 시험 태그 옵션에서 먼저 등록하세요" 안내. `/admin/exam-tag-options` 에 최소 1개 이상 옵션 등록이 셋업 필수. **`form.category === "exam"` 일 때만 렌더** (어드민 글 작성/수정, 빠른편집 모달 3곳 공통)
 - `/exam` 페이지 필터 UI: `<ExamArticleFilter>` — URL 쿼리 `?year=&grade=&subject=` 와 동기화되는 select 3개
 - 공개 API: `GET /api/exam-tag-options` (인증 없음, 선택적 `?type=` 필터)
 - strategy/news 등 다른 카테고리 기사는 `exam_*` 컬럼이 NULL — UI 노출 없음
