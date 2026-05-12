@@ -13,7 +13,7 @@
 ### 네비게이션 (`nav_menus` 테이블)
 - DB-driven, parent_id 로 부모-자식 트리 구성
 - 어드민 UI: `/admin/nav-menus` 에서 추가/수정 (href 는 자유 입력)
-- 헤더 컴포넌트: `src/components/header.tsx` — `buildNavTree()` 로 평탄 → 트리 변환, DB 응답이 없으면 하드코딩 폴백 사용
+- 헤더 컴포넌트: `src/components/header-server.tsx` (RSC) 가 D1에서 `nav_menus`·`header_links`를 fetch해 `src/components/header.tsx` (client) 에 prop으로 전달. `buildNavTree()` 는 header-server.tsx 에서 호출. DB 응답이 없으면 `header.tsx` 내부 `DEFAULT_NAV` 폴백 사용
 - 메가메뉴/모바일 서브메뉴 자동 노출
 
 ### 부모 메뉴 라우팅 — catch-all 자동화

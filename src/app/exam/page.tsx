@@ -25,6 +25,24 @@ export const metadata: Metadata = {
   },
 };
 
+// exam_tag_options 테이블이 아직 D1 에 마이그레이션되지 않은 환경에서도
+// /exam 페이지가 500 으로 죽지 않도록 방어 (마이그레이션 0007 부재 시 빈 배열).
+async function safeExamTagOptions(db: Awaited<ReturnType<typeof getDb>>) {
+  try {
+    return await db
+      .select()
+      .from(examTagOptionsTable)
+      .orderBy(asc(examTagOptionsTable.sortOrder));
+  } catch {
+    return [] as Array<{
+      id: string;
+      tagType: string;
+      value: string;
+      sortOrder: number | null;
+    }>;
+  }
+}
+
 export default async function ExamPage() {
   const db = await getDb();
   const [raw, rawTagOptions] = await Promise.all([
@@ -33,7 +51,7 @@ export default async function ExamPage() {
       .from(articlesTable)
       .where(eq(articlesTable.category, "exam"))
       .orderBy(desc(articlesTable.date)),
-    db.select().from(examTagOptionsTable).orderBy(asc(examTagOptionsTable.sortOrder)),
+    safeExamTagOptions(db),
   ]);
   const articles = raw.map(toArticle);
   const tagOptions: ExamTagOption[] = rawTagOptions.map((row) => ({

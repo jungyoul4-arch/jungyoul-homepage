@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Noto_Sans_KR } from "next/font/google";
 import "./globals.css";
-import { Header } from "@/components/header";
+import { HeaderServer } from "@/components/header-server";
 import { Footer } from "@/components/footer";
 import { AuthProvider } from "@/components/auth-provider";
 import { InlineEditModal } from "@/components/inline-edit-modal";
@@ -147,7 +147,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col font-sans">
         <TrackingCodeBodyStart />
         <AuthProvider>
-          <Header />
+          <HeaderServer />
           <main className="flex-1">{children}</main>
           <Footer />
           <InlineEditModal />

@@ -3,12 +3,12 @@
 import Link from "next/link";
 import Image from "next/image";
 import { createElement, type ReactNode } from "react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Search, X, Menu, Lock, LayoutDashboard, ChevronDown } from "lucide-react";
 // ChevronDown: 모바일 메뉴에서만 사용
 import { useAuth } from "./auth-provider";
 import { SiteLogo } from "./site-logo";
-import { DEFAULT_NAV, buildNavTree, type NavGroup, type NavMenuItem } from "@/lib/default-nav";
+import { DEFAULT_NAV, type NavGroup, type NavMenuItem } from "@/lib/default-nav";
 import { getHeaderLinkIcon } from "@/lib/header-link-icons";
 
 type HeaderLink = {
@@ -48,49 +48,25 @@ const searchSuggestions = [
   { label: "AI교육", href: "/articles?category=column" },
 ];
 
-export function Header() {
+interface HeaderProps {
+  // RSC 래퍼(HeaderServer)에서 prefetch 한 초기값. 없으면 DEFAULT_NAV 폴백.
+  initialNavGroups?: NavGroup[];
+  initialHeaderLinks?: HeaderLink[];
+}
+
+export function Header({ initialNavGroups, initialHeaderLinks }: HeaderProps = {}) {
   const { isAdmin } = useAuth();
   const [searchOpen, setSearchOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [navGroups, setNavGroups] = useState<NavGroup[]>(DEFAULT_NAV);
-  const [headerLinks, setHeaderLinks] = useState<HeaderLink[]>([]);
+  const [navGroups] = useState<NavGroup[]>(
+    initialNavGroups && initialNavGroups.length > 0 ? initialNavGroups : DEFAULT_NAV
+  );
+  const [headerLinks] = useState<HeaderLink[]>(initialHeaderLinks ?? []);
   const [mobileSubmenu, setMobileSubmenu] = useState<string | null>(null);
   const [hoveredNav, setHoveredNav] = useState<string | null>(null);
   const hasAnyChildren = navGroups.some((g) => g.children.length > 0);
   const showMegaMenu = !!hoveredNav && hasAnyChildren;
-
-  // DB에서 메뉴 데이터 로드
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/nav-menus")
-      .then((res) => res.json())
-      .then((data: NavMenuItem[]) => {
-        if (!cancelled && data.length > 0) {
-          setNavGroups(buildNavTree(data));
-        }
-      })
-      .catch(() => {
-        // 네트워크 에러 시 폴백 유지
-      });
-    return () => { cancelled = true; };
-  }, []);
-
-  // 헤더 링크 버튼 로드
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/header-links")
-      .then((res) => res.json())
-      .then((data: HeaderLink[]) => {
-        if (!cancelled && Array.isArray(data)) {
-          setHeaderLinks(data);
-        }
-      })
-      .catch(() => {
-        // 실패 시 빈 배열 유지 — 헤더는 정상 동작
-      });
-    return () => { cancelled = true; };
-  }, []);
 
   return (
     <header

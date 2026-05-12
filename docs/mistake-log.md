@@ -91,6 +91,12 @@
 - 해결: `xPct/yPct` 자유 좌표를 `anchor: "tl"|"tr"|"center"|"bl"|"br"` 5단계 enum 으로 교체. 우측 패널 3×3 그리드 버튼(귀퉁이 4 + 중앙 1, 빈 4셀은 spacer). 드래그 핸들러 일체 제거. ANCHOR_POSITIONS 에 8/92% 가장자리 패딩으로 잘림 방지. renderToBlob 에서 anchor 별로 ctx.textAlign/textBaseline 자동 결정
 - 교훈: 자유도가 높은 컨트롤이 항상 좋은 UX 는 아니다. 모바일/터치 사용자가 있으면 프리셋 기반이 정확도/속도 모두 우월
 
+## 2026-05-12 — `/exam` 페이지 500 — `exam_tag_options` 테이블 마이그레이션 미적용
+- 현상: 운영 D1에 `0007_add_exam_tags.sql` 마이그레이션이 적용되지 않은 상태에서 `/exam` 페이지 접속 시 500 반환
+- 원인: `src/app/exam/page.tsx` RSC에서 `examTagOptionsTable` 조회를 비보호 drizzle 쿼리로 실행 — 테이블이 없으면 D1이 에러를 throw
+- 해결: `safeExamTagOptions(db)` 헬퍼로 try/catch 감싸고 에러 시 `[]` 반환 → 페이지는 정상 렌더, 필터 UI는 빈 옵션(builtin 폴백 적용)으로 동작
+- 교훈: RSC에서 새로 추가된 테이블을 조회할 때는 해당 마이그레이션이 모든 환경에 적용되었다고 가정하지 말 것. 테이블 부재를 graceful 하게 처리하는 try/catch + 빈 배열 폴백을 기본 패턴으로 사용
+
 ## 2026-05-12 — Miniflare D1 UNIQUE 제약 에러가 `Error` 인스턴스가 아닐 수 있음
 - 현상: `exam_tag_options` 에 중복 값 삽입 시 API 가 409 대신 500 반환
 - 원인: Miniflare(로컬 D1 에뮬레이터)가 던지는 UNIQUE 제약 위반 에러가 표준 `Error` 인스턴스가 아닌 경우가 있어 `e instanceof Error && e.message.includes("UNIQUE")` 검사가 false 로 평가

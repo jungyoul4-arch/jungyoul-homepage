@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import type { ExamTagOption } from "@/lib/data";
 
 export interface ExamTagValue {
@@ -31,6 +30,42 @@ const SECTIONS: {
 const selectClass =
   "w-full h-9 px-3 border border-gray-300 rounded-sm text-sm focus:outline-none focus:border-blue-600 bg-white";
 
+// DB에 옵션이 없는 차원도 즉시 사용 가능하도록 컴포넌트 내장 기본 목록 제공.
+// /admin/exam-tag-options 에서 추가 등록 시 DB 값이 우선하고, builtin 중 DB에 없는 값만 뒤에 합쳐서 노출.
+function buildYearFallback(): string[] {
+  const current = new Date().getFullYear();
+  const years: string[] = [];
+  for (let y = current + 1; y >= current - 3; y--) {
+    years.push(String(y));
+  }
+  return years;
+}
+
+const BUILTIN_OPTIONS: Record<ExamTagOption["tagType"], string[]> = {
+  year: buildYearFallback(),
+  grade: ["고1", "고2", "고3"],
+  subject: ["국어", "영어", "수학", "과학"],
+};
+
+function mergeOptions(
+  dbOptions: ExamTagOption[],
+  tagType: ExamTagOption["tagType"]
+): ExamTagOption[] {
+  const dbForType = dbOptions
+    .filter((o) => o.tagType === tagType)
+    .sort((a, b) => a.sortOrder - b.sortOrder);
+  const dbValues = new Set(dbForType.map((o) => o.value));
+  const builtinTail = BUILTIN_OPTIONS[tagType]
+    .filter((v) => !dbValues.has(v))
+    .map((v, i) => ({
+      id: `builtin-${tagType}-${v}`,
+      tagType,
+      value: v,
+      sortOrder: dbForType.length + i,
+    }));
+  return [...dbForType, ...builtinTail];
+}
+
 export function ExamTagSelects({ value, onChange, options, className }: Props) {
   const [internal, setInternal] = useState<ExamTagOption[] | null>(null);
   const fetched = options ?? internal;
@@ -41,7 +76,7 @@ export function ExamTagSelects({ value, onChange, options, className }: Props) {
     fetch("/api/exam-tag-options")
       .then((r) => r.json())
       .then((data: ExamTagOption[]) => {
-        if (!cancelled) setInternal(data);
+        if (!cancelled) setInternal(Array.isArray(data) ? data : []);
       })
       .catch(() => {
         if (!cancelled) setInternal([]);
@@ -59,30 +94,11 @@ export function ExamTagSelects({ value, onChange, options, className }: Props) {
     );
   }
 
-  const visible = SECTIONS.filter(
-    (s) => fetched.filter((o) => o.tagType === s.tagType).length > 0
-  );
-
-  if (visible.length === 0) {
-    return (
-      <div className={className}>
-        <p className="text-xs text-gray-400">
-          등록된 태그 옵션이 없습니다.{" "}
-          <Link href="/admin/exam-tag-options" className="text-blue-600 underline">
-            옵션 추가
-          </Link>
-        </p>
-      </div>
-    );
-  }
-
   return (
     <div className={className}>
       <div className="grid grid-cols-3 gap-3">
-        {visible.map((s) => {
-          const opts = fetched
-            .filter((o) => o.tagType === s.tagType)
-            .sort((a, b) => a.sortOrder - b.sortOrder);
+        {SECTIONS.map((s) => {
+          const opts = mergeOptions(fetched, s.tagType);
           return (
             <div key={s.key}>
               <label className="block text-xs font-medium text-gray-600 mb-1">
