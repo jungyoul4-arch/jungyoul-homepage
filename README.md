@@ -40,6 +40,9 @@ graphify-out/             코드 그래프 (탐색 우선 자료)
 ## 헤더 링크 버튼 (외부/내부)
 `nav_menus` 와 별개로 헤더 우측 상단 돋보기 왼편(데스크탑) 또는 상단 바 아래 **좌측** 행(모바일)에 외부 사이트 링크 버튼을 N개까지 노출 가능. 시안은 투명 배경 + 옅은 회색 테두리(파란 캡슐 X). 어드민 `/admin/header-links` 에서 라벨·URL·**버튼 이미지**·순서 편집. 모든 버튼은 `target="_blank"` 새 탭. DB: `header_links` (`src/db/schema.ts`, drizzle 마이그 `0006_*`). 버튼 글리프는 `imageUrl` 우선이고, 비어 있으면 레거시 lucide 아이콘(`src/lib/header-link-icons.ts` 화이트리스트) 폴백. 이미지 업로드는 어드민 폼에서 `/api/admin/upload` 로 R2 저장.
 
+## 익명 커뮤니티 (`/community`)
+고등학생 위주 익명 게시판. 가입 절차 없음 — 첫 진입 시 `anon_session` 쿠키 자동 발급, 닉네임(`조용한코끼리042` 형식) 영속. 단일 피드 + 어드민 관리 태그(수능/내신/논술/진로/고민/잡담 시드) 필터. 글당 이미지 1장 첨부, 평면(flat) 댓글, 세션별 좋아요 토글. PC=sticky 사이드바, Mobile=가로 칩(동일 페이지, Tailwind `lg:` 분기). 어드민: `/admin/community/posts` (모더레이션), `/admin/community/tags` (태그 CRUD). DB: `community_*` 5개 테이블 (drizzle `0008_add_community.sql`). 본문/댓글은 `sanitizeContent()` 필수. 자세히는 [`docs/community.md`](docs/community.md).
+
 ## 보안 룰 (항상 적용)
 - **JSON-LD XSS escape**: 모든 `<script type="application/ld+json">` 출력은 `JSON.stringify(...).replace(/</g, "\\u003c")` 적용 필수
 - **어드민 인증**: `/api/admin/**` route handler 는 `requireAdmin()` (`src/lib/auth.ts`) 첫 줄 게이트. `/admin/*` 페이지는 `src/middleware.ts` 가 JWT 검증
@@ -84,6 +87,7 @@ npm run deploy           # opennextjs-cloudflare build + wrangler deploy
 
 ## 참조 문서
 - [`docs/categories.md`](docs/categories.md) — 카테고리·네비게이션 추가 절차 (catch-all 라우팅 포함)
+- [`docs/community.md`](docs/community.md) — 익명 커뮤니티(/community) 세션·API·디자인 토큰
 - [`docs/seo-checklist.md`](docs/seo-checklist.md) — 페이지 추가/메타데이터/JSON-LD/sitemap 체크리스트
 - [`docs/editor.md`](docs/editor.md) — 어드민 본문 에디터·페이스트 파이프라인·HWPX·썸네일 오버레이
 - [`docs/business-info.md`](docs/business-info.md) — 사업자 정보 (Organization JSON-LD·푸터·연락처)

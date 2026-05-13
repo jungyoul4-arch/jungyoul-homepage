@@ -1,0 +1,59 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { requireAnonSession } from "@/lib/anon-session";
+
+// 익명 세션 사용자의 이미지 업로드 (글당 1장).
+// src/app/api/admin/upload/route.ts 와 동일한 검증 규약 — requireAdmin 만 requireAnonSession 으로 교체.
+// R2 키 prefix 는 `community/YYYY/MM/...` 로 분리하여 운영 어드민 자산과 격리.
+const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+const ALLOWED_EXTS = ["jpg", "jpeg", "png", "gif", "webp"];
+const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+
+export async function POST(request: NextRequest) {
+  const guard = await requireAnonSession(request);
+  if (guard instanceof NextResponse) return guard;
+
+  try {
+    const formData = await request.formData();
+    const file = formData.get("file") as File | null;
+    if (!file) {
+      return NextResponse.json({ error: "파일이 없습니다." }, { status: 400 });
+    }
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      return NextResponse.json(
+        { error: "허용되지 않는 파일 형식입니다. (JPG, PNG, GIF, WebP만 가능)" },
+        { status: 400 }
+      );
+    }
+    if (file.size > MAX_SIZE) {
+      return NextResponse.json(
+        { error: "파일 크기는 10MB 이하여야 합니다." },
+        { status: 400 }
+      );
+    }
+    const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+    if (!ALLOWED_EXTS.includes(ext)) {
+      return NextResponse.json(
+        { error: "허용되지 않는 파일 확장자입니다." },
+        { status: 400 }
+      );
+    }
+
+    const now = new Date();
+    const path = `community/${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const random = crypto.randomUUID().slice(0, 8);
+    const key = `${path}/${Date.now()}-${random}.${ext}`;
+
+    const { env } = await getCloudflareContext({ async: true });
+    const arrayBuffer = await file.arrayBuffer();
+    await env.IMAGES_BUCKET.put(key, arrayBuffer, {
+      httpMetadata: { contentType: file.type },
+    });
+
+    const url = `/api/community/upload/${key}`;
+    return NextResponse.json({ url, key });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "알 수 없는 오류";
+    return NextResponse.json({ error: `업로드 실패: ${message}` }, { status: 500 });
+  }
+}

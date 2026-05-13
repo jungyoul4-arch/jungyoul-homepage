@@ -16,6 +16,8 @@ import {
   Pin,
   ExternalLink,
   Tags,
+  MessageSquare,
+  Tag,
 } from "lucide-react";
 import { SiteLogo } from "@/components/site-logo";
 
@@ -42,6 +44,13 @@ const sidebarGroups = [
     items: [
       { label: "메뉴 관리", href: "/admin/nav-menus", icon: Navigation },
       { label: "헤더 링크 버튼", href: "/admin/header-links", icon: ExternalLink },
+    ],
+  },
+  {
+    label: "커뮤니티",
+    items: [
+      { label: "게시글 모더레이션", href: "/admin/community/posts", icon: MessageSquare },
+      { label: "커뮤니티 태그", href: "/admin/community/tags", icon: Tag },
     ],
   },
   {

@@ -118,3 +118,62 @@ export const examTagOptions = sqliteTable(
   },
   (t) => [uniqueIndex("exam_tag_options_type_value_idx").on(t.tagType, t.value)]
 );
+
+// ── 익명 커뮤니티 (/community) — 고등학생 위주 익명 게시판 ──────────────
+// 익명 세션. 쿠키 anon_session 의 JWT 페이로드 sid 와 1:1 매핑. 닉네임은 영속.
+export const communitySessions = sqliteTable("community_sessions", {
+  id: text("id").primaryKey(),                                  // uuid v4
+  nickname: text("nickname").notNull(),                         // "조용한코끼리042"
+  createdAt: text("created_at").$defaultFn(() => new Date().toISOString()),
+  lastSeenAt: text("last_seen_at").$defaultFn(() => new Date().toISOString()),
+});
+
+// 어드민이 관리하는 태그 옵션. 글 작성/필터 셀렉트에 노출.
+export const communityTags = sqliteTable(
+  "community_tags",
+  {
+    id: text("id").primaryKey(),
+    value: text("value").notNull(),
+    sortOrder: integer("sort_order").default(0),
+  },
+  (t) => [uniqueIndex("community_tags_value_idx").on(t.value)]
+);
+
+// 커뮤니티 게시글. body 는 sanitize-html 적용된 HTML 단편.
+// like_count·comment_count 는 비정규화(트랜잭션 없이 +1/-1).
+export const communityPosts = sqliteTable("community_posts", {
+  id: text("id").primaryKey(),
+  sessionId: text("session_id").notNull(),                      // community_sessions.id (soft FK)
+  nicknameSnapshot: text("nickname_snapshot").notNull(),        // 작성 시점 닉네임
+  title: text("title").notNull(),                               // ≤120자
+  body: text("body").notNull(),                                 // sanitize-html, ≤5000자
+  imageUrl: text("image_url").default(""),                      // /api/community/upload/{key}
+  tag: text("tag").default(""),                                 // community_tags.value 카피(SSOT)
+  likeCount: integer("like_count").default(0),
+  commentCount: integer("comment_count").default(0),
+  isDeleted: integer("is_deleted", { mode: "boolean" }).default(false),
+  createdAt: text("created_at").$defaultFn(() => new Date().toISOString()),
+});
+
+// 좋아요. (post, session) 유니크 — 토글 가능.
+export const communityPostLikes = sqliteTable(
+  "community_post_likes",
+  {
+    id: text("id").primaryKey(),
+    postId: text("post_id").notNull(),
+    sessionId: text("session_id").notNull(),
+    createdAt: text("created_at").$defaultFn(() => new Date().toISOString()),
+  },
+  (t) => [uniqueIndex("community_post_likes_post_session_idx").on(t.postId, t.sessionId)]
+);
+
+// 평면(flat) 댓글. 본인 식별은 session_id 기반.
+export const communityComments = sqliteTable("community_comments", {
+  id: text("id").primaryKey(),
+  postId: text("post_id").notNull(),
+  sessionId: text("session_id").notNull(),
+  nicknameSnapshot: text("nickname_snapshot").notNull(),
+  body: text("body").notNull(),                                 // sanitize-html, ≤1000자
+  isDeleted: integer("is_deleted", { mode: "boolean" }).default(false),
+  createdAt: text("created_at").$defaultFn(() => new Date().toISOString()),
+});

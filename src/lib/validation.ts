@@ -1,6 +1,18 @@
 import { z } from "zod";
 import { createInsertSchema, createUpdateSchema } from "drizzle-zod";
-import { articles, highlights, teachers, videos, trackingCodes, navMenus, headerLinks, examTagOptions } from "@/db/schema";
+import {
+  articles,
+  highlights,
+  teachers,
+  videos,
+  trackingCodes,
+  navMenus,
+  headerLinks,
+  examTagOptions,
+  communityPosts,
+  communityComments,
+  communityTags,
+} from "@/db/schema";
 import { categories } from "@/lib/data";
 import { NextResponse } from "next/server";
 
@@ -150,6 +162,26 @@ const examTagTypeMsg = { message: "tagType은 year, grade, subject 중 하나여
 export const insertExamTagOptionSchema = createInsertSchema(examTagOptions, {
   tagType: (schema) => schema.refine(examTagTypeRefine, examTagTypeMsg),
   value: (schema) => schema.min(1).max(50),
+}).omit({ id: true, sortOrder: true });
+
+// Community — 익명 커뮤니티 게시글/댓글/태그
+export const insertCommunityPostSchema = createInsertSchema(communityPosts, {
+  title: (schema) => schema.min(1).max(120),
+  body: (schema) => schema.min(1).max(5000),
+  imageUrl: (schema) => schema.max(500).optional(),
+  tag: (schema) => schema.max(50).optional(),
+}).pick({ title: true, body: true, imageUrl: true, tag: true });
+
+export const insertCommunityCommentSchema = createInsertSchema(communityComments, {
+  body: (schema) => schema.min(1).max(1000),
+}).pick({ body: true });
+
+export const insertCommunityTagSchema = createInsertSchema(communityTags, {
+  value: (schema) => schema.min(1).max(50),
+}).omit({ id: true, sortOrder: true });
+
+export const updateCommunityTagSchema = createUpdateSchema(communityTags, {
+  value: (schema) => schema.max(50),
 }).omit({ id: true, sortOrder: true });
 
 export function validationError(e: unknown) {

@@ -27,6 +27,21 @@
 - href 검증: `/` 또는 `http(s)://` 만 허용 (`hrefRefine` 재사용). `imageUrl` 은 max 500자 optional
 - **SSR 선 렌더**: `src/components/header-server.tsx` (RSC)가 `nav_menus`·`header_links`를 D1에서 직접 fetch해 `<Header initialNavGroups initialHeaderLinks>`에 prop으로 전달 → 첫 paint에 실제 DB 데이터 포함, FOUC 없음. `src/app/layout.tsx`는 `<HeaderServer />`를 렌더. `/api/nav-menus`·`/api/header-links` API는 어드민 페이지용으로 유지되지만 공개 헤더에서는 더 이상 사용하지 않음
 
+## /community — 익명 커뮤니티
+- 고등학생 위주 익명 게시판. 가입 X — `anon_session` 쿠키로 닉네임 영속화 (`src/lib/anon-session.ts`, `src/lib/community-nickname.ts`). 어드민 `admin_token` 과 별도 쿠키, 같은 `JWT_SECRET` 공유하지만 페이로드 키(`{ sid }` vs `{ username }`)로 구분
+- 데이터: `community_sessions`/`community_tags`/`community_posts`/`community_post_likes`/`community_comments` (drizzle 마이그 `0008_add_community.sql`, 6개 기본 태그 시드 포함)
+- 페이지: `/community` (단일 피드 + 태그필터, 무한스크롤), `/community/new` (글쓰기), `/community/[id]` (상세 + 평면 댓글 + 좋아요)
+- 어드민: `/admin/community/posts` (모더레이션 — soft-deleted 포함 표시), `/admin/community/tags` (태그 CRUD). 사이드바 "커뮤니티" 그룹
+- API: 공개 13개 `/api/community/*` (session/me/tags/posts/posts-detail/like/comments/upload) + 어드민 3개 `/api/admin/community/*`
+- 이미지: 1장 첨부, R2 키 prefix `community/YYYY/MM/...` (`/api/community/upload`). 검증·MIME·크기 규약은 `/api/admin/upload` 동일
+- 본문(`title`은 평문, `body`는 HTML)·댓글: `sanitizeContent()` (`src/lib/sanitize.ts`) 필수. JSON-LD 는 `renderJsonLd()` 로 `<` → `<` escape
+- 본인 식별: `session_id` 일치. soft-delete 통일(`isDeleted=true`) — 좋아요·댓글 정합성 보장. 본인 글/댓글만 삭제 가능, 어드민은 강제 삭제
+- cursor 페이지네이션: `src/lib/community-cursor.ts` — base64(`createdAt|id`). `community-feed.tsx` 에서 IntersectionObserver 무한스크롤
+- 댓글 카운터: `src/lib/community-helpers.ts` 의 `bumpCommentCount`/`bumpLikeCount` — SQL UPDATE `MAX(0, ...)` 로 음수 방지
+- **스타일링 (러프 v1)**: `globals.css` 의 `--color-community-*` 4종(surface/border/accent/muted) 만 사용. hex/arbitrary 금지. 디자인 변경 시 4줄 토큰만 손보면 전체 갱신. 각 컴포넌트 최상단에 `// STYLING: rough v1 — community tokens only` 주석 (핫스팟 표시)
+- 헤더 링크 등록: 배포 후 `/admin/header-links` 에 행만 추가(label="커뮤니티", href=`/community`) — 코드 변경 불필요
+- v2 로 미룬 항목: Turnstile, 레이트리밋, 신고, 이미지 다중, 댓글 좋아요, 검색, 알림 — 절차 [`docs/community.md`](docs/community.md)
+
 ## /exam 페이지 태깅 시스템
 - `category = "exam"` 기사에만 적용되는 별도 메타데이터 레이어. 카테고리 enum 과 무관
 - 태그 3차원: **연도**(exam_year), **학년**(exam_grade, 고1/고2/고3), **과목**(exam_subject, 국어/영어/수학/과학)
@@ -54,6 +69,7 @@
 - 전체 개요/명령어/디렉터리 구조 → [`README.md`](README.md)
 - 페이지/링크/메타데이터/sitemap 추가 → [`docs/seo-checklist.md`](docs/seo-checklist.md)
 - 카테고리·네비게이션 추가 절차(catch-all 라우팅, 단일 소스, /exam 같은 별도 라우트) → [`docs/categories.md`](docs/categories.md)
+- 익명 커뮤니티(/community): 익명 세션·닉네임 생성·API·디자인 토큰 → [`docs/community.md`](docs/community.md)
 - 빠른편집 에디터(페이스트 파이프라인·HWPX·sanitize·썸네일 오버레이) → [`docs/editor.md`](docs/editor.md)
 - 사업자 정보(JSON-LD Organization·푸터·연락처) → [`docs/business-info.md`](docs/business-info.md)
 - 빌드/타입 에러 디버깅 회고 → [`docs/mistake-log.md`](docs/mistake-log.md)

@@ -32,6 +32,12 @@
   --color-text-secondary: #666666;
   --color-border-light: #E0E0E0;
   --color-article-line: #E0E9FE;
+  /* 커뮤니티(/community) 전용 시맨틱 토큰 — v1 러프 스타일링 핫스팟.
+     컴포넌트는 community-* 4종만 사용. 후속 디자인 작업 시 이 4줄만 바꾸면 전체 갱신. */
+  --color-community-surface: var(--color-media-bg);
+  --color-community-border: var(--color-border-light);
+  --color-community-accent: var(--color-brand-blue);
+  --color-community-muted: var(--color-text-secondary);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
