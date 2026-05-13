@@ -294,6 +294,11 @@
   margin-top: 4px;
   color: #666;
 }
+.article-content-preview figcaption[data-placeholder]:empty::before {
+  content: attr(data-placeholder);
+  color: #9ca3af;
+  font-style: italic;
+}
 .article-content-preview a {
   color: #1e64fa;
 }

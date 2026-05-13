@@ -19,20 +19,72 @@ import {
 } from "lucide-react";
 import { SiteLogo } from "@/components/site-logo";
 
-const sidebarItems = [
-  { label: "대시보드", href: "/admin", icon: LayoutDashboard },
-  { label: "기사 관리", href: "/admin/articles", icon: FileText },
-  { label: "슬라이드 관리", href: "/admin/slides", icon: Layers },
-  { label: "메인 고정 기사", href: "/admin/pinned-articles", icon: Pin },
-  { label: "하이라이트", href: "/admin/highlights", icon: Star },
-  { label: "강사 관리", href: "/admin/teachers", icon: Users },
-  { label: "영상 관리", href: "/admin/videos", icon: Video },
-  { label: "메뉴 관리", href: "/admin/nav-menus", icon: Navigation },
-  { label: "헤더 링크 버튼", href: "/admin/header-links", icon: ExternalLink },
-  { label: "시험 태그 옵션", href: "/admin/exam-tag-options", icon: Tags },
-  { label: "추적 코드", href: "/admin/tracking-codes", icon: Code },
-  { label: "웹사이트 로고 설정", href: "/admin/settings", icon: Settings },
+const dashboardItem = {
+  label: "대시보드",
+  href: "/admin",
+  icon: LayoutDashboard,
+};
+
+const sidebarGroups = [
+  {
+    label: "콘텐츠 관리",
+    items: [
+      { label: "기사 관리", href: "/admin/articles", icon: FileText },
+      { label: "슬라이드 관리", href: "/admin/slides", icon: Layers },
+      { label: "메인 고정 기사", href: "/admin/pinned-articles", icon: Pin },
+      { label: "하이라이트", href: "/admin/highlights", icon: Star },
+      { label: "강사 관리", href: "/admin/teachers", icon: Users },
+      { label: "영상 관리", href: "/admin/videos", icon: Video },
+    ],
+  },
+  {
+    label: "사이트 구조",
+    items: [
+      { label: "메뉴 관리", href: "/admin/nav-menus", icon: Navigation },
+      { label: "헤더 링크 버튼", href: "/admin/header-links", icon: ExternalLink },
+    ],
+  },
+  {
+    label: "설정",
+    items: [
+      { label: "시험 태그 옵션", href: "/admin/exam-tag-options", icon: Tags },
+      { label: "추적 코드", href: "/admin/tracking-codes", icon: Code },
+      { label: "웹사이트 로고 설정", href: "/admin/settings", icon: Settings },
+    ],
+  },
 ];
+
+type SidebarItem = {
+  label: string;
+  href: string;
+  icon: typeof LayoutDashboard;
+};
+
+function SidebarLink({
+  item,
+  pathname,
+}: {
+  item: SidebarItem;
+  pathname: string;
+}) {
+  const isActive =
+    pathname === item.href ||
+    (item.href !== "/admin" && pathname.startsWith(item.href));
+  const Icon = item.icon;
+  return (
+    <Link
+      href={item.href}
+      className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-sm transition-colors ${
+        isActive
+          ? "bg-blue-50 text-blue-600 font-medium"
+          : "text-gray-600 hover:bg-gray-100"
+      }`}
+    >
+      <Icon size={18} />
+      {item.label}
+    </Link>
+  );
+}
 
 export default function AdminLayout({
   children,
@@ -62,26 +114,23 @@ export default function AdminLayout({
           </Link>
         </div>
 
-        <nav className="flex-1 py-4 px-3 space-y-1">
-          {sidebarItems.map((item) => {
-            const isActive =
-              pathname === item.href ||
-              (item.href !== "/admin" && pathname.startsWith(item.href));
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-sm transition-colors ${
-                  isActive
-                    ? "bg-blue-50 text-blue-600 font-medium"
-                    : "text-gray-600 hover:bg-gray-100"
-                }`}
-              >
-                <item.icon size={18} />
-                {item.label}
-              </Link>
-            );
-          })}
+        <nav className="flex-1 py-4 px-3 space-y-4 overflow-y-auto">
+          <SidebarLink item={dashboardItem} pathname={pathname} />
+
+          {sidebarGroups.map((group) => (
+            <div key={group.label} className="space-y-1">
+              <div className="px-3 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+                {group.label}
+              </div>
+              {group.items.map((item) => (
+                <SidebarLink
+                  key={item.href}
+                  item={item}
+                  pathname={pathname}
+                />
+              ))}
+            </div>
+          ))}
         </nav>
 
         <div className="p-3 border-t border-gray-200">

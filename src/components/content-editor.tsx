@@ -274,8 +274,8 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
         img.src = url;
         img.alt = file.name;
         const figcaption = document.createElement("figcaption");
-        figcaption.textContent = "\u25b2 ";
         figcaption.setAttribute("contenteditable", "true");
+        figcaption.setAttribute("data-placeholder", "\uc774\ubbf8\uc9c0 \uc124\uba85 (\uc120\ud0dd)");
         figure.appendChild(img);
         figure.appendChild(figcaption);
         placeholder.replaceWith(figure);
@@ -397,8 +397,8 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
       img.src = url;
       img.alt = `${file.name} - 페이지 ${i + 1}`;
       const figcaption = document.createElement("figcaption");
-      figcaption.textContent = "▲ ";
       figcaption.setAttribute("contenteditable", "true");
+      figcaption.setAttribute("data-placeholder", "페이지 설명 (선택)");
       figure.appendChild(img);
       figure.appendChild(figcaption);
       figures.push(figure);
@@ -678,6 +678,14 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
     syncToParent();
   }
 
+  // ▲ 마크 삽입: 현재 커서 위치에 "▲ " 삽입 + 해당 블록 가운데 정렬
+  function insertTriangleMark() {
+    document.execCommand("insertText", false, "▲ ");
+    document.execCommand("justifyCenter", false);
+    editorRef.current?.focus();
+    syncToParent();
+  }
+
   // 커서/선택 위치의 가장 가까운 블록 요소를 찾는 헬퍼
   function findParentBlock(node: Node | null): HTMLElement | null {
     const editor = editorRef.current;
@@ -828,6 +836,9 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
         <button type="button" onClick={handleVideoButton} className={`${tbtnOff} flex items-center gap-1`} title="동영상 삽입">
           <Video size={14} />
           동영상
+        </button>
+        <button type="button" onClick={insertTriangleMark} className={`${tbtnOff} flex items-center gap-1`} title="▲ 마크 삽입 (커서 위치, 해당 블록 가운데 정렬)">
+          ▲
         </button>
         {uploading && (
           <span className="text-xs text-blue-600 ml-2">업로드 중...</span>
