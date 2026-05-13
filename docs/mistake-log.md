@@ -2,6 +2,12 @@
 
 기록 형식: 날짜 / 현상 / 원인 / 해결 / 교훈
 
+## 2026-05-13 — 디자인 토큰 마이그레이션 후 hex 잔재 추가 발견 (`text-[#666]`, `border-[#E0E0E0]`)
+- 현상: hex → 토큰 마이그레이션을 27 파일에 일괄 적용한 직후 검증 단계에서 (a) `text-[#666]` 8 곳(`article-list.tsx` × 5, `highlights-carousel.tsx` × 3), (b) `border-[#E0E0E0]`/`bg-[#e0e0e0]` 11 곳(`footer.tsx`/`latest-articles.tsx`/`media-library.tsx`/`highlights-carousel.tsx`/`[slug]/page.tsx`/`exam/page.tsx`/`articles/page.tsx`) 잔재 검출. **장 검색이 `#1A1A1A`/`#666666`/`#1E64FA`/`#0E41AD` 4 개 long-form 만 대상으로 진행돼 3-char shorthand(`#666`) 와 동일 색이지만 다른 토큰명에 매핑되는 값(`#E0E0E0` = `border-light`) 이 누락**
+- 원인: 마이그레이션 grep 대상 hex 가 brand color 4 개 long-form 만 포함. `#666` (= `#666666` shorthand) 과 `--color-border-light` 정의 후 추가된 `#E0E0E0` 잔재가 인지되지 않음
+- 해결: (a) `text-[#666]` 8 곳 → `text-text-secondary`. (b) `border-[#E0E0E0]`·`bg-[#e0e0e0]` 11 곳 → `border-border-light`·`bg-border-light`. UI 그레이스케일(`#F5F5F5` 호버, `#d9d9d9` 비활성, `#e9e9e9` 호버 다크) 은 브랜드 팔레트가 아니므로 보존
+- 교훈: (1) 디자인 토큰 grep 은 **shorthand(`#abc` = `#aabbcc`) 와 대소문자 모두 대상으로 포함**해야 안전. 즉 `[#1aA-Fa-f]{3,6}` 류 정규식으로 한 번 더 sweep. (2) 토큰 추가 시점이 마이그레이션 시점과 **다르면** 추가된 토큰에 대응하는 잔재가 새로 생김 → 토큰 추가 PR 에서 그 토큰의 hex 잔재도 함께 처리. (3) `globals.css` 의 토큰 정의 자체에는 hex 가 남아있는 게 정상(SSOT) — grep 결과에서 그것만 제외
+
 ## 2026-05-11 — 헤더 링크 버튼 모바일 정렬·이미지 첨부·정율사관 자식 라우팅 별도 진단
 - 현상: (a) 모바일에서 헤더 외부 링크 버튼(`QA 튜터링`·`클래스인-티처`)이 우측 정렬·파란 캡슐(`bg-[#1E64FA]`) 로 노출, (b) 어드민 폼은 lucide 아이콘 이름 입력만 받아 임의 로고/이미지 첨부 불가, (c) 사용자가 "정율사관 → 성장스토리" 자식 메뉴 클릭 시 404 가 *여전히* 재현됨을 보고
 - 해결 (a)+(b): `header.tsx` 모바일 컨테이너 `justify-end` → `justify-start`, 두 분기(데스크탑/모바일) 버튼 클래스를 `bg-[#1E64FA] text-white` → `border border-gray-200 text-[#1A1A1A]` (투명 + 옅은 테두리) 로 교체. `header_links.image_url` 컬럼 추가(drizzle `0006_*`) + 어드민 폼에서 `/api/admin/upload` 직접 업로드(`ThumbnailUploader` 는 오버레이 기능까지 들고 있어 과도 → 인라인 파일 input 사용). 헤더 글리프는 `imageUrl` 우선 + lucide 폴백 헬퍼(`renderHeaderLinkGlyph`)로 분리, `createElement` 로 ESLint `react-hooks/static-components` 룰 회피. 어드민 신규 UI 는 lucide 입력 제거하고 이미지 업로드만 노출, 레거시 데이터는 노란 안내 배지로 표시

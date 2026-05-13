@@ -459,19 +459,15 @@ function TextCard({ article }: { article: { id: string; title: string; slug: str
       <AdminBtn article={article} small />
       <div className="flex items-center h-full pr-8">
         <div>
-          <p
-            className="text-xs font-semibold mb-1 transition-colors duration-200 group-hover:text-[#0E41AD]"
-            style={{ color: "#1E64FA" }}
-          >
+          <p className="text-xs font-semibold mb-1 text-brand-blue transition-colors duration-200 group-hover:text-brand-blue-dark">
             {article.categoryLabel}
           </p>
           <p
-            className="leading-snug transition-colors duration-200 group-hover:text-[#0E41AD]"
+            className="leading-snug text-text-primary transition-colors duration-200 group-hover:text-brand-blue-dark"
             style={{
               fontWeight: 700,
               letterSpacing: "-0.03em",
               fontSize: "0.95rem",
-              color: "#1A1A1A",
               display: "-webkit-box",
               WebkitLineClamp: 2,
               WebkitBoxOrient: "vertical",
@@ -483,7 +479,7 @@ function TextCard({ article }: { article: { id: string; title: string; slug: str
         </div>
       </div>
       {/* Arrow icon */}
-      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 group-hover:text-[#0E41AD] transition-colors">
+      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 group-hover:text-brand-blue-dark transition-colors">
         <ChevronRight size={16} />
       </span>
     </Link>

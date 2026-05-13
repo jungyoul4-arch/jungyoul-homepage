@@ -148,36 +148,36 @@ export default async function ArticlePage({ params }: Props) {
       />
 
       <article className="max-w-[1080px] mx-auto px-4 lg:px-10">
-        <nav className="py-4 text-[1rem] text-[#666666]" aria-label="breadcrumb">
+        <nav className="py-4 text-[1rem] text-text-secondary" aria-label="breadcrumb">
           <ol className="flex items-center gap-1">
             <li>
-              <Link href="/" className="hover:text-[#1E64FA] transition-colors">홈</Link>
+              <Link href="/" className="hover:text-brand-blue transition-colors">홈</Link>
             </li>
-            <li><ChevronRight size={14} className="text-[#666666]" /></li>
+            <li><ChevronRight size={14} className="text-text-secondary" /></li>
             <li>
-              <Link href="/articles" className="hover:text-[#1E64FA] transition-colors">교육정보</Link>
+              <Link href="/articles" className="hover:text-brand-blue transition-colors">교육정보</Link>
             </li>
-            <li><ChevronRight size={14} className="text-[#666666]" /></li>
-            <li className="text-[#1A1A1A] font-bold">{article.categoryLabel}</li>
+            <li><ChevronRight size={14} className="text-text-secondary" /></li>
+            <li className="text-text-primary font-bold">{article.categoryLabel}</li>
           </ol>
         </nav>
 
         <header className="border-b border-gray-200 pb-8 mb-8">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-[1rem] font-bold text-[#666666]">
+            <span className="text-[1rem] font-bold text-text-secondary">
               {article.categoryLabel}
             </span>
             <AdminEditButton type="article" data={article} />
           </div>
-          <h1 className="text-[1.5rem] md:text-[2.75rem] font-bold text-[#1A1A1A] leading-[1.27] mb-4">
+          <h1 className="text-[1.5rem] md:text-[2.75rem] font-bold text-text-primary leading-[1.27] mb-4">
             {article.title}
           </h1>
-          <p className="text-[1.25rem] text-[#666666] leading-relaxed mb-4">
+          <p className="text-[1.25rem] text-text-secondary leading-relaxed mb-4">
             {article.excerpt}
           </p>
           <time
             dateTime={article.date.replace(/\//g, "-")}
-            className="text-[1.125rem] font-bold text-[#666666]"
+            className="text-[1.125rem] font-bold text-text-secondary"
           >
             {article.date}
           </time>
@@ -207,10 +207,10 @@ export default async function ArticlePage({ params }: Props) {
         </div>
 
         {/* 저작권 안내 박스 — 삼성 뉴스룸 스타일 */}
-        <div className="mt-8 bg-[#F4F7FF] rounded-lg p-8 text-[#666666] text-sm leading-relaxed">
+        <div className="mt-8 bg-[#F4F7FF] rounded-lg p-8 text-text-secondary text-sm leading-relaxed">
           정율 교육정보의 콘텐츠는 출처를 밝히는 경우 자유롭게 이용하실 수 있습니다.
           콘텐츠 이용 시{" "}
-          <Link href="/" className="text-[#1E64FA]">
+          <Link href="/" className="text-brand-blue">
             정율 교육정보
           </Link>
           {" "}출처 표기를 부탁드립니다.
@@ -219,7 +219,7 @@ export default async function ArticlePage({ params }: Props) {
         {/* 관련 교육정보 — 삼성 뉴스룸 스타일 (가로 스크롤) */}
         {relatedArticles.length > 0 && (
           <section className="border-t border-gray-200 pt-12 mt-8 pb-8">
-            <h2 className="text-[1.5rem] font-bold text-[#1A1A1A] mb-6">관련 교육정보</h2>
+            <h2 className="text-[1.5rem] font-bold text-text-primary mb-6">관련 교육정보</h2>
             <div className="flex gap-5 overflow-x-auto scrollbar-hide -mr-4 lg:-mr-10 pr-4 lg:pr-10" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
               {relatedArticles.map((related) => (
                 <Link
@@ -243,15 +243,15 @@ export default async function ArticlePage({ params }: Props) {
                       />
                     )}
                   </div>
-                  <span className="text-[0.875rem] font-bold text-[#666666] mb-1 block">
+                  <span className="text-[0.875rem] font-bold text-text-secondary mb-1 block">
                     {related.categoryLabel}
                   </span>
-                  <h3 className="text-[1rem] md:text-[1.375rem] font-bold text-[#1A1A1A] leading-7 line-clamp-2 group-hover:text-[#1E64FA] transition-colors">
+                  <h3 className="text-[1rem] md:text-[1.375rem] font-bold text-text-primary leading-7 line-clamp-2 group-hover:text-brand-blue transition-colors">
                     {related.title}
                   </h3>
                   <time
                     dateTime={related.date.replace(/\//g, "-")}
-                    className="text-[0.875rem] font-medium text-[#666666] mt-1 block"
+                    className="text-[0.875rem] font-medium text-text-secondary mt-1 block"
                   >
                     {related.date}
                   </time>
@@ -265,7 +265,7 @@ export default async function ArticlePage({ params }: Props) {
               <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
                 <Link
                   href="/articles"
-                  className="inline-flex items-center justify-center h-16 px-12 bg-[#1E64FA] text-[1.375rem] font-bold text-white rounded-full hover:bg-[#0E41AD] transition-colors whitespace-nowrap"
+                  className="inline-flex items-center justify-center h-16 px-12 bg-brand-blue text-[1.375rem] font-bold text-white rounded-full hover:bg-brand-blue-dark transition-colors whitespace-nowrap"
                 >
                   교육정보 더보기
                 </Link>

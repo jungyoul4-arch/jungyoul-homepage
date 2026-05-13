@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
 import { examTagOptions } from "@/db/schema";
 import { requireAdmin } from "@/lib/admin-auth";
-import { insertExamTagOptionSchema, errorResponse } from "@/lib/validation";
+import { insertExamTagOptionSchema, errorResponse, isUniqueConstraintError } from "@/lib/validation";
 import { eq, sql } from "drizzle-orm";
 
 export async function POST(request: NextRequest) {
@@ -28,9 +28,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ id }, { status: 201 });
   } catch (e) {
-    // Miniflare D1 의 UNIQUE 위반은 Error 인스턴스가 아닐 수 있어 폭넓게 매칭.
-    const msg = e instanceof Error ? `${e.message} ${(e.cause as Error | undefined)?.message ?? ""}` : String(e);
-    if (msg.includes("UNIQUE constraint failed")) {
+    if (isUniqueConstraintError(e)) {
       return NextResponse.json(
         { error: "이미 등록된 값입니다." },
         { status: 409 }

@@ -48,17 +48,17 @@ export default function AboutPage() {
         })}
       />
 
-      <h1 className="text-[1.5rem] md:text-[2.75rem] font-bold text-[#1A1A1A] mb-2">
+      <h1 className="text-[1.5rem] md:text-[2.75rem] font-bold text-text-primary mb-2">
         회사소개
       </h1>
-      <p className="text-[1.25rem] font-medium text-[#666666] mb-10">
+      <p className="text-[1.25rem] font-medium text-text-secondary mb-10">
         학생의 가능성을 이끌어내는 교육, 정율이 함께합니다.
       </p>
 
       {/* Company Vision */}
       <div className="max-w-3xl">
         <section className="mb-12">
-          <h2 className="text-[1.375rem] font-bold text-[#1A1A1A] mb-4 pb-3 border-b border-gray-200">
+          <h2 className="text-[1.375rem] font-bold text-text-primary mb-4 pb-3 border-b border-gray-200">
             교육 철학
           </h2>
           <p className="text-[#000000] text-[1.25rem] leading-[30px] font-normal mb-4">
@@ -74,7 +74,7 @@ export default function AboutPage() {
         </section>
 
         <section className="mb-12">
-          <h2 className="text-[1.375rem] font-bold text-[#1A1A1A] mb-4 pb-3 border-b border-gray-200">
+          <h2 className="text-[1.375rem] font-bold text-text-primary mb-4 pb-3 border-b border-gray-200">
             정율의 차별점
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -97,15 +97,15 @@ export default function AboutPage() {
               },
             ].map((item) => (
               <div key={item.title} className="border border-gray-200 p-5">
-                <h3 className="font-bold text-[#1A1A1A] mb-2">{item.title}</h3>
-                <p className="text-[0.875rem] text-[#666666] leading-relaxed">{item.desc}</p>
+                <h3 className="font-bold text-text-primary mb-2">{item.title}</h3>
+                <p className="text-[0.875rem] text-text-secondary leading-relaxed">{item.desc}</p>
               </div>
             ))}
           </div>
         </section>
 
         <section className="mb-12">
-          <h2 className="text-[1.375rem] font-bold text-[#1A1A1A] mb-4 pb-3 border-b border-gray-200">
+          <h2 className="text-[1.375rem] font-bold text-text-primary mb-4 pb-3 border-b border-gray-200">
             회사 정보
           </h2>
           <table className="w-full text-sm">

@@ -64,14 +64,14 @@ export function ExamArticleFilter({ articles, tagOptions }: Props) {
     <>
       {visible.length > 0 && (
         <div className="flex flex-wrap items-center gap-3 mb-8 p-4 bg-[#F5F7FA] rounded-md">
-          <span className="text-sm font-semibold text-[#1A1A1A] mr-2">필터</span>
+          <span className="text-sm font-semibold text-text-primary mr-2">필터</span>
           {visible.map((s) => {
             const opts = tagOptions
               .filter((o) => o.tagType === s.tagType)
               .sort((a, b) => a.sortOrder - b.sortOrder);
             return (
               <div key={s.param} className="flex items-center gap-1.5">
-                <label className="text-xs text-[#666666]">{s.label}</label>
+                <label className="text-xs text-text-secondary">{s.label}</label>
                 <select
                   value={selected[s.param]}
                   onChange={(e) => handleChange(s.param, e.target.value)}
@@ -92,7 +92,7 @@ export function ExamArticleFilter({ articles, tagOptions }: Props) {
             <button
               type="button"
               onClick={() => router.replace("/exam", { scroll: false })}
-              className="ml-auto text-xs text-[#1E64FA] hover:underline"
+              className="ml-auto text-xs text-brand-blue hover:underline"
             >
               초기화
             </button>

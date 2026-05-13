@@ -52,13 +52,13 @@ export default async function HighlightPage({ params }: Props) {
 
   return (
     <div className="max-w-[1480px] mx-auto px-4 lg:px-10 py-10">
-      <nav className="pb-6 text-[1rem] text-[#666666]" aria-label="breadcrumb">
+      <nav className="pb-6 text-[1rem] text-text-secondary" aria-label="breadcrumb">
         <ol className="flex items-center gap-1">
           <li>
-            <Link href="/" className="hover:text-[#1E64FA] transition-colors">홈</Link>
+            <Link href="/" className="hover:text-brand-blue transition-colors">홈</Link>
           </li>
-          <li><ChevronRight size={14} className="text-[#666666]" /></li>
-          <li className="text-[#1A1A1A] font-bold">{highlight.title}</li>
+          <li><ChevronRight size={14} className="text-text-secondary" /></li>
+          <li className="text-text-primary font-bold">{highlight.title}</li>
         </ol>
       </nav>
 

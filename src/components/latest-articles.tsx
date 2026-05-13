@@ -34,7 +34,7 @@ export function LatestArticles({ articles, pinnedArticleIds = [] }: LatestArticl
       <div className="max-w-[1480px] mx-auto px-5 lg:px-10">
         {/* Section Header + Tab — 삼성 뉴스룸 원본은 static (sticky 아님) */}
         <div>
-          <h2 className="text-[1.25rem] md:text-[1.5rem] font-bold text-[#1A1A1A] mb-6" style={{ letterSpacing: "-0.03em", lineHeight: 1.6 }}>
+          <h2 className="text-[1.25rem] md:text-[1.5rem] font-bold text-text-primary mb-6" style={{ letterSpacing: "-0.03em", lineHeight: 1.6 }}>
             최신 교육정보
           </h2>
 
@@ -46,13 +46,13 @@ export function LatestArticles({ articles, pinnedArticleIds = [] }: LatestArticl
                 onClick={() => setActiveTab(cat.value)}
                 className={`pb-2 md:py-2 mr-6 text-[1rem] md:text-[1.125rem] transition-colors relative whitespace-nowrap shrink-0 ${
                   activeTab === cat.value
-                    ? "text-[#1E64FA] font-bold"
-                    : "text-[#666666] hover:text-[#1A1A1A] font-medium"
+                    ? "text-brand-blue font-bold"
+                    : "text-text-secondary hover:text-text-primary font-medium"
                 }`}
               >
                 {cat.label}
                 {activeTab === cat.value && (
-                  <span className="absolute -bottom-px left-0 right-0 h-1 bg-[#1E64FA]" />
+                  <span className="absolute -bottom-px left-0 right-0 h-1 bg-brand-blue" />
                 )}
               </button>
             ))}
@@ -78,7 +78,7 @@ export function LatestArticles({ articles, pinnedArticleIds = [] }: LatestArticl
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
             <Link
               href="/articles"
-              className="inline-flex items-center justify-center h-16 px-12 bg-[#1E64FA] text-[1.375rem] font-bold text-white rounded-full hover:bg-[#0E41AD] transition-colors whitespace-nowrap"
+              className="inline-flex items-center justify-center h-16 px-12 bg-brand-blue text-[1.375rem] font-bold text-white rounded-full hover:bg-brand-blue-dark transition-colors whitespace-nowrap"
             >
               교육정보 더보기
             </Link>
@@ -119,28 +119,28 @@ function ArticleCard({ article, headlineMode = false }: { article: Article; head
 
           {/* Category + Title */}
           <div className="flex flex-col gap-3">
-            <span className="text-[1rem] font-bold text-[#666666]">
+            <span className="text-[1rem] font-bold text-text-secondary">
               {article.categoryLabel}
             </span>
-            <h3 className="text-[0.875rem] md:text-[1.125rem] lg:text-[1.375rem] font-bold text-[#1A1A1A] leading-7 line-clamp-2 group-hover:text-[#1E64FA] transition-colors">
+            <h3 className="text-[0.875rem] md:text-[1.125rem] lg:text-[1.375rem] font-bold text-text-primary leading-7 line-clamp-2 group-hover:text-brand-blue transition-colors">
               {article.title}
             </h3>
-            <time className="text-[1rem] font-medium text-[#666666]">{article.date}</time>
+            <time className="text-[1rem] font-medium text-text-secondary">{article.date}</time>
           </div>
         </div>
 
         {/* Mobile: 상위 4개는 풀폭 헤드라인, 5번째부터는 가로 리스트 */}
         {headlineMode ? (
-          <div className="sm:hidden flex flex-col gap-1.5 py-5 border-b border-[#E0E0E0]">
-            <span className="text-[1rem] font-bold text-[#666666] tracking-[-0.03em]">
+          <div className="sm:hidden flex flex-col gap-1.5 py-5 border-b border-border-light">
+            <span className="text-[1rem] font-bold text-text-secondary tracking-[-0.03em]">
               {article.categoryLabel}
             </span>
-            <h3 className="text-[1.125rem] font-bold text-[#1A1A1A] leading-[1.4] tracking-[-0.03em] line-clamp-2 group-hover:text-[#1E64FA] transition-colors">
+            <h3 className="text-[1.125rem] font-bold text-text-primary leading-[1.4] tracking-[-0.03em] line-clamp-2 group-hover:text-brand-blue transition-colors">
               {article.title}
             </h3>
           </div>
         ) : (
-          <div className="flex gap-3 sm:hidden py-5 border-b border-[#E0E0E0]">
+          <div className="flex gap-3 sm:hidden py-5 border-b border-border-light">
             <div className="w-1/2 aspect-[16/9] shrink-0 rounded-lg overflow-hidden relative">
               <div
                 className="absolute inset-0"
@@ -159,13 +159,13 @@ function ArticleCard({ article, headlineMode = false }: { article: Article; head
               )}
             </div>
             <div className="flex-1 min-w-0 flex flex-col justify-center">
-              <span className="text-[1rem] font-bold text-[#666666] tracking-[-0.03em]">
+              <span className="text-[1rem] font-bold text-text-secondary tracking-[-0.03em]">
                 {article.categoryLabel}
               </span>
-              <h3 className="text-[0.875rem] font-medium text-[#1A1A1A] leading-[1.286] tracking-[-0.03em] line-clamp-3 mt-1">
+              <h3 className="text-[0.875rem] font-medium text-text-primary leading-[1.286] tracking-[-0.03em] line-clamp-3 mt-1">
                 {article.title}
               </h3>
-              <time className="text-[0.875rem] font-medium text-[#666666] mt-1 block">{article.date}</time>
+              <time className="text-[0.875rem] font-medium text-text-secondary mt-1 block">{article.date}</time>
             </div>
           </div>
         )}

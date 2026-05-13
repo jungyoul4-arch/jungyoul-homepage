@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -68,13 +68,13 @@ export function ArticleList({ articles, hideTabs = false }: ArticleListProps) {
               onClick={() => handleTab(cat.value)}
               className={`py-2 mr-6 text-[1.125rem] transition-colors relative whitespace-nowrap shrink-0 ${
                 activeTab === cat.value
-                  ? "text-[#1E64FA] font-bold"
-                  : "text-[#666666] hover:text-[#1A1A1A] font-medium"
+                  ? "text-brand-blue font-bold"
+                  : "text-text-secondary hover:text-text-primary font-medium"
               }`}
             >
               {cat.label}
               {activeTab === cat.value && (
-                <span className="absolute bottom-0 left-0 right-0 h-1 bg-[#1E64FA]" />
+                <span className="absolute bottom-0 left-0 right-0 h-1 bg-brand-blue" />
               )}
             </button>
           ))}
@@ -135,7 +135,7 @@ function Pagination({
           <Link
             href={buildUrl(1)}
             className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors ${
-              currentPage === 1 ? "text-[#d9d9d9] pointer-events-none" : "text-[#666] hover:bg-[#F5F5F5]"
+              currentPage === 1 ? "text-[#d9d9d9] pointer-events-none" : "text-text-secondary hover:bg-[#F5F5F5]"
             }`}
             aria-label="첫 페이지"
           >
@@ -147,7 +147,7 @@ function Pagination({
           <Link
             href={buildUrl(Math.max(1, currentPage - 1))}
             className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors ${
-              currentPage === 1 ? "text-[#d9d9d9] pointer-events-none" : "text-[#666] hover:bg-[#F5F5F5]"
+              currentPage === 1 ? "text-[#d9d9d9] pointer-events-none" : "text-text-secondary hover:bg-[#F5F5F5]"
             }`}
             aria-label="이전 페이지"
           >
@@ -162,8 +162,8 @@ function Pagination({
               href={buildUrl(page)}
               className={`w-10 h-10 flex items-center justify-center rounded-full text-[1.125rem] transition-colors ${
                 page === currentPage
-                  ? "font-bold text-[#1A1A1A] underline underline-offset-4"
-                  : "font-medium text-[#666] hover:bg-[#F5F5F5]"
+                  ? "font-bold text-text-primary underline underline-offset-4"
+                  : "font-medium text-text-secondary hover:bg-[#F5F5F5]"
               }`}
               aria-current={page === currentPage ? "page" : undefined}
             >
@@ -177,7 +177,7 @@ function Pagination({
           <Link
             href={buildUrl(Math.min(totalPages, currentPage + 1))}
             className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors ${
-              currentPage === totalPages ? "text-[#d9d9d9] pointer-events-none" : "text-[#666] hover:bg-[#F5F5F5]"
+              currentPage === totalPages ? "text-[#d9d9d9] pointer-events-none" : "text-text-secondary hover:bg-[#F5F5F5]"
             }`}
             aria-label="다음 페이지"
           >
@@ -189,7 +189,7 @@ function Pagination({
           <Link
             href={buildUrl(totalPages)}
             className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors ${
-              currentPage === totalPages ? "text-[#d9d9d9] pointer-events-none" : "text-[#666] hover:bg-[#F5F5F5]"
+              currentPage === totalPages ? "text-[#d9d9d9] pointer-events-none" : "text-text-secondary hover:bg-[#F5F5F5]"
             }`}
             aria-label="마지막 페이지"
           >
@@ -227,12 +227,12 @@ function ArticleCard({ article }: { article: Article }) {
         </div>
         {/* Text */}
         <div className="flex flex-col gap-3">
-          <h2 className="text-[1rem] md:text-[1.375rem] font-bold text-[#1A1A1A] leading-7 line-clamp-2 group-hover:text-[#1E64FA] transition-colors">
+          <h2 className="text-[1rem] md:text-[1.375rem] font-bold text-text-primary leading-7 line-clamp-2 group-hover:text-brand-blue transition-colors">
             {article.title}
           </h2>
           <div className="flex items-center gap-3">
-            <time className="text-[1rem] font-medium text-[#666666]">{article.date}</time>
-            <span className="text-[1rem] font-bold text-[#666666]">
+            <time className="text-[1rem] font-medium text-text-secondary">{article.date}</time>
+            <span className="text-[1rem] font-bold text-text-secondary">
               {article.categoryLabel}
             </span>
           </div>

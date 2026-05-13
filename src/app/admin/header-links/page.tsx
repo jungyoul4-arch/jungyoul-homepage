@@ -36,7 +36,7 @@ function HeaderLinkPreview({ items }: { items: HeaderLink[] }) {
           items.map((link) => (
             <span
               key={link.id}
-              className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 text-[#1A1A1A] text-xs font-medium rounded-full cursor-default"
+              className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 text-text-primary text-xs font-medium rounded-full cursor-default"
             >
               {renderButtonGlyph(link.imageUrl, link.icon)}
               {link.label}

@@ -54,7 +54,7 @@ export function HighlightsCarousel({ highlights }: HighlightsCarouselProps) {
       <div className="max-w-[1480px] mx-auto px-10 max-[768px]:px-5">
         {/* Header — 삼성 뉴스룸 스타일 */}
         <div className="relative flex items-center mb-6">
-          <h2 className="text-2xl max-[670px]:text-xl font-bold text-[#1a1a1a] leading-8 tracking-[-0.045rem]">
+          <h2 className="text-2xl max-[670px]:text-xl font-bold text-text-primary leading-8 tracking-[-0.045rem]">
             하이라이트
           </h2>
 
@@ -62,7 +62,7 @@ export function HighlightsCarousel({ highlights }: HighlightsCarouselProps) {
           <div className="absolute right-[46px] flex items-center">
             <button
               onClick={() => scroll("left")}
-              className="w-6 h-6 flex items-center justify-center text-[#1a1a1a] hover:text-[#666] transition-colors"
+              className="w-6 h-6 flex items-center justify-center text-text-primary hover:text-text-secondary transition-colors"
               aria-label="이전"
             >
               <ChevronLeft size={16} strokeWidth={2} />
@@ -70,27 +70,27 @@ export function HighlightsCarousel({ highlights }: HighlightsCarouselProps) {
 
             {/* Page counter */}
             <div className="px-3 font-bold text-sm tracking-[-0.026rem] flex items-center">
-              <span className="text-[#1a1a1a]">{displayIndex}</span>
-              <span className="w-px h-[9px] bg-[#e0e0e0] mx-2" />
-              <span className="text-[#666]">{displayTotal}</span>
+              <span className="text-text-primary">{displayIndex}</span>
+              <span className="w-px h-[9px] bg-border-light mx-2" />
+              <span className="text-text-secondary">{displayTotal}</span>
             </div>
 
             <button
               onClick={() => scroll("right")}
-              className="w-6 h-6 flex items-center justify-center text-[#1a1a1a] hover:text-[#666] transition-colors"
+              className="w-6 h-6 flex items-center justify-center text-text-primary hover:text-text-secondary transition-colors"
               aria-label="다음"
             >
               <ChevronRight size={16} strokeWidth={2} />
             </button>
 
             {/* Divider */}
-            <span className="w-px h-4 bg-[#e0e0e0] mx-4 pointer-events-none" />
+            <span className="w-px h-4 bg-border-light mx-4 pointer-events-none" />
           </div>
 
           {/* 더보기 link */}
           <Link
             href="/highlights"
-            className="absolute right-0 text-lg font-bold text-[#1a1a1a] hover:text-[#0E41AD] flex items-center tracking-[-0.034rem] transition-colors"
+            className="absolute right-0 text-lg font-bold text-text-primary hover:text-brand-blue-dark flex items-center tracking-[-0.034rem] transition-colors"
           >
             더보기
           </Link>
@@ -141,7 +141,7 @@ export function HighlightsCarousel({ highlights }: HighlightsCarouselProps) {
                     )}
                   </div>
                   {/* Title — 이미지 아래 (삼성 뉴스룸 패턴) */}
-                  <p className="py-5 max-[670px]:py-3 text-[1.375rem] max-[670px]:text-base font-bold text-[#1a1a1a] leading-7 tracking-[-0.041rem] truncate">
+                  <p className="py-5 max-[670px]:py-3 text-[1.375rem] max-[670px]:text-base font-bold text-text-primary leading-7 tracking-[-0.041rem] truncate">
                     {item.title}
                   </p>
                 </Link>

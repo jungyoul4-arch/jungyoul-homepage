@@ -80,7 +80,7 @@ export function Header({ initialNavGroups, initialHeaderLinks }: HeaderProps = {
           <Link href="/" className="flex items-center gap-2 shrink-0">
             <SiteLogo size="md" />
             <div className="flex flex-col">
-              <span className="text-[1.125rem] font-bold text-[#1A1A1A] leading-6">
+              <span className="text-[1.125rem] font-bold text-text-primary leading-6">
                 정율 교육정보
               </span>
             </div>
@@ -92,12 +92,12 @@ export function Header({ initialNavGroups, initialHeaderLinks }: HeaderProps = {
               <Link
                 key={group.parent.id}
                 href={group.parent.href}
-                className="relative text-[1.125rem] font-bold text-[#1A1A1A] hover:text-[#1E64FA] transition-colors py-5 lg:pt-[42px] lg:pb-[30px]"
+                className="relative text-[1.125rem] font-bold text-text-primary hover:text-brand-blue transition-colors py-5 lg:pt-[42px] lg:pb-[30px]"
                 onMouseEnter={() => setHoveredNav(group.parent.id)}
               >
                 {group.parent.label}
                 <span
-                  className={`absolute bottom-0 left-0 right-0 h-1 bg-[#1E64FA] transition-opacity duration-200 ${
+                  className={`absolute bottom-0 left-0 right-0 h-1 bg-brand-blue transition-opacity duration-200 ${
                     hoveredNav === group.parent.id ? "opacity-100" : "opacity-0"
                   }`}
                 />
@@ -113,7 +113,7 @@ export function Header({ initialNavGroups, initialHeaderLinks }: HeaderProps = {
                       <Link
                         key={child.id}
                         href={child.href}
-                        className="block py-1.5 text-[0.9375rem] text-[#666666] hover:text-[#1E64FA] transition-colors whitespace-nowrap"
+                        className="block py-1.5 text-[0.9375rem] text-text-secondary hover:text-brand-blue transition-colors whitespace-nowrap"
                       >
                         {child.label}
                       </Link>
@@ -135,7 +135,7 @@ export function Header({ initialNavGroups, initialHeaderLinks }: HeaderProps = {
                     href={link.href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 text-[#1A1A1A] text-xs font-medium rounded-full hover:border-gray-400 hover:bg-gray-50 transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 text-text-primary text-xs font-medium rounded-full hover:border-gray-400 hover:bg-gray-50 transition-colors"
                     aria-label={link.label}
                   >
                     {renderHeaderLinkGlyph(link)}
@@ -154,7 +154,7 @@ export function Header({ initialNavGroups, initialHeaderLinks }: HeaderProps = {
             {isAdmin ? (
               <Link
                 href="/admin"
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1E64FA] text-white text-xs font-medium rounded-full hover:bg-[#0E41AD] transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-blue text-white text-xs font-medium rounded-full hover:bg-brand-blue-dark transition-colors"
                 aria-label="관리자 대시보드"
               >
                 <LayoutDashboard size={14} />
@@ -188,7 +188,7 @@ export function Header({ initialNavGroups, initialHeaderLinks }: HeaderProps = {
                 href={link.href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 text-[#1A1A1A] text-xs font-medium rounded-full hover:border-gray-400 hover:bg-gray-50 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 text-text-primary text-xs font-medium rounded-full hover:border-gray-400 hover:bg-gray-50 transition-colors"
                 aria-label={link.label}
               >
                 {renderHeaderLinkGlyph(link)}
@@ -225,7 +225,7 @@ export function Header({ initialNavGroups, initialHeaderLinks }: HeaderProps = {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="검색어를 입력하세요"
-                  className="w-full h-12 px-4 pr-12 border border-gray-300 rounded-sm text-[15px] focus:outline-none focus:border-[#1E64FA]"
+                  className="w-full h-12 px-4 pr-12 border border-gray-300 rounded-sm text-[15px] focus:outline-none focus:border-brand-blue"
                   autoFocus
                 />
                 <button className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -240,7 +240,7 @@ export function Header({ initialNavGroups, initialHeaderLinks }: HeaderProps = {
                   <Link
                     key={item.label}
                     href={item.href}
-                    className="px-3 py-1.5 bg-white border border-gray-200 rounded-sm text-sm text-gray-600 hover:border-[#1E64FA] hover:text-[#1E64FA] transition-colors"
+                    className="px-3 py-1.5 bg-white border border-gray-200 rounded-sm text-sm text-gray-600 hover:border-brand-blue hover:text-brand-blue transition-colors"
                   >
                     {item.label}
                   </Link>
@@ -265,7 +265,7 @@ export function Header({ initialNavGroups, initialHeaderLinks }: HeaderProps = {
                           mobileSubmenu === group.parent.id ? null : group.parent.id
                         )
                       }
-                      className="flex items-center justify-between w-full py-3 text-[1.125rem] font-bold text-[#1A1A1A]"
+                      className="flex items-center justify-between w-full py-3 text-[1.125rem] font-bold text-text-primary"
                     >
                       {group.parent.label}
                       <ChevronDown
@@ -281,7 +281,7 @@ export function Header({ initialNavGroups, initialHeaderLinks }: HeaderProps = {
                           <Link
                             key={child.id}
                             href={child.href}
-                            className="block py-2 text-[1rem] text-[#666666] hover:text-[#1E64FA]"
+                            className="block py-2 text-[1rem] text-text-secondary hover:text-brand-blue"
                             onClick={() => setMobileMenuOpen(false)}
                           >
                             {child.label}
@@ -293,7 +293,7 @@ export function Header({ initialNavGroups, initialHeaderLinks }: HeaderProps = {
                 ) : (
                   <Link
                     href={group.parent.href}
-                    className="block py-3 text-[1.125rem] font-bold text-[#1A1A1A]"
+                    className="block py-3 text-[1.125rem] font-bold text-text-primary"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     {group.parent.label}

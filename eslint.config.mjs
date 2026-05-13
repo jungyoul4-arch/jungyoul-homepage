@@ -12,6 +12,15 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Vendored / generated assets — not source we control or want lint signal on.
+    // public/pdfjs/pdf.worker.min.mjs alone contributed ~99% of lint output and
+    // drowned real source-code warnings. Other public/* are SVG/ICO assets that
+    // ESLint should not be parsing.
+    "public/**",
+    ".open-next/**",
+    ".wrangler/**",
+    "graphify-out/**",
+    ".playwright-mcp/**",
   ]),
 ]);
 

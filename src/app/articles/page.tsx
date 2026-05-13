@@ -93,7 +93,7 @@ export default async function ArticlesPage() {
       />
 
       {/* Page Header — 삼성 뉴스룸 "최신기사" 페이지 스타일 */}
-      <h1 className="text-[1.5rem] md:text-[1.875rem] font-bold text-[#1A1A1A] mt-10 md:mt-20 pb-5 border-b border-[#E0E0E0] mb-10">
+      <h1 className="text-[1.5rem] md:text-[1.875rem] font-bold text-text-primary mt-10 md:mt-20 pb-5 border-b border-border-light mb-10">
         교육정보
       </h1>
       <ArticleList articles={articles} />

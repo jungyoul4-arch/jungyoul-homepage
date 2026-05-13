@@ -17,7 +17,7 @@
 
 ## 헤더 링크 버튼 (외부/내부)
 - `nav_menus` 와 별개. 헤더 우측 상단 돋보기 왼편(`lg≥`) / 상단 바 아래 **좌측** 행(`<lg`)에 N개 노출, 모두 `target="_blank"` 새 탭
-- 시안: 투명 배경 + `border-gray-200` 옅은 테두리 + `text-[#1A1A1A]`. 호버 시 테두리 진해지고 옅은 회색 배경. **파란 배경 캡슐은 사용하지 않음**
+- 시안: 투명 배경 + `border-gray-200` 옅은 테두리 + `text-text-primary`. 호버 시 테두리 진해지고 옅은 회색 배경. **파란 배경 캡슐은 사용하지 않음**
 - 데이터: `header_links` (label, href, **image_url**, icon[레거시], sort_order) — `src/db/schema.ts` (drizzle 마이그 `0006_huge_purple_man.sql`)
 - 어드민: `/admin/header-links` (CRUD + Up/Down reorder), 사이드바 "헤더 링크 버튼"
 - 공개 API: `GET /api/header-links` (인증 없음, sort_order ASC)
@@ -36,6 +36,14 @@
 - `/exam` 페이지 필터 UI: `<ExamArticleFilter>` — URL 쿼리 `?year=&grade=&subject=` 와 동기화되는 select 3개
 - 공개 API: `GET /api/exam-tag-options` (인증 없음, 선택적 `?type=` 필터)
 - strategy/news 등 다른 카테고리 기사는 `exam_*` 컬럼이 NULL — UI 노출 없음
+
+## 디자인 토큰 (색상)
+- 색상은 모두 `src/app/globals.css` `@theme inline` 블록의 `--color-*` 토큰으로만 표기. **신규 코드에서 hex 값(`#1A1A1A`, `#1E64FA` 등) 임의 입력 금지**
+- 브랜드/텍스트 토큰: `brand-blue`(#1E64FA), `brand-blue-dark`(#0E41AD), `text-primary`(#1A1A1A), `text-secondary`(#666666), `border-light`(#E0E0E0), `article-line`(#E0E9FE), `media-bg`(#f4f7ff)
+- Tailwind 사용 예: `text-brand-blue`, `text-text-primary`, `text-text-secondary`, `bg-brand-blue`, `border-border-light`, `bg-border-light`
+- UI 그레이스케일(`#F5F5F5` 호버 배경, `#d9d9d9` 비활성 텍스트, `#e9e9e9` 호버 다크) 은 브랜드 팔레트가 아니므로 Tailwind arbitrary 또는 native `gray-*` 사용 허용 (article-list 페이지네이션, footer SNS 버튼 hover 등)
+- 다크 모드: `@custom-variant dark (&:is(.dark *))` 는 의도적으로 보존 — Tailwind v4 의 기본 `prefers-color-scheme: dark` 자동 활성을 무력화하는 가드. 본문에서 어디서도 `.dark` 클래스를 추가하지 않으므로 `dark:` 유틸리티는 영구 inert
+- 신규 토큰 추가 시: `globals.css:6` `@theme` 블록에 `--color-<name>: <hex>` 추가 → `bg-<name>` / `text-<name>` / `border-<name>` 유틸리티 자동 생성
 
 ## 코드베이스 탐색 규칙
 - 모든 코드 질문/작업 전: `graphify-out/GRAPH_REPORT.md` 먼저 읽기

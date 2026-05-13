@@ -119,14 +119,14 @@ export default async function MenuIndexPage({ params }: RouteParams) {
           })}
         />
 
-        <h1 className="text-[1.5rem] md:text-[1.875rem] font-bold text-[#1A1A1A] mt-10 md:mt-20 pb-5 border-b border-[#E0E0E0] mb-10">
+        <h1 className="text-[1.5rem] md:text-[1.875rem] font-bold text-text-primary mt-10 md:mt-20 pb-5 border-b border-border-light mb-10">
           {label}
         </h1>
 
         {children.length > 0 ? (
           <NavTabs items={children} />
         ) : (
-          <p className="text-[1rem] text-[#666666] py-10">
+          <p className="text-[1rem] text-text-secondary py-10">
             아직 하위 메뉴가 등록되지 않았습니다. 어드민에서 자식 항목을 추가하면 자동으로 표시됩니다.
           </p>
         )}

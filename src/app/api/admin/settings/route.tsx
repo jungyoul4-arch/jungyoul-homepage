@@ -51,10 +51,18 @@ async function generateFavicon(logoUrl: string): Promise<string | null> {
             background: "transparent",
           }}
         >
+          {/*
+            ImageResponse (next/og, Satori) 는 next/image 를 지원하지 않고
+            원시 <img> 만 허용한다. 또한 이 JSX 는 서버에서 PNG 로 라스터
+            라이즈되어 R2 로 저장될 뿐 브라우저에 도달하지 않으므로 LCP /
+            alt 접근성 규칙이 적용되지 않는다.
+          */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={dataSrc}
             width={32}
             height={32}
+            alt=""
             style={{ objectFit: "contain" }}
           />
         </div>

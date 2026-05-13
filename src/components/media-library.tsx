@@ -40,7 +40,7 @@ export function MediaLibrary({ videos }: MediaLibraryProps) {
       <div className="max-w-[1480px] mx-auto px-10">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-[1.25rem] md:text-[1.5rem] font-bold text-[#1A1A1A] leading-8 tracking-[-0.045rem]">
+          <h2 className="text-[1.25rem] md:text-[1.5rem] font-bold text-text-primary leading-8 tracking-[-0.045rem]">
             정율TV
           </h2>
           <div className="flex items-center">
@@ -58,12 +58,12 @@ export function MediaLibrary({ videos }: MediaLibraryProps) {
             >
               <ChevronRight size={16} />
             </button>
-            <span className="w-px h-4 bg-[#e0e0e0] mx-4" aria-hidden="true" />
+            <span className="w-px h-4 bg-border-light mx-4" aria-hidden="true" />
             <a
               href="https://www.youtube.com/@jungyoulTV"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[1.125rem] font-bold text-[#1A1A1A] hover:text-[#0E41AD] transition-colors"
+              className="text-[1.125rem] font-bold text-text-primary hover:text-brand-blue-dark transition-colors"
             >
               더보기
             </a>

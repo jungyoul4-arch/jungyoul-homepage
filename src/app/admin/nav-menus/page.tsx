@@ -51,13 +51,13 @@ function MenuPreview({ tree }: { tree: ParentWithChildren[] }) {
             <span
               key={group.parent.id}
               className={`relative text-[1rem] font-bold cursor-default transition-colors pb-2 ${
-                hovered === group.parent.id ? "text-[#1E64FA]" : "text-[#1A1A1A]"
+                hovered === group.parent.id ? "text-brand-blue" : "text-text-primary"
               }`}
               onMouseEnter={() => setHovered(group.parent.id)}
             >
               {group.parent.label}
               <span
-                className={`absolute bottom-0 left-0 right-0 h-[3px] bg-[#1E64FA] transition-opacity duration-200 ${
+                className={`absolute bottom-0 left-0 right-0 h-[3px] bg-brand-blue transition-opacity duration-200 ${
                   hovered === group.parent.id ? "opacity-100" : "opacity-0"
                 }`}
               />
@@ -70,7 +70,7 @@ function MenuPreview({ tree }: { tree: ParentWithChildren[] }) {
             {hoveredGroup!.children.map((child) => (
               <span
                 key={child.id}
-                className="block py-1 text-[0.875rem] text-[#666666] cursor-default"
+                className="block py-1 text-[0.875rem] text-text-secondary cursor-default"
               >
                 {child.label}
               </span>

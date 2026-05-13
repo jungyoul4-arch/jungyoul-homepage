@@ -73,10 +73,10 @@ export default function ContactPage() {
         })}
       />
 
-      <h1 className="text-[1.5rem] md:text-[2.75rem] font-bold text-[#1A1A1A] mb-2">
+      <h1 className="text-[1.5rem] md:text-[2.75rem] font-bold text-text-primary mb-2">
         상담신청
       </h1>
-      <p className="text-[1.25rem] font-medium text-[#666666] mb-10">
+      <p className="text-[1.25rem] font-medium text-text-secondary mb-10">
         입시에 대한 궁금한 점이 있으시면 편하게 문의해 주세요.
       </p>
 
@@ -88,13 +88,13 @@ export default function ContactPage() {
               <Phone size={18} className="text-blue-600" />
             </div>
             <div>
-              <h2 className="font-bold text-[#1A1A1A] mb-1">전화 상담</h2>
+              <h2 className="font-bold text-text-primary mb-1">전화 상담</h2>
               <p className="text-gray-600 text-sm mb-2">
                 평일 09:00 ~ 22:00 / 토요일 09:00 ~ 18:00
               </p>
               <a
                 href="tel:032-321-9937"
-                className="text-[#1E64FA] font-bold text-lg hover:underline"
+                className="text-brand-blue font-bold text-lg hover:underline"
               >
                 032-321-9937
               </a>
@@ -106,7 +106,7 @@ export default function ContactPage() {
               <MessageCircle size={18} className="text-yellow-600" />
             </div>
             <div>
-              <h2 className="font-bold text-[#1A1A1A] mb-1">카카오톡 상담</h2>
+              <h2 className="font-bold text-text-primary mb-1">카카오톡 상담</h2>
               <p className="text-gray-600 text-sm mb-2">
                 실시간 1:1 채팅 상담이 가능합니다.
               </p>
@@ -126,13 +126,13 @@ export default function ContactPage() {
               <Mail size={18} className="text-gray-600" />
             </div>
             <div>
-              <h2 className="font-bold text-[#1A1A1A] mb-1">이메일 문의</h2>
+              <h2 className="font-bold text-text-primary mb-1">이메일 문의</h2>
               <p className="text-gray-600 text-sm mb-2">
                 자세한 상담을 원하시면 이메일로 문의해 주세요.
               </p>
               <a
                 href="mailto:jungyoul3@naver.com"
-                className="text-[#1E64FA] font-medium hover:underline"
+                className="text-brand-blue font-medium hover:underline"
               >
                 jungyoul3@naver.com
               </a>
@@ -144,7 +144,7 @@ export default function ContactPage() {
               <MapPin size={18} className="text-green-600" />
             </div>
             <div>
-              <h2 className="font-bold text-[#1A1A1A] mb-1">찾아오시는 길</h2>
+              <h2 className="font-bold text-text-primary mb-1">찾아오시는 길</h2>
               <p className="text-gray-600 text-sm mb-1">
                 경기도 부천시 원미구 길주로91 601호
               </p>
@@ -157,7 +157,7 @@ export default function ContactPage() {
 
         {/* Contact Form */}
         <div className="border border-gray-200 p-6 md:p-8">
-          <h2 className="text-[1.5rem] font-bold text-[#1A1A1A] mb-6">온라인 상담 신청</h2>
+          <h2 className="text-[1.5rem] font-bold text-text-primary mb-6">온라인 상담 신청</h2>
           <form className="space-y-5">
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
@@ -166,7 +166,7 @@ export default function ContactPage() {
               <input
                 type="text"
                 id="name"
-                className="w-full h-11 px-3 border border-gray-300 text-sm focus:outline-none focus:border-[#1E64FA]"
+                className="w-full h-11 px-3 border border-gray-300 text-sm focus:outline-none focus:border-brand-blue"
                 placeholder="이름을 입력하세요"
               />
             </div>
@@ -177,7 +177,7 @@ export default function ContactPage() {
               <input
                 type="tel"
                 id="phone"
-                className="w-full h-11 px-3 border border-gray-300 text-sm focus:outline-none focus:border-[#1E64FA]"
+                className="w-full h-11 px-3 border border-gray-300 text-sm focus:outline-none focus:border-brand-blue"
                 placeholder="010-0000-0000"
               />
             </div>
@@ -187,7 +187,7 @@ export default function ContactPage() {
               </label>
               <select
                 id="grade"
-                className="w-full h-11 px-3 border border-gray-300 text-sm focus:outline-none focus:border-[#1E64FA] bg-white"
+                className="w-full h-11 px-3 border border-gray-300 text-sm focus:outline-none focus:border-brand-blue bg-white"
               >
                 <option value="">선택해 주세요</option>
                 <option value="high1">고1</option>
@@ -202,7 +202,7 @@ export default function ContactPage() {
               </label>
               <select
                 id="interest"
-                className="w-full h-11 px-3 border border-gray-300 text-sm focus:outline-none focus:border-[#1E64FA] bg-white"
+                className="w-full h-11 px-3 border border-gray-300 text-sm focus:outline-none focus:border-brand-blue bg-white"
               >
                 <option value="">선택해 주세요</option>
                 <option value="suneung">수능 대비</option>
@@ -219,13 +219,13 @@ export default function ContactPage() {
               <textarea
                 id="message"
                 rows={4}
-                className="w-full px-3 py-2 border border-gray-300 text-sm focus:outline-none focus:border-[#1E64FA] resize-none"
+                className="w-full px-3 py-2 border border-gray-300 text-sm focus:outline-none focus:border-brand-blue resize-none"
                 placeholder="궁금한 내용을 자유롭게 작성해 주세요"
               />
             </div>
             <button
               type="submit"
-              className="w-full h-16 bg-[#1E64FA] text-white font-bold text-[1.375rem] rounded-full hover:bg-[#0E41AD] transition-colors"
+              className="w-full h-16 bg-brand-blue text-white font-bold text-[1.375rem] rounded-full hover:bg-brand-blue-dark transition-colors"
             >
               상담 신청하기
             </button>

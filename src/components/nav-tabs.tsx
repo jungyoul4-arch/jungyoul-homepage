@@ -16,7 +16,7 @@ export function NavTabs({ items }: { items: NavTabItem[] }) {
         <Link
           key={it.id}
           href={it.href}
-          className="py-2 mr-6 text-[1.125rem] text-[#666666] hover:text-[#1A1A1A] font-medium whitespace-nowrap shrink-0"
+          className="py-2 mr-6 text-[1.125rem] text-text-secondary hover:text-text-primary font-medium whitespace-nowrap shrink-0"
         >
           {it.label}
         </Link>

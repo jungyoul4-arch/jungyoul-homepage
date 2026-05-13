@@ -162,6 +162,24 @@ export function validationError(e: unknown) {
   return null;
 }
 
+/**
+ * Miniflare(local D1 에뮬레이터)는 UNIQUE 제약 위반을 `Error` 인스턴스가 아닌 객체로
+ * throw 할 수 있다. 운영 D1 / Miniflare 양쪽 모두에서 안정적으로 감지하기 위해
+ * `e.message` + `e.cause.message` + `String(e)` 를 한꺼번에 확인한다.
+ * 회고: docs/mistake-log.md 2026-05-12.
+ */
+export function isUniqueConstraintError(e: unknown): boolean {
+  const direct = e instanceof Error ? e.message : "";
+  const cause =
+    e instanceof Error && e.cause instanceof Error ? e.cause.message : "";
+  const stringified = String(e);
+  return (
+    direct.includes("UNIQUE constraint failed") ||
+    cause.includes("UNIQUE constraint failed") ||
+    stringified.includes("UNIQUE constraint failed")
+  );
+}
+
 export function errorResponse(e: unknown) {
   const zodRes = validationError(e);
   if (zodRes) return zodRes;

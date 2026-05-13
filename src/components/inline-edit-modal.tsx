@@ -198,7 +198,7 @@ export function InlineEditModal() {
             <button
               onClick={handleSave}
               disabled={saving}
-              className="flex-1 h-10 bg-[#1E64FA] text-white text-sm font-medium rounded-md hover:bg-[#0E41AD] transition-colors disabled:opacity-50"
+              className="flex-1 h-10 bg-brand-blue text-white text-sm font-medium rounded-md hover:bg-brand-blue-dark transition-colors disabled:opacity-50"
             >
               {saving ? "저장 중..." : "저장"}
             </button>
