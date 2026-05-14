@@ -13,10 +13,15 @@
 ## 디렉터리 핵심
 ```
 src/app/                  Next.js App Router 페이지/라우트
-  ├ page.tsx              홈
-  ├ layout.tsx            루트 레이아웃 + Organization JSON-LD + 트래킹 코드 슬롯
-  ├ [slug]/page.tsx       동적 부모 메뉴 catch-all (nav_menus 기반 자동 인덱스)
-  ├ articles/, exam/, teachers/, faq/, ...  명시 라우트 (별도 hero·콘텐츠 가짐)
+  ├ layout.tsx            루트 레이아웃 (AuthProvider·Tracking·ScrollTop·InlineEditModal)
+  ├ (main)/               메인 사이트 라우트 그룹 (URL 비반영)
+  │   ├ layout.tsx        HeaderServer + main + Footer
+  │   ├ page.tsx          홈
+  │   ├ [slug]/page.tsx   동적 부모 메뉴 catch-all (nav_menus 기반 자동 인덱스)
+  │   └ articles/, exam/, teachers/, faq/, ...  명시 라우트 (별도 hero·콘텐츠 가짐)
+  ├ (community)/          익명 커뮤니티 라우트 그룹 (URL 비반영)
+  │   ├ layout.tsx        미니 헤더 + 축소 푸터
+  │   └ community/        /community, /community/new, /community/[id]
   ├ admin/                어드민 UI (middleware 가 /admin/* 인증 보호)
   └ api/                  Route handlers (admin/* 는 requireAdmin 게이트)
 src/components/           재사용 컴포넌트 (Header, ArticleList, NavTabs 등)
@@ -32,10 +37,11 @@ graphify-out/             코드 그래프 (탐색 우선 자료)
 ## 라우팅 모델 (핵심)
 헤더 네비게이션은 D1 `nav_menus` 테이블에서 DB-driven 으로 빌드됩니다. 부모 메뉴 클릭 시 동작:
 
-1. **명시 라우트** (`/articles`, `/exam`, `/teachers`, `/faq`, `/about`, `/contact`, `/location`, `/privacy`, `/terms`) — 각자 고유한 hero·메타·콘텐츠를 갖는 페이지. Next.js 우선순위에 의해 catch-all 보다 먼저 매칭.
-2. **catch-all `[slug]/page.tsx`** — 위에 매칭되지 않은 단일 세그먼트 경로를 받아 `nav_menus` 에서 `href = "/{slug}"` 부모 행을 조회. 부모가 있으면 자식 행들을 자식 탭 인덱스로 자동 렌더 (HeroBanner + H1 + NavTabs + JSON-LD CollectionPage). 부모가 없으면 `notFound()`.
+1. **명시 라우트** (`/articles`, `/exam`, `/teachers`, `/faq`, `/about`, `/contact`, `/location`, `/privacy`, `/terms`) — 각자 고유한 hero·메타·콘텐츠를 갖는 페이지. `src/app/(main)/` 아래에 위치. Next.js 우선순위에 의해 catch-all 보다 먼저 매칭.
+2. **catch-all `(main)/[slug]/page.tsx`** — 위에 매칭되지 않은 단일 세그먼트 경로를 받아 `nav_menus` 에서 `href = "/{slug}"` 부모 행을 조회. 부모가 있으면 자식 행들을 자식 탭 인덱스로 자동 렌더 (HeroBanner + H1 + NavTabs + JSON-LD CollectionPage). 부모가 없으면 `notFound()`.
+3. **`(community)/community/**`** — 별도 미니 레이아웃(카테고리 메뉴·검색·헤더 링크 버튼 미노출).
 
-→ **콘텐츠 관리자가 어드민 `/admin/nav-menus` 에서 부모 메뉴 행만 추가하면 코드 변경 없이 즉시 라우트가 동작합니다.** 별도 hero/콘텐츠가 필요한 경우에만 `src/app/<slug>/page.tsx` 명시 페이지를 추가하면 됩니다. 자세한 절차는 [`docs/categories.md`](docs/categories.md).
+→ **콘텐츠 관리자가 어드민 `/admin/nav-menus` 에서 부모 메뉴 행만 추가하면 코드 변경 없이 즉시 라우트가 동작합니다.** 별도 hero/콘텐츠가 필요한 경우에만 `src/app/(main)/<slug>/page.tsx` 명시 페이지를 추가하면 됩니다. 자세한 절차는 [`docs/categories.md`](docs/categories.md).
 
 ## 헤더 링크 버튼 (외부/내부)
 `nav_menus` 와 별개로 헤더 우측 상단 돋보기 왼편(데스크탑) 또는 상단 바 아래 **좌측** 행(모바일)에 외부 사이트 링크 버튼을 N개까지 노출 가능. 시안은 투명 배경 + 옅은 회색 테두리(파란 캡슐 X). 어드민 `/admin/header-links` 에서 라벨·URL·**버튼 이미지**·순서 편집. 모든 버튼은 `target="_blank"` 새 탭. DB: `header_links` (`src/db/schema.ts`, drizzle 마이그 `0006_*`). 버튼 글리프는 `imageUrl` 우선이고, 비어 있으면 레거시 lucide 아이콘(`src/lib/header-link-icons.ts` 화이트리스트) 폴백. 이미지 업로드는 어드민 폼에서 `/api/admin/upload` 로 R2 저장.

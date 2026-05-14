@@ -16,8 +16,13 @@
 - 헤더 컴포넌트: `src/components/header-server.tsx` (RSC) 가 D1에서 `nav_menus`·`header_links`를 fetch해 `src/components/header.tsx` (client) 에 prop으로 전달. `buildNavTree()` 는 header-server.tsx 에서 호출. DB 응답이 없으면 `header.tsx` 내부 `DEFAULT_NAV` 폴백 사용
 - 메가메뉴/모바일 서브메뉴 자동 노출
 
+### 라우트 그룹 구조
+- **메인 사이트** 전체는 `src/app/(main)/` 아래에 위치 (URL 비반영). 새 명시 라우트를 추가할 때는 `src/app/(main)/<slug>/page.tsx` 에 생성.
+- **익명 커뮤니티**는 `src/app/(community)/community/` 아래 (별도 레이아웃).
+- `src/app/admin/`, `src/app/api/`, `src/app/globals.css`, `src/app/robots.ts`, `src/app/sitemap.ts` 는 그룹 밖에 유지.
+
 ### 부모 메뉴 라우팅 — catch-all 자동화
-- `src/app/[slug]/page.tsx` 가 catch-all 동적 라우트로 단일 세그먼트 경로를 받는다
+- `src/app/(main)/[slug]/page.tsx` 가 catch-all 동적 라우트로 단일 세그먼트 경로를 받는다
 - `nav_menus` 에서 `parent_id IS NULL AND href = "/{slug}"` 행을 찾으면, 자식 행들을 `sortOrder asc` 로 가져와 HeroBanner + H1 + NavTabs + JSON-LD CollectionPage 를 자동 렌더
 - 명시 라우트(`/articles`, `/exam`, `/teachers`, `/faq`, `/about`, `/contact`, `/location`, `/privacy`, `/terms`, `/highlights/*`, `/admin/*`, `/api/*`)는 Next.js 우선순위에 의해 catch-all 보다 먼저 매칭 → 충돌 없음
 - 부모 행이 없으면 `notFound()` — 정상 404
@@ -51,8 +56,8 @@
 2. `/articles` 와 홈 탭에는 노출하지 않으려면:
    - `src/components/article-list.tsx` 의 탭 렌더에서 `categories.filter((c) => c.value !== "<new>")`
    - `src/components/latest-articles.tsx` 동일 처리
-3. **신규 라우트 페이지 생성** — `src/app/<slug>/page.tsx` (catch-all 보다 우선 매칭됨)
-   - `src/app/articles/page.tsx` 또는 `src/app/exam/page.tsx` 패턴 모방
+3. **신규 라우트 페이지 생성** — `src/app/(main)/<slug>/page.tsx` (catch-all 보다 우선 매칭됨)
+   - `src/app/(main)/articles/page.tsx` 또는 `src/app/(main)/exam/page.tsx` 패턴 모방
    - 쿼리: `eq(articlesTable.category, "<new>")`
    - `<ArticleList articles={...} hideTabs />` (탭 숨김 prop)
    - **JSON-LD 출력 시 `.replace(/</g, "\\u003c")` XSS escape 필수** (CLAUDE.md 보안 룰 — `src/app/location/page.tsx` 에서 누락된 적 있음, mistake-log 2026-05-11 참조)

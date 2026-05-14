@@ -12,8 +12,9 @@
 - 사용자 입력 콘텐츠는 `sanitize-html` 통과 후 저장
 
 ## 라우팅 모델
-- 부모 메뉴 catch-all: `src/app/[slug]/page.tsx` 가 `nav_menus` DB 기반으로 부모/자식을 조회해 인덱스 페이지(HeroBanner + H1 + NavTabs + JSON-LD)를 자동 렌더. **어드민 `/admin/nav-menus` 에 부모 행만 등록하면 코드 변경 없이 새 라우트가 동작**
-- 명시 라우트(`/articles`, `/exam`, `/teachers`, `/faq`, `/about`, `/contact`, `/location`, ...)는 Next.js 우선순위에 의해 catch-all 보다 먼저 매칭. 별도 hero/콘텐츠/카테고리 필터가 필요할 때만 명시 페이지를 추가 → 절차 [`docs/categories.md`](docs/categories.md)
+- **라우트 그룹**: 메인 사이트 → `src/app/(main)/`, 익명 커뮤니티 → `src/app/(community)/` (URL 비반영)
+- 부모 메뉴 catch-all: `src/app/(main)/[slug]/page.tsx` 가 `nav_menus` DB 기반으로 부모/자식을 조회해 인덱스 페이지(HeroBanner + H1 + NavTabs + JSON-LD)를 자동 렌더. **어드민 `/admin/nav-menus` 에 부모 행만 등록하면 코드 변경 없이 새 라우트가 동작**
+- 명시 라우트(`/articles`, `/exam`, `/teachers`, `/faq`, `/about`, `/contact`, `/location`, ...)는 `(main)/` 아래에 위치. Next.js 우선순위에 의해 catch-all 보다 먼저 매칭. 별도 hero/콘텐츠/카테고리 필터가 필요할 때만 명시 페이지를 추가 → 절차 [`docs/categories.md`](docs/categories.md)
 
 ## 헤더 링크 버튼 (외부/내부)
 - `nav_menus` 와 별개. 헤더 우측 상단 돋보기 왼편(`lg≥`) / 상단 바 아래 **좌측** 행(`<lg`)에 N개 노출, 모두 `target="_blank"` 새 탭
@@ -25,7 +26,8 @@
 - 이미지 업로드: 어드민 폼에서 `<input type="file">` → `/api/admin/upload` → R2 (`/api/admin/upload/{key}` 응답). 권장 크기 40×40 png/svg/webp
 - 헤더 컴포넌트(`src/components/header.tsx`)는 lucide 아이콘을 `createElement` + ReactNode 헬퍼(`renderHeaderLinkGlyph`)로 렌더 — ESLint `react-hooks/static-components` 룰(렌더 중 컴포넌트 변수 생성 금지) 회피
 - href 검증: `/` 또는 `http(s)://` 만 허용 (`hrefRefine` 재사용). `imageUrl` 은 max 500자 optional
-- **SSR 선 렌더**: `src/components/header-server.tsx` (RSC)가 `nav_menus`·`header_links`를 D1에서 직접 fetch해 `<Header initialNavGroups initialHeaderLinks>`에 prop으로 전달 → 첫 paint에 실제 DB 데이터 포함, FOUC 없음. `src/app/layout.tsx`는 `<HeaderServer />`를 렌더. `/api/nav-menus`·`/api/header-links` API는 어드민 페이지용으로 유지되지만 공개 헤더에서는 더 이상 사용하지 않음
+- **SSR 선 렌더**: `src/components/header-server.tsx` (RSC)가 `nav_menus`·`header_links`를 D1에서 직접 fetch해 `<Header initialNavGroups initialHeaderLinks>`에 prop으로 전달 → 첫 paint에 실제 DB 데이터 포함, FOUC 없음. `src/app/(main)/layout.tsx`가 `<HeaderServer />`를 렌더. `/api/nav-menus`·`/api/header-links` API는 어드민 페이지용으로 유지되지만 공개 헤더에서는 더 이상 사용하지 않음
+- **캡슐 버튼 노출 범위**: `header_links` 버튼은 `(main)/layout.tsx` 의 헤더에서만 노출. `/community` 내부(`(community)/layout.tsx`)에서는 미니 헤더만 표시됨
 
 ## /community — 익명 커뮤니티
 - 고등학생 위주 익명 게시판. 가입 X — `anon_session` 쿠키로 닉네임 영속화 (`src/lib/anon-session.ts`, `src/lib/community-nickname.ts`). 어드민 `admin_token` 과 별도 쿠키, 같은 `JWT_SECRET` 공유하지만 페이로드 키(`{ sid }` vs `{ username }`)로 구분
@@ -39,7 +41,8 @@
 - cursor 페이지네이션: `src/lib/community-cursor.ts` — base64(`createdAt|id`). `community-feed.tsx` 에서 IntersectionObserver 무한스크롤
 - 댓글 카운터: `src/lib/community-helpers.ts` 의 `bumpCommentCount`/`bumpLikeCount` — SQL UPDATE `MAX(0, ...)` 로 음수 방지
 - **스타일링 (러프 v1)**: `globals.css` 의 `--color-community-*` 4종(surface/border/accent/muted) 만 사용. hex/arbitrary 금지. 디자인 변경 시 4줄 토큰만 손보면 전체 갱신. 각 컴포넌트 최상단에 `// STYLING: rough v1 — community tokens only` 주석 (핫스팟 표시)
-- 헤더 링크 등록: 배포 후 `/admin/header-links` 에 행만 추가(label="커뮤니티", href=`/community`) — 코드 변경 불필요
+- **chrome 분리**: `src/app/(community)/layout.tsx` 가 미니 헤더(로고 + "커뮤니티" 타이틀 + "글쓰기" CTA + "메인 ←" 링크) + 축소 푸터(회사정보 + SNS 만)를 제공. 카테고리 메뉴·검색·헤더 링크 캡슐·풀 푸터는 노출되지 않음
+- 헤더 링크 등록: 배포 후 `/admin/header-links` 에 행만 추가(label="커뮤니티", href=`/community`) — 코드 변경 불필요. 단, 이 버튼은 메인 사이트 헤더(`(main)/layout.tsx`)에서만 노출됨
 - v2 로 미룬 항목: Turnstile, 레이트리밋, 신고, 이미지 다중, 댓글 좋아요, 검색, 알림 — 절차 [`docs/community.md`](docs/community.md)
 
 ## /exam 페이지 태깅 시스템

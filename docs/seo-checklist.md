@@ -8,7 +8,7 @@
 - [ ] metadata `alternates.canonical` 지정
 
 ## 부모 메뉴(네비게이션) 추가 시
-- 어드민 `/admin/nav-menus` 에 부모 행만 등록하면 catch-all `src/app/[slug]/page.tsx` 가 자동으로 인덱스 페이지를 렌더한다. 별도 hero/콘텐츠가 필요 없으면 코드 변경 0 줄
+- 어드민 `/admin/nav-menus` 에 부모 행만 등록하면 catch-all `src/app/(main)/[slug]/page.tsx` 가 자동으로 인덱스 페이지를 렌더한다. 별도 hero/콘텐츠가 필요 없으면 코드 변경 0 줄
 - 별도 hero/콘텐츠/카테고리 필터가 필요한 경우(예: `/exam`) 에만 명시 페이지를 만든다 — 절차는 [`categories.md`](categories.md) "B 고급 시나리오"
 - 자세한 라우팅 모델은 [`README.md`](../README.md) "라우팅 모델" 섹션
 

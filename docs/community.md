@@ -3,11 +3,28 @@
 > 고등학생 위주 익명 게시판. 가입 절차 없음, 쿠키 발급 닉네임 영속.
 
 ## 정체성
-- URL: `/community` — 명시 라우트(catch-all 보다 우선)
+- URL: `/community` — `src/app/(community)/community/` 라우트 그룹 (URL 에는 그룹명 비반영)
 - 대상: 고등학생 (수능·내신·진로·고민·잡담 태그)
 - 익명 모델: 같은 브라우저는 같은 닉네임 유지. 본인 글·댓글 식별/삭제 가능.
 - 가입 절차 없음. 첫 진입 시 `anon_session` 쿠키 자동 발급.
-- 헤더 링크 버튼으로 새 탭 진입(어드민이 `/admin/header-links` 에서 행 등록).
+- 헤더 링크 버튼으로 새 탭 진입(어드민이 `/admin/header-links` 에서 행 등록). 단, 이 버튼은 `(main)/layout.tsx` 헤더에서만 노출 — `/community` 내부에서는 미니 헤더만 표시됨.
+
+## chrome 분리 (`(community)/layout.tsx`)
+`/community/**` 는 메인 사이트와 별도 레이아웃을 사용한다.
+
+### 미니 헤더 구성
+- **좌측**: 로고 + "JY 커뮤니티" 타이틀
+- **우측**: "글쓰기" CTA 버튼 + "메인 ←" 회귀 링크
+
+### 미노출 항목 (의도적 정책)
+- 카테고리 부모 메뉴(입시/칼럼/정율소식 등)
+- 메가메뉴 / 모바일 서브메뉴
+- 검색 토글 / 추천 검색어
+- 헤더 링크 캡슐 버튼(`header_links` 데이터)
+- 풀 푸터(카테고리 링크 4종 — "자주 묻는 질문/회사소개/개인정보처리방침/이용약관")
+
+### 축소 푸터
+`src/components/community/community-footer-social.tsx` — 회사정보 + Instagram/Naver/Kakao/YouTube SNS 4종만 표시.
 
 ## 데이터 모델 (`src/db/schema.ts`)
 - `community_sessions` — 익명 세션 영속 닉네임 매핑 (id, nickname, createdAt, lastSeenAt)
@@ -86,6 +103,8 @@ v1은 디테일 디자인 최소화. `src/app/globals.css` `@theme inline` 에 4
 1. `/admin/header-links` 진입
 2. **버튼 추가** → label="커뮤니티", href=`/community`, imageUrl 업로드(40×40 권장) 또는 비워두면 lucide 폴백
 3. 저장 → 헤더에 즉시 노출(SSR 캐시 무효화 후), `target="_blank"` 자동 적용
+
+> 이 캡슐 버튼은 **메인 사이트 헤더(`(main)/layout.tsx`)에서만 노출**됨. `/community` 내부에서는 미니 헤더만 보이므로 버튼 등록과 무관하게 캡슐이 나타나지 않는다.
 
 ## 운영 점검
 - 미배포 마이그레이션 적용:
