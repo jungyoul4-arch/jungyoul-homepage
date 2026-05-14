@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { createInsertSchema, createUpdateSchema } from "drizzle-zod";
+import { NextRequest } from "next/server";
 import {
   articles,
   highlights,
@@ -153,7 +154,7 @@ export const updateHeaderLinkSchema = createUpdateSchema(headerLinks, {
 }).omit({ id: true, sortOrder: true });
 
 // Exam Tag Options — /exam 태그 셀렉트박스 옵션 (year/grade/subject)
-export const examTagTypes = ["year", "grade", "subject"] as const;
+const examTagTypes = ["year", "grade", "subject"] as const;
 export type ExamTagType = (typeof examTagTypes)[number];
 const examTagTypeRefine = (v: string): v is ExamTagType =>
   (examTagTypes as readonly string[]).includes(v);
@@ -180,11 +181,7 @@ export const insertCommunityTagSchema = createInsertSchema(communityTags, {
   value: (schema) => schema.min(1).max(50),
 }).omit({ id: true, sortOrder: true });
 
-export const updateCommunityTagSchema = createUpdateSchema(communityTags, {
-  value: (schema) => schema.max(50),
-}).omit({ id: true, sortOrder: true });
-
-export function validationError(e: unknown) {
+function validationError(e: unknown) {
   if (e instanceof z.ZodError) {
     return NextResponse.json(
       { error: "입력값이 올바르지 않습니다.", details: e.issues },
@@ -210,6 +207,17 @@ export function isUniqueConstraintError(e: unknown): boolean {
     cause.includes("UNIQUE constraint failed") ||
     stringified.includes("UNIQUE constraint failed")
   );
+}
+
+export async function parseReorderIds(
+  request: NextRequest,
+): Promise<{ ids: string[] } | NextResponse> {
+  const body = (await request.json()) as Record<string, unknown>;
+  const ids = body.ids;
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return NextResponse.json({ error: "ids 배열이 필요합니다." }, { status: 400 });
+  }
+  return { ids: ids as string[] };
 }
 
 export function errorResponse(e: unknown) {

@@ -69,5 +69,6 @@ export function sanitizeContent(html: string): string {
     },
     allowedIframeHostnames: ["www.youtube.com", "player.vimeo.com"],
     allowedSchemes: ["http", "https", "mailto"],
+    exclusiveFilter: (frame) => frame.tag === "iframe" && !frame.attribs.src,
   });
 }

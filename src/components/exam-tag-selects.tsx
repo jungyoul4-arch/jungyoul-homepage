@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import type { ExamTagOption } from "@/lib/data";
 
-export interface ExamTagValue {
+interface ExamTagValue {
   examYear: string;
   examGrade: string;
   examSubject: string;

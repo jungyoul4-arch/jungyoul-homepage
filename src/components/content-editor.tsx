@@ -262,7 +262,7 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
 
       const placeholderId = `upload-${Date.now()}`;
       insertHtmlAtCursor(
-        `<span id="${placeholderId}" style="color:#999;font-style:italic;">[이미지 업로드 중...]</span>`
+        `<span id="${placeholderId}" style="color:#9CA3AF;font-style:italic;">[이미지 업로드 중...]</span>`
       );
 
       const url = await uploadImage(file);
@@ -333,7 +333,7 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
   async function handlePdfFile(file: File) {
     const placeholderId = `pdf-upload-${Date.now()}`;
     insertHtmlAtCursor(
-      `<span id="${placeholderId}" style="color:#999;font-style:italic;">[PDF 변환 준비 중...]</span>`,
+      `<span id="${placeholderId}" style="color:#9CA3AF;font-style:italic;">[PDF 변환 준비 중...]</span>`,
     );
 
     let blobs: Blob[];
@@ -386,7 +386,7 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
       if (!url) {
         // 단일 페이지 실패 시 안내만 남기고 계속 진행.
         const fail = document.createElement("span");
-        fail.style.color = "#c00";
+        fail.style.color = "#DC2626";
         fail.style.fontStyle = "italic";
         fail.textContent = `[페이지 ${i + 1} 업로드 실패]`;
         figures.push(fail);
@@ -481,7 +481,7 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
       const placeholder = doc.createElement("span");
       placeholder.setAttribute(
         "style",
-        "padding:2px 6px;background-color:#fef3c7;color:#92400e;font-size:12px;border-radius:2px;",
+        "padding:2px 6px;background-color:#FEF3C7;color:#92400E;font-size:12px;border-radius:2px;",
       );
       placeholder.textContent =
         "[원본 이미지 — 이미지 영역만 다시 클립보드에 복사해 별도로 붙여넣어 주세요]";
@@ -556,7 +556,7 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
         // sanitize 화이트리스트 통과 가능한 속성만 사용 (display 는 허용 목록 외라 생략).
         placeholder.setAttribute(
           "style",
-          "padding:2px 6px;background-color:#fef3c7;color:#92400e;font-size:12px;border-radius:2px;",
+          "padding:2px 6px;background-color:#FEF3C7;color:#92400E;font-size:12px;border-radius:2px;",
         );
         placeholder.textContent = "[이미지 업로드 실패 — 다시 붙여넣어 주세요]";
         img.replaceWith(placeholder);

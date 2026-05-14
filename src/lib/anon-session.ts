@@ -1,32 +1,19 @@
 import { SignJWT, jwtVerify } from "jose";
 import { NextRequest, NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
-import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { getDb } from "@/db";
 import { communitySessions } from "@/db/schema";
 import { generateNickname } from "./community-nickname";
+import { getJwtSecret } from "./jwt-secret";
+import { buildCookieHeader, extractTokenFromCookies } from "./cookie-utils";
 
 // 익명 커뮤니티 세션 — admin_token 과 별도 쿠키. 같은 JWT_SECRET 공유.
 // 토큰 페이로드는 `{ sid }`(어드민은 `{ username }`) 로 구분.
 const COOKIE_NAME = "anon_session";
 const EXPIRY_DAYS = 365;
 
-async function getSecret(): Promise<Uint8Array> {
-  let secret: string | undefined;
-  try {
-    const { env } = await getCloudflareContext({ async: true });
-    secret = env.JWT_SECRET;
-  } catch {
-    secret = process.env.JWT_SECRET;
-  }
-  if (!secret) {
-    throw new Error("JWT_SECRET is not configured");
-  }
-  return new TextEncoder().encode(secret);
-}
-
-export async function createAnonToken(sessionId: string): Promise<string> {
-  const secret = await getSecret();
+async function createAnonToken(sessionId: string): Promise<string> {
+  const secret = await getJwtSecret();
   return new SignJWT({ sid: sessionId })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
@@ -34,26 +21,15 @@ export async function createAnonToken(sessionId: string): Promise<string> {
     .sign(secret);
 }
 
-export async function verifyAnonToken(token: string): Promise<{ sid: string } | null> {
+async function verifyAnonToken(token: string): Promise<{ sid: string } | null> {
   try {
-    const secret = await getSecret();
+    const secret = await getJwtSecret();
     const { payload } = await jwtVerify(token, secret);
     if (typeof payload.sid !== "string") return null;
     return { sid: payload.sid };
   } catch {
     return null;
   }
-}
-
-export function getAnonCookieHeader(token: string, isProduction = true): string {
-  const secure = isProduction ? "; Secure" : "";
-  return `${COOKIE_NAME}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${EXPIRY_DAYS * 86400}${secure}`;
-}
-
-export function getAnonTokenFromCookies(cookieHeader: string | null): string | null {
-  if (!cookieHeader) return null;
-  const match = cookieHeader.match(new RegExp(`${COOKIE_NAME}=([^;]+)`));
-  return match ? match[1] : null;
 }
 
 export type AnonSession = {
@@ -63,7 +39,7 @@ export type AnonSession = {
 
 // 쿠키에서 익명 세션 조회. 없으면 null 반환 — 호출부는 401 또는 ensureAnonSession() 사용.
 export async function getAnonSession(request: NextRequest): Promise<AnonSession | null> {
-  const token = getAnonTokenFromCookies(request.headers.get("cookie"));
+  const token = extractTokenFromCookies(COOKIE_NAME, request.headers.get("cookie"));
   if (!token) return null;
   const payload = await verifyAnonToken(token);
   if (!payload) return null;
@@ -117,7 +93,7 @@ export async function ensureAnonSession(
   const isProduction = process.env.NODE_ENV === "production";
   return {
     session: { sessionId, nickname },
-    setCookie: getAnonCookieHeader(token, isProduction),
+    setCookie: buildCookieHeader(COOKIE_NAME, token, EXPIRY_DAYS * 86400, isProduction),
   };
 }
 

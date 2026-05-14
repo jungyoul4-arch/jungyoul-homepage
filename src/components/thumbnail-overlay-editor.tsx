@@ -14,7 +14,7 @@ import {
   Square,
 } from "lucide-react";
 
-export type OverlayAnchor = "tl" | "tr" | "center" | "bl" | "br";
+type OverlayAnchor = "tl" | "tr" | "center" | "bl" | "br";
 
 export interface TextOverlay {
   id: string;
@@ -308,7 +308,7 @@ export function ThumbnailOverlayEditor({
                       padding: "2px 6px",
                       outline:
                         selectedId === o.id
-                          ? "1px dashed rgba(30,100,250,0.9)"
+                          ? "1px dashed var(--color-brand-blue)"
                           : "none",
                     }}
                   >

@@ -9,7 +9,7 @@ interface NavTabItem {
 export function NavTabs({ items }: { items: NavTabItem[] }) {
   return (
     <div
-      className="flex border-b border-[#d9d9d9] overflow-x-auto"
+      className="flex border-b border-gray-300 overflow-x-auto"
       style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
     >
       {items.map((it) => (

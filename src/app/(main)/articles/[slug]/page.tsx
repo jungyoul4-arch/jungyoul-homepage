@@ -207,7 +207,7 @@ export default async function ArticlePage({ params }: Props) {
         </div>
 
         {/* 저작권 안내 박스 — 삼성 뉴스룸 스타일 */}
-        <div className="mt-8 bg-[#F4F7FF] rounded-lg p-8 text-text-secondary text-sm leading-relaxed">
+        <div className="mt-8 bg-media-bg rounded-lg p-8 text-text-secondary text-sm leading-relaxed">
           정율 교육정보의 콘텐츠는 출처를 밝히는 경우 자유롭게 이용하실 수 있습니다.
           콘텐츠 이용 시{" "}
           <Link href="/" className="text-brand-blue">
@@ -261,7 +261,7 @@ export default async function ArticlePage({ params }: Props) {
 
             {/* 하단 CTA — 삼성 뉴스룸 스타일 */}
             <div className="relative mt-[58px]">
-              <div className="h-px bg-[#E0E9FE]" />
+              <div className="h-px bg-article-line" />
               <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
                 <Link
                   href="/articles"

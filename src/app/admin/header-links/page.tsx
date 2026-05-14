@@ -4,6 +4,7 @@ import { createElement, useEffect, useRef, useState, type ReactNode } from "reac
 import Image from "next/image";
 import { Plus, Trash2, Save, Pencil, X, ArrowUp, ArrowDown, Eye, Upload, ImageIcon } from "lucide-react";
 import { getHeaderLinkIcon } from "@/lib/header-link-icons";
+import { swapById } from "@/lib/utils";
 
 interface HeaderLink {
   id: string;
@@ -146,16 +147,10 @@ export default function AdminHeaderLinksPage() {
 
   async function handleMove(targetId: string, direction: -1 | 1) {
     if (reordering) return;
-    const sorted = [...items].sort((a, b) => a.sortOrder - b.sortOrder);
-    const idx = sorted.findIndex((s) => s.id === targetId);
-    const swapIdx = idx + direction;
-    if (swapIdx < 0 || swapIdx >= sorted.length) return;
-
+    const reordered = swapById(items, targetId, direction);
+    if (!reordered) return;
     setReordering(true);
     try {
-      const reordered = [...sorted];
-      [reordered[idx], reordered[swapIdx]] = [reordered[swapIdx], reordered[idx]];
-
       const res = await fetch("/api/admin/header-links/reorder", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },

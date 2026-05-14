@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Trash2, Save, Pencil, X, ChevronDown, ChevronRight, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, RotateCcw, Eye, RefreshCw } from "lucide-react";
+import { swapById } from "@/lib/utils";
 
 interface NavMenu {
   id: string;
@@ -207,19 +208,11 @@ export default function AdminNavMenusPage() {
   // 순서 변경: 형제 항목 배열에서 위치를 swap 후 즉시 API 저장
   async function handleMove(targetId: string, direction: -1 | 1, parentId: string | null) {
     if (reordering) return;
-    const siblings = items
-      .filter((i) => (parentId === null ? !i.parentId : i.parentId === parentId))
-      .sort((a, b) => a.sortOrder - b.sortOrder);
-
-    const idx = siblings.findIndex((s) => s.id === targetId);
-    const swapIdx = idx + direction;
-    if (swapIdx < 0 || swapIdx >= siblings.length) return;
-
+    const siblings = items.filter((i) => (parentId === null ? !i.parentId : i.parentId === parentId));
+    const reordered = swapById(siblings, targetId, direction);
+    if (!reordered) return;
     setReordering(true);
     try {
-      const reordered = [...siblings];
-      [reordered[idx], reordered[swapIdx]] = [reordered[swapIdx], reordered[idx]];
-
       const res = await fetch("/api/admin/nav-menus/reorder", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
