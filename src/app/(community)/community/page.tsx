@@ -1,9 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import type { Metadata } from "next";
-import Link from "next/link";
 import { and, asc, desc, eq } from "drizzle-orm";
-import { Pencil } from "lucide-react";
 import { getDb } from "@/db";
 import { communityPosts, communityTags } from "@/db/schema";
 import { renderJsonLd } from "@/lib/json-ld";
@@ -101,21 +99,7 @@ export default async function CommunityIndexPage({
         })}
       />
 
-      <header className="flex items-end justify-between mb-6">
-        <div>
-          <h1 className="text-xl lg:text-2xl font-bold text-text-primary">커뮤니티</h1>
-          <p className="text-sm text-community-muted mt-1">
-            고등학생 익명 게시판 — 가입 없이 즉시 글을 쓸 수 있어요.
-          </p>
-        </div>
-        <Link
-          href="/community/new"
-          className="inline-flex items-center gap-1.5 px-4 py-2 bg-community-accent text-white text-sm font-medium rounded-md hover:opacity-90"
-        >
-          <Pencil size={16} />
-          글쓰기
-        </Link>
-      </header>
+      <h1 className="sr-only">커뮤니티</h1>
 
       <div className="flex flex-col lg:flex-row lg:gap-6">
         <CommunityTagFilter tags={tags} />
