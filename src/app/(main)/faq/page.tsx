@@ -141,7 +141,7 @@ export default function FAQPage() {
                 <span className="text-gray-400 font-bold text-lg mt-0.5 shrink-0">
                   A
                 </span>
-                <p className="text-[1.25rem] font-normal text-text-primary leading-[30px]">
+                <p className="text-[1.25rem] font-normal text-[#000000] leading-[30px]">
                   {faq.answer}
                 </p>
               </div>

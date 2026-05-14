@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { Plus, Trash2, ArrowUp, ArrowDown, Tags } from "lucide-react";
-import { swapById } from "@/lib/utils";
 
 interface ExamTagOption {
   id: string;
@@ -84,10 +83,17 @@ export default function AdminExamTagOptionsPage() {
 
   async function handleMove(type: TagType, targetId: string, direction: -1 | 1) {
     if (reordering) return;
-    const reordered = swapById(items.filter((it) => it.tagType === type), targetId, direction);
-    if (!reordered) return;
+    const sorted = items
+      .filter((it) => it.tagType === type)
+      .sort((a, b) => a.sortOrder - b.sortOrder);
+    const idx = sorted.findIndex((s) => s.id === targetId);
+    const swapIdx = idx + direction;
+    if (swapIdx < 0 || swapIdx >= sorted.length) return;
+
     setReordering(true);
     try {
+      const reordered = [...sorted];
+      [reordered[idx], reordered[swapIdx]] = [reordered[swapIdx], reordered[idx]];
       const res = await fetch("/api/admin/exam-tag-options/reorder", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },

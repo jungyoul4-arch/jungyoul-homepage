@@ -5,7 +5,6 @@ import { siteSettings } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { ImageResponse } from "next/og";
-import { errorResponse } from "@/lib/validation";
 
 const ALLOWED_KEYS = ["logo_url"];
 
@@ -22,7 +21,8 @@ export async function GET(request: NextRequest) {
     }
     return NextResponse.json(settings);
   } catch (e) {
-    return errorResponse(e);
+    const message = e instanceof Error ? e.message : "알 수 없는 오류";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -132,6 +132,7 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (e) {
-    return errorResponse(e);
+    const message = e instanceof Error ? e.message : "알 수 없는 오류";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

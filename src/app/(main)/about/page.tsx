@@ -61,12 +61,12 @@ export default function AboutPage() {
           <h2 className="text-[1.375rem] font-bold text-text-primary mb-4 pb-3 border-b border-gray-200">
             교육 철학
           </h2>
-          <p className="text-text-primary text-[1.25rem] leading-[30px] font-normal mb-4">
+          <p className="text-[#000000] text-[1.25rem] leading-[30px] font-normal mb-4">
             정율사관학원은 &ldquo;학생 한 명 한 명에게 최적화된 교육&rdquo;을 핵심 가치로 삼고 있습니다.
             획일화된 교육이 아닌, 학생의 현재 위치와 목표에 맞는 개인 맞춤형 학습 전략을
             설계하고 실행합니다.
           </p>
-          <p className="text-text-primary text-[1.25rem] leading-[30px] font-normal">
+          <p className="text-[#000000] text-[1.25rem] leading-[30px] font-normal">
             내신 관리부터 수능 대비, 논술 특강, 고교학점제 대비까지 — 입시의 모든 영역을
             아우르는 종합 교육 프로그램을 운영하며, AI 기반 진로 설계 도구를 도입하여
             과학적이고 체계적인 교육을 제공합니다.

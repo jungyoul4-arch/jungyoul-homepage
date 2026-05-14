@@ -192,7 +192,7 @@ export function HeroCarousel({ slides }: HeroCarouselProps) {
             </span>
             <span
               className="inline-block mx-0.5"
-              style={{ width: "1px", height: "9px", background: "#D9D9D9" }}
+              style={{ width: "1px", height: "9px", background: "#ddd" }}
             />
             <span className="text-gray-400 text-xs">
               {String(totalSlides).padStart(2, "0")}
@@ -229,7 +229,7 @@ export function HeroCarousel({ slides }: HeroCarouselProps) {
           {/* Divider + Play/Pause */}
           <span
             className="inline-block"
-            style={{ width: "1px", height: "16px", background: "#D9D9D9" }}
+            style={{ width: "1px", height: "16px", background: "#ddd" }}
           />
           <button
             onClick={() => setIsPaused(!isPaused)}
@@ -419,7 +419,7 @@ function SubCard({ article, tall }: { article: { id: string; title: string; exce
       <GradientOverlay />
       <AdminBtn article={article} small />
       <div className="absolute left-0 right-0 bottom-0 p-4 lg:p-5 transition-all duration-300 group-hover:top-0 group-hover:flex group-hover:flex-col group-hover:justify-start group-hover:pt-6 z-[3]">
-        <p className="text-xs font-semibold mb-1" style={{ color: "var(--color-brand-blue)" }}>
+        <p className="text-xs font-semibold mb-1" style={{ color: "#89b4fa" }}>
           {article.categoryLabel}
         </p>
         <p
@@ -448,12 +448,12 @@ function TextCard({ article }: { article: { id: string; title: string; slug: str
     <Link
       href={`/articles/${article.slug}`}
       className="group relative block rounded-xl overflow-hidden p-4 transition-colors duration-200"
-      style={{ backgroundColor: "var(--color-article-line)", height: "25%", minHeight: "64px" }}
+      style={{ backgroundColor: "#e0e9fe", height: "25%", minHeight: "64px" }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.backgroundColor = "#BFDBFE";
+        e.currentTarget.style.backgroundColor = "#c7d5fa";
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.backgroundColor = "var(--color-article-line)";
+        e.currentTarget.style.backgroundColor = "#e0e9fe";
       }}
     >
       <AdminBtn article={article} small />
@@ -551,7 +551,7 @@ function ContentOverlay({
 }) {
   return (
     <div className="absolute left-0 right-0 bottom-0 p-6 md:p-8 lg:p-10 transition-all duration-300 group-hover:top-0 group-hover:flex group-hover:flex-col group-hover:justify-start group-hover:pt-10 z-[3]">
-      <p className="text-xs font-semibold mb-2" style={{ color: "var(--color-brand-blue)" }}>
+      <p className="text-xs font-semibold mb-2" style={{ color: "#89b4fa" }}>
         {category}
       </p>
       <p
@@ -585,7 +585,7 @@ function ContentOverlay({
 function MobileContent({ title, category }: { title: string; category: string }) {
   return (
     <div className="absolute left-0 right-0 bottom-0 p-5 z-[3]">
-      <p className="text-xs font-semibold mb-2" style={{ color: "var(--color-brand-blue)" }}>
+      <p className="text-xs font-semibold mb-2" style={{ color: "#89b4fa" }}>
         {category}
       </p>
       <p

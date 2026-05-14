@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
 import { pinnedArticles } from "@/db/schema";
 import { requireAdmin } from "@/lib/admin-auth";
-import { errorResponse } from "@/lib/validation";
 
 interface SlotInput {
   slot: number;
@@ -48,6 +47,7 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (e) {
-    return errorResponse(e);
+    console.error("Pinned articles error:", e instanceof Error ? e.message : e);
+    return NextResponse.json({ error: "저장에 실패했습니다." }, { status: 500 });
   }
 }

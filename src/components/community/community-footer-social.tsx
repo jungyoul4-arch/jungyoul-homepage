@@ -41,7 +41,7 @@ export function CommunityFooterSocial() {
           href={l.href}
           target="_blank"
           rel="noopener noreferrer"
-          className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 transition-colors"
+          className="w-10 h-10 bg-[#F5F5F5] rounded-full flex items-center justify-center hover:bg-[#e9e9e9] transition-colors"
           aria-label={l.label}
         >
           {l.glyph}

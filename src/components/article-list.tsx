@@ -61,7 +61,7 @@ export function ArticleList({ articles, hideTabs = false }: ArticleListProps) {
     <>
       {/* Tab Filter */}
       {!hideTabs && (
-        <div className="flex border-b border-gray-300 overflow-x-auto" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
+        <div className="flex border-b border-[#d9d9d9] overflow-x-auto" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
           {categories.filter((cat) => cat.value !== "exam").map((cat) => (
             <button
               key={cat.value}
@@ -135,7 +135,7 @@ function Pagination({
           <Link
             href={buildUrl(1)}
             className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors ${
-              currentPage === 1 ? "text-gray-400 pointer-events-none" : "text-text-secondary hover:bg-gray-100"
+              currentPage === 1 ? "text-[#d9d9d9] pointer-events-none" : "text-text-secondary hover:bg-[#F5F5F5]"
             }`}
             aria-label="첫 페이지"
           >
@@ -147,7 +147,7 @@ function Pagination({
           <Link
             href={buildUrl(Math.max(1, currentPage - 1))}
             className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors ${
-              currentPage === 1 ? "text-gray-400 pointer-events-none" : "text-text-secondary hover:bg-gray-100"
+              currentPage === 1 ? "text-[#d9d9d9] pointer-events-none" : "text-text-secondary hover:bg-[#F5F5F5]"
             }`}
             aria-label="이전 페이지"
           >
@@ -163,7 +163,7 @@ function Pagination({
               className={`w-10 h-10 flex items-center justify-center rounded-full text-[1.125rem] transition-colors ${
                 page === currentPage
                   ? "font-bold text-text-primary underline underline-offset-4"
-                  : "font-medium text-text-secondary hover:bg-gray-100"
+                  : "font-medium text-text-secondary hover:bg-[#F5F5F5]"
               }`}
               aria-current={page === currentPage ? "page" : undefined}
             >
@@ -177,7 +177,7 @@ function Pagination({
           <Link
             href={buildUrl(Math.min(totalPages, currentPage + 1))}
             className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors ${
-              currentPage === totalPages ? "text-gray-400 pointer-events-none" : "text-text-secondary hover:bg-gray-100"
+              currentPage === totalPages ? "text-[#d9d9d9] pointer-events-none" : "text-text-secondary hover:bg-[#F5F5F5]"
             }`}
             aria-label="다음 페이지"
           >
@@ -189,7 +189,7 @@ function Pagination({
           <Link
             href={buildUrl(totalPages)}
             className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors ${
-              currentPage === totalPages ? "text-gray-400 pointer-events-none" : "text-text-secondary hover:bg-gray-100"
+              currentPage === totalPages ? "text-[#d9d9d9] pointer-events-none" : "text-text-secondary hover:bg-[#F5F5F5]"
             }`}
             aria-label="마지막 페이지"
           >

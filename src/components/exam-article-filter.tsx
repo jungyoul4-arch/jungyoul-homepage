@@ -22,7 +22,7 @@ const SECTIONS: {
 ];
 
 const selectClass =
-  "h-10 px-3 border border-gray-300 rounded-sm text-sm focus:outline-none focus:border-brand-blue bg-white min-w-[120px]";
+  "h-10 px-3 border border-gray-300 rounded-sm text-sm focus:outline-none focus:border-blue-600 bg-white min-w-[120px]";
 
 export function ExamArticleFilter({ articles, tagOptions }: Props) {
   const router = useRouter();
@@ -63,7 +63,7 @@ export function ExamArticleFilter({ articles, tagOptions }: Props) {
   return (
     <>
       {visible.length > 0 && (
-        <div className="flex flex-wrap items-center gap-3 mb-8 p-4 bg-media-bg rounded-md">
+        <div className="flex flex-wrap items-center gap-3 mb-8 p-4 bg-[#F5F7FA] rounded-md">
           <span className="text-sm font-semibold text-text-primary mr-2">필터</span>
           {visible.map((s) => {
             const opts = tagOptions

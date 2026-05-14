@@ -39,7 +39,7 @@ export function LatestArticles({ articles, pinnedArticleIds = [] }: LatestArticl
           </h2>
 
           {/* Tab Filter — 삼성 뉴스룸 탭 스타일 (16px, pb-2, border 4px) */}
-          <div className="flex border-b border-gray-300 overflow-x-auto" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
+          <div className="flex border-b border-[#d9d9d9] overflow-x-auto" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
             {categories.filter((cat) => cat.value !== "exam").map((cat) => (
               <button
                 key={cat.value}
@@ -74,7 +74,7 @@ export function LatestArticles({ articles, pinnedArticleIds = [] }: LatestArticl
 
         {/* More Button — 삼성 뉴스룸 가로선 중앙 텍스트 스타일 */}
         <div className="relative mt-[58px]">
-          <div className="h-px bg-article-line" />
+          <div className="h-px bg-[#E0E9FE]" />
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
             <Link
               href="/articles"

@@ -636,7 +636,7 @@ function SlidePreview({
                 <div
                   key={t.id}
                   className="rounded-lg px-2 py-1.5 flex items-center min-h-[32px]"
-                  style={{ backgroundColor: "var(--color-article-line)" }}
+                  style={{ backgroundColor: "#e0e9fe" }}
                 >
                   <p className="text-[10px] text-gray-800 font-medium truncate">
                     {art?.title || `텍스트 ${idx + 1}`}

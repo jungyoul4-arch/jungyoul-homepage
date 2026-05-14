@@ -1,5 +1,0 @@
-{
-  "ignore": [
-    "public/pdfjs/pdf.worker.min.mjs"
-  ]
-}

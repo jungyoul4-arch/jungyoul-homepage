@@ -1,11 +1,8 @@
-import { clsx, type ClassValue } from "clsx";
-import { twMerge } from "tailwind-merge";
+import { clsx, type ClassValue } from "clsx"
+import { twMerge } from "tailwind-merge"
 
-/**
- * className 병합 + Tailwind 충돌 해결 (shadcn 컨벤션)
- */
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
+  return twMerge(clsx(inputs))
 }
 
 /**
@@ -22,24 +19,6 @@ export function generateSlug(title: string): string {
     .replace(/^-|-$/g, "");
   const suffix = crypto.randomUUID().slice(0, 8);
   return base ? `${base}-${suffix}` : suffix;
-}
-
-/**
- * 정렬된 배열에서 targetId 항목을 direction 방향으로 이웃 항목과 swap 한 새 배열 반환.
- * 이동 불가(경계, 없는 ID)인 경우 null 반환.
- */
-export function swapById<T extends { id: string; sortOrder: number }>(
-  items: T[],
-  targetId: string,
-  direction: -1 | 1,
-): T[] | null {
-  const sorted = [...items].sort((a, b) => a.sortOrder - b.sortOrder);
-  const idx = sorted.findIndex((s) => s.id === targetId);
-  const swapIdx = idx + direction;
-  if (idx === -1 || swapIdx < 0 || swapIdx >= sorted.length) return null;
-  const reordered = [...sorted];
-  [reordered[idx], reordered[swapIdx]] = [reordered[swapIdx], reordered[idx]];
-  return reordered;
 }
 
 /**

@@ -2,33 +2,6 @@
 
 기록 형식: 날짜 / 현상 / 원인 / 해결 / 교훈
 
-## 2026-05-14 — 신규 vitest 9종 도입 직후 husky pre-commit 실패 + sanitize iframe 결함 발견
-- 현상: `lint-staged` 의 `bash -c 'npx tsc --noEmit'` 가 3개 TS 에러로 husky pre-commit (code 1) 실패. 추가로 `npm test` 실행 시 (a) `validation-helpers.test.ts` 가 `createInsertSchema(...).pick is not a function` 으로 모듈 로드 실패, (b) `sanitize.test.ts` "strips iframes from non-allowed hosts" 가 `<iframe></iframe>` 잔재로 실패
-- 원인:
-  - **TS 3건**: 신규 테스트가 소스에 없는 export 를 import (`HEADER_LINK_ICONS` 가 `const` 만, `HEADER_LINK_ICON_NAMES` 미존재, `cn` 미존재). 테스트 작성자가 shadcn 컨벤션을 가정했으나 `src/components/ui/button.tsx` 삭제와 함께 `cn` 도입이 누락된 상태였음
-  - **validation 테스트 mock 결손**: `vi.mock("drizzle-zod", ...)` 가 `omit()` 만 노출했는데 `validation.ts:174,178` 가 community 스키마에서 `pick()` 체인 사용. 프로덕션 코드는 정상(실제 ZodObject 는 `pick`/`omit` 둘 다 보유), 모킹만 불완전
-  - **sanitize 결함**: `sanitize-html` 의 `allowedIframeHostnames` 가 src 만 strip 하고 빈 `<iframe></iframe>` 태그를 남김. 무해하지만 CLAUDE.md "iframe 허용 호스트는 YouTube/Vimeo 만" 의도와 미정합. 테스트가 이 갭을 노출
-- 해결:
-  - `HEADER_LINK_ICONS` `export` + `HEADER_LINK_ICON_NAMES = Object.keys(HEADER_LINK_ICONS)` 추가
-  - `clsx`/`tailwind-merge` 추가 후 `cn(...inputs) = twMerge(clsx(inputs))` 를 `src/lib/utils.ts` 에 신설 (shadcn 컨벤션)
-  - `vi.mock("drizzle-zod", ...)` 가 chain 헬퍼로 `omit`/`pick` 동시 반환하도록 수정
-  - `src/lib/sanitize.ts` 에 `exclusiveFilter: (frame) => frame.tag === "iframe" && !frame.attribs.src` 추가 — src 없는 iframe 전체 제거. 유튜브/Vimeo iframe 은 src 보존되므로 영향 없음
-- 결과: 9개 테스트 파일 78건 모두 통과(`Tests 78 passed`). `npx tsc --noEmit` 0 에러
-- 교훈:
-  (1) **테스트 작성자와 소스 변경자가 분리된 PR 흐름** 에서는 import-export 정합성이 자주 깨진다 — pre-commit 의 `tsc --noEmit` 가 마지막 방어선. lint-staged 가 `*.ts` 변경분에서만 동작하므로, 테스트만 추가하고 소스 변경 없는 커밋도 `tsc` 가 트리거되도록 staged glob 확인 권장.
-  (2) **`vi.mock` 은 production 코드의 호출 표면 전체** 를 노출해야 한다. drizzle-zod 처럼 체인이 길어지는 API 는 `pick`/`omit`/`required`/`partial` 등 사용되는 메서드를 모두 mock chain 에 두자.
-  (3) **`sanitize-html`의 `allowedIframeHostnames` 는 src 만 strip** 하고 태그를 남긴다. 호스트 화이트리스트와 "잘못된 iframe = 완전 제거" 의도가 일치하려면 `exclusiveFilter` 가 함께 필요. 외부 라이브러리의 부분 sanitize 동작은 테스트로 가시화하지 않으면 발견하기 어려움.
-
-## 2026-05-14 — JSON-LD XSS escape 전수검증 — 전원 renderJsonLd() 헬퍼 적용 확인
-- 현상: JSON-LD `<script type="application/ld+json">` 출력 지점 13개 전수 감사 실시
-- 결과: `src/app` 내 모든 13개 파일이 `renderJsonLd()` 헬퍼(`src/lib/json-ld.ts`) 를 사용하고 있음. 인라인 `JSON.stringify` + `dangerouslySetInnerHTML` 직접 사용 0건, 원시 `.replace(/</g, "\\u003c")` 잔재 0건
-- 해결: 코드 수정 없음. `docs/seo-checklist.md` 의 grep 점검 명령을 `renderJsonLd` 기준으로 갱신하고 인라인 패턴 잔재 확인 명령 추가
-- 교훈: `renderJsonLd()` 헬퍼로의 이행(2026-05-11) 이 완전히 정착됨. 새 JSON-LD 추가 시 반드시 헬퍼를 사용하고, 아래 grep 으로 자가 점검할 것:
-  ```bash
-  grep -rL "renderJsonLd" $(grep -rl "application/ld+json" src/app)
-  grep -rn 'dangerouslySetInnerHTML.*JSON\.stringify' src/app
-  ```
-
 ## 2026-05-13 — 디자인 토큰 마이그레이션 후 hex 잔재 추가 발견 (`text-[#666]`, `border-[#E0E0E0]`)
 - 현상: hex → 토큰 마이그레이션을 27 파일에 일괄 적용한 직후 검증 단계에서 (a) `text-[#666]` 8 곳(`article-list.tsx` × 5, `highlights-carousel.tsx` × 3), (b) `border-[#E0E0E0]`/`bg-[#e0e0e0]` 11 곳(`footer.tsx`/`latest-articles.tsx`/`media-library.tsx`/`highlights-carousel.tsx`/`[slug]/page.tsx`/`exam/page.tsx`/`articles/page.tsx`) 잔재 검출. **장 검색이 `#1A1A1A`/`#666666`/`#1E64FA`/`#0E41AD` 4 개 long-form 만 대상으로 진행돼 3-char shorthand(`#666`) 와 동일 색이지만 다른 토큰명에 매핑되는 값(`#E0E0E0` = `border-light`) 이 누락**
 - 원인: 마이그레이션 grep 대상 hex 가 brand color 4 개 long-form 만 포함. `#666` (= `#666666` shorthand) 과 `--color-border-light` 정의 후 추가된 `#E0E0E0` 잔재가 인지되지 않음

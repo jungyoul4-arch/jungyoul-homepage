@@ -26,16 +26,13 @@
 - catch-all 이 `nav_menus` 부모 행과 일치하는 슬러그만 200 응답하므로, 자식 메뉴 href 가 부모 슬러그로 향할 때는 부모 행이 실제 DB 에 있는지 확인
 
 ## XSS 방지
-- **모든 JSON-LD 직렬화: `renderJsonLd()` 헬퍼(`src/lib/json-ld.ts`) 사용 필수**. 인라인 `JSON.stringify` + `dangerouslySetInnerHTML` 직접 사용 금지. 헬퍼 내부에 `.replace(/</g, "\\u003c")` escape 가 내장되어 있음 (mistake-log 2026-05-11 이행 완료, 2026-05-14 전수검증 통과).
+- **모든 JSON-LD 직렬화: `.replace(/</g, "\\u003c")` 적용 필수**. 12 곳의 인라인 패턴 중 한 곳(`src/app/location/page.tsx`)에서 누락되어 mistake-log 2026-05-11 회고에 기록됨. 새 JSON-LD 작성 시 grep 으로 적용 여부 자가 점검
   ```bash
-  # 새 JSON-LD 추가 후 자가 점검 — 출력 0 줄이어야 함
-  grep -rL "renderJsonLd" $(grep -rl "application/ld+json" src/app)
-  # 인라인 JSON.stringify 패턴 잔재 확인 — 출력 0 줄이어야 함
-  grep -rn 'dangerouslySetInnerHTML.*JSON\.stringify' src/app
+  grep -L "replace(/</g" $(grep -rl "application/ld+json" src/app)
+  # 출력 0 줄이어야 함
   ```
 - 본문 콘텐츠는 저장 시 `src/lib/sanitize.ts` `sanitizeContent()` 통과 (어드민 API 에서 자동 적용)
 - sanitize 화이트리스트 확장 시 정규식으로 값 제한 — [`editor.md`](editor.md) 참조
-- `iframe` 은 허용 호스트(`www.youtube.com`/`player.vimeo.com`)만 src 유지. 비허용 호스트는 `exclusiveFilter` 로 태그 자체 제거(빈 `<iframe></iframe>` 잔재 없음) — 단위 테스트 `src/lib/__tests__/sanitize.test.ts` "strips iframes from non-allowed hosts" 가드
 
 ## 자산 규격
 - OG 이미지: `/public/og-image.png` (1200×630)
