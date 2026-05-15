@@ -42,22 +42,11 @@
 
 페이스트 우선순위 재정렬 이전에는 HWPX 클립보드의 image item 이 먼저 매칭되어 표 구조가 폐기되는 회귀가 있었음 → [`mistake-log.md`](mistake-log.md) 2026-05-08 항목 참고.
 
-### PDF 드래그&드롭
-HWPX 내부 이미지의 클립보드 페이스트가 일관되지 않아 우회로로 PDF 파일 통째 드롭을 지원한다.
-
-- **트리거**: 본문 에디터 영역에 `.pdf` 파일 드래그&드롭 (`handleDrop` 의 `application/pdf` 또는 `.pdf$` 확장자 분기)
-- **처리**: 클라이언트에서 [`pdfjs-dist`](https://github.com/mozilla/pdf.js) 동적 import → 페이지마다 `scale 2.0` (≈192dpi) 으로 `<canvas>` 렌더 → `image/png` Blob → `/api/admin/upload` (기존 이미지 화이트리스트 그대로 통과) → 영구 URL → `<figure><img alt="…페이지 N"><figcaption data-placeholder="페이지 설명 (선택)"></figcaption></figure>` 순차 삽입. **figcaption 은 빈 채로 생성**되며 어떤 마크도 자동으로 들어가지 않는다 (이전 버전의 ▲ 자동 prefix 는 제거됨). 사용자가 캡션을 입력하지 않으면 placeholder 만 어드민 에디터에 표시되고, 공개 페이지에서는 빈 figcaption 이 된다.
-- **워커**: `public/pdfjs/pdf.worker.min.mjs` (legacy 빌드) 정적 자산. `GlobalWorkerOptions.workerSrc = "/pdfjs/pdf.worker.min.mjs"`
-- **30 페이지 초과 보호**: `pdfToPngBlobs` 의 `onStart` 콜백에서 `window.confirm()` 으로 사용자 확인. 취소 시 빈 배열 반환하여 본문 미변경.
-- **진행 표시**: `[PDF 변환 중... done/total]` placeholder span 이 페이지 변환·업로드마다 갱신. 단일 페이지 업로드 실패는 그 페이지만 안내 텍스트로 대체하고 나머지는 계속.
-- **한계**: 페이지가 통째 PNG 이미지로 들어오므로 시각 정확도 100% (표·수식·도형 그대로) 이지만 본문 검색·텍스트 수정 불가. PDF 원본은 서버에 저장되지 않음. 페이지 설명·▲ 마크는 사용자가 직접 입력 또는 툴바 ▲ 버튼으로 추가.
-- **모듈 분리**: 어드민 본문 에디터에서만 동적 import 되어 공개 페이지 번들에는 영향 없음 (pdfjs-dist ≈3MB).
-
 ### 단독 이미지 figcaption
 드래그&드롭·툴바 업로드 등 단독 이미지 삽입 시 figcaption 은 `data-placeholder="이미지 설명 (선택)"` 속성만 가진 빈 contenteditable 요소로 생성된다. 어떤 마크도 자동 prefix 되지 않는다 (이전 버전의 △/▲ 자동 추가는 제거됨). 클립보드 이미지 페이스트(`normalizePastedHtml` 경로)는 기존대로 figcaption 자체를 만들지 않으므로 변경 없음.
 
 ### ▲ 마크 삽입
-이미지·페이지 설명 앞에 두는 시각 마커. **어떤 경로에서도 자동 추가되지 않으며**, 툴바 Row 2 의 ▲ 버튼으로만 현재 커서 위치에 "▲ "(▲ + 공백) 가 삽입되고 동시에 해당 블록(figcaption/p/h…)이 가운데 정렬된다. figcaption 은 이미 CSS `text-align: center` 가 기본값이므로 캡션 안에서는 시각적 변화 없음, 본문 단락에서 사용하면 `justifyCenter` 가 그 단락만 가운데 정렬한다. 다른 정렬을 원하면 툴바 왼쪽/오른쪽 정렬 버튼으로 변경.
+이미지 캡션 앞에 두는 시각 마커. **어떤 경로에서도 자동 추가되지 않으며**, 툴바 Row 2 의 ▲ 버튼으로만 현재 커서 위치에 "▲ "(▲ + 공백) 가 삽입되고 동시에 해당 블록(figcaption/p/h…)이 가운데 정렬된다. figcaption 은 이미 CSS `text-align: center` 가 기본값이므로 캡션 안에서는 시각적 변화 없음, 본문 단락에서 사용하면 `justifyCenter` 가 그 단락만 가운데 정렬한다. 다른 정렬을 원하면 툴바 왼쪽/오른쪽 정렬 버튼으로 변경.
 
 ### 서버 sanitize
 `src/lib/sanitize.ts` `sanitizeContent()` 가 `/api/admin/articles` POST/PUT 에서 본문에 적용. 화이트리스트:
