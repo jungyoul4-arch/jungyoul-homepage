@@ -2,7 +2,6 @@ export const dynamic = "force-dynamic";
 
 import type { Metadata } from "next";
 import { ExamArticleFilter } from "@/components/exam-article-filter";
-import { HeroBanner } from "@/components/hero-banner";
 import { getDb } from "@/db";
 import { articles as articlesTable, examTagOptions as examTagOptionsTable } from "@/db/schema";
 import { asc, desc, eq } from "drizzle-orm";
@@ -18,7 +17,6 @@ export const metadata: Metadata = {
     title: "시험지 분석 | 정율 교육정보",
     description:
       "정율사관 시험지 분석 — 모의고사·내신 기출 분석과 풀이 전략을 정리한 콘텐츠 모음.",
-    images: [{ url: "/images/hero-articles.jpg", width: 1200, height: 514 }],
   },
   alternates: {
     canonical: "/exam",
@@ -63,7 +61,6 @@ export default async function ExamPage() {
 
   return (
     <>
-      <HeroBanner src="/images/hero-articles.jpg" alt="시험지 분석" />
       <div className="max-w-[1480px] mx-auto px-4 lg:px-10 py-10">
         <script
           type="application/ld+json"

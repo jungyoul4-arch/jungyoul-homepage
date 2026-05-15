@@ -8,7 +8,6 @@ import { teachers as teachersTable } from "@/db/schema";
 import { toTeacher } from "@/lib/mappers";
 import { AdminEditButton } from "@/components/admin-edit-button";
 import { isValidThumbnail } from "@/lib/thumbnail";
-import { HeroBanner } from "@/components/hero-banner";
 import { renderJsonLd } from "@/lib/json-ld";
 
 export const metadata: Metadata = {
@@ -19,7 +18,6 @@ export const metadata: Metadata = {
     title: "선생님 소개 | 정율 교육정보",
     description:
       "정율사관학원의 전문 강사진을 소개합니다.",
-    images: [{ url: "/images/hero-teachers.jpg", width: 1200, height: 514 }],
   },
   alternates: {
     canonical: "/teachers",
@@ -35,7 +33,6 @@ export default async function TeachersPage() {
 
   return (
     <>
-      <HeroBanner src="/images/hero-teachers.jpg" alt="정율 교육정보 선생님 소개" />
       <div className="max-w-[1480px] mx-auto px-4 lg:px-10 py-10">
         {/* JSON-LD for teachers */}
       <script

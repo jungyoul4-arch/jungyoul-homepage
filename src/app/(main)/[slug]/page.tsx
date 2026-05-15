@@ -2,7 +2,6 @@ export const dynamic = "force-dynamic";
 
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { HeroBanner } from "@/components/hero-banner";
 import { NavTabs } from "@/components/nav-tabs";
 import { getDb } from "@/db";
 import { navMenus } from "@/db/schema";
@@ -78,7 +77,6 @@ export async function generateMetadata({ params }: RouteParams): Promise<Metadat
     openGraph: {
       title: `${label} | 정율 교육정보`,
       description,
-      images: [{ url: "/images/hero-articles.jpg", width: 1200, height: 514 }],
     },
     alternates: {
       canonical: `/${slug}`,
@@ -95,7 +93,6 @@ export default async function MenuIndexPage({ params }: RouteParams) {
 
   return (
     <>
-      <HeroBanner src="/images/hero-articles.jpg" alt={label} />
       <div className="max-w-[1480px] mx-auto px-4 lg:px-10 py-10">
         <script
           type="application/ld+json"

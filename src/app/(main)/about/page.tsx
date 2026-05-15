@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { HeroBanner } from "@/components/hero-banner";
 import { renderJsonLd } from "@/lib/json-ld";
 
 export const metadata: Metadata = {
@@ -9,7 +8,6 @@ export const metadata: Metadata = {
   openGraph: {
     title: "회사소개 | 정율 교육정보",
     description: "주식회사정율 — 맞춤형 교육 전문 기업",
-    images: [{ url: "/images/hero-about.jpg", width: 1200, height: 514 }],
   },
   alternates: {
     canonical: "/about",
@@ -19,7 +17,6 @@ export const metadata: Metadata = {
 export default function AboutPage() {
   return (
     <>
-      <HeroBanner src="/images/hero-about.jpg" alt="정율 교육정보 회사소개" />
       <div className="max-w-[1480px] mx-auto px-4 lg:px-10 py-10">
         {/* AboutPage JSON-LD */}
       <script

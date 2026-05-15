@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { HeroBanner } from "@/components/hero-banner";
 import { renderJsonLd } from "@/lib/json-ld";
 
 export const metadata: Metadata = {
@@ -17,7 +16,6 @@ export const metadata: Metadata = {
     title: "자주 묻는 질문(FAQ) | 정율 교육정보",
     description:
       "정율사관학원에 대해 자주 묻는 질문과 답변입니다.",
-    images: [{ url: "/images/hero-faq.jpg", width: 1200, height: 514 }],
   },
   alternates: {
     canonical: "/faq",
@@ -80,7 +78,6 @@ const faqs = [
 export default function FAQPage() {
   return (
     <>
-      <HeroBanner src="/images/hero-faq.jpg" alt="정율 교육정보 자주 묻는 질문" />
       <div className="max-w-[1480px] mx-auto px-4 lg:px-10 py-10">
         {/* FAQPage JSON-LD — AEO 핵심 */}
       <script

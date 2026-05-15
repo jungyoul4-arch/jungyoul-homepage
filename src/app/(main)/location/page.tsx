@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { MapPin, Train, Bus, Car } from "lucide-react";
-import { HeroBanner } from "@/components/hero-banner";
 import { renderJsonLd } from "@/lib/json-ld";
 
 export const metadata: Metadata = {
@@ -10,7 +9,6 @@ export const metadata: Metadata = {
   openGraph: {
     title: "찾아오는 길 | 정율 교육정보",
     description: "정율사관학원 오시는 길 안내. 부천역 도보 5분.",
-    images: [{ url: "/images/hero-location.jpg", width: 1200, height: 514 }],
   },
   alternates: {
     canonical: "/location",
@@ -20,7 +18,6 @@ export const metadata: Metadata = {
 export default function LocationPage() {
   return (
     <>
-      <HeroBanner src="/images/hero-location.jpg" alt="정율 교육정보 찾아오는 길" />
       <div className="max-w-[1480px] mx-auto px-4 lg:px-10 py-10">
         {/* JSON-LD Place */}
       <script
