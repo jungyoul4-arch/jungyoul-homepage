@@ -56,7 +56,13 @@
 
 추가 안전장치: `useEffect` 마운트 시 `document.execCommand("styleWithCSS", false, "true")` 를 호출해 bold/italic 등 잔존 execCommand 호출도 인라인 style 기반 markup 을 생성하도록 강제 (Chromium 의 `<font>`/`<b>` 레거시 회피). toolbar 버튼은 `onMouseDown={preventEditorBlur}` 로 click 직전 selection 이 무너지지 않도록 보호.
 
-정렬 감지(`detectBlock`) 는 인라인 `el.style.textAlign` 우선, 인라인이 없으면 `getComputedStyle(el).textAlign` 폴백(CSS 클래스/상속 기반 정렬 인지). 값 매트릭스: `left/center/right/justify` + computed `end` → `right` 변환.
+**대상 블록 탐색(`findParentBlock`)**: `p/h2-4/div/blockquote/li/ul/ol` + **`figure/figcaption/td/th`**. figure/figcaption 까지 포함하는 이유 — 외부 에디터(HWP/Word/CKEditor 류) 페이스트가 `<figure>` 를 단락 컨테이너로 쓰는 경우가 흔하고(중첩 `<figure><figure><figure>text</figure></figure></figure>` 형태), figure 가 매칭되지 않으면 정렬이 wrapping `<div>` 로 올라가 시각 변화 0 으로 사라진다.
+
+**검출(`detectBlock`)**: walk-up 으로 정렬을 누적하지 않고 **`findParentBlock` 으로 얻은 가장 가까운 단락 블록의 `getComputedStyle().textAlign` 한 번만 읽는다**. computed 는 이미 inline + CSS 상속을 모두 반영하므로 단일 read 로 충분하고, 외곽 wrapper 의 inline text-align 이 사용자의 안쪽 선택을 덮어쓰는 회귀를 차단. 매핑 매트릭스: `center` → 가운데, `right`/`end` → 오른쪽, 그 외(`left`/`start`/`justify`/`match-parent`/`""`) → 왼쪽. UI 에 양쪽 정렬 버튼이 없으므로 `justify` 는 왼쪽 버튼이 받는다.
+
+**적용(`execAlign`) 후 조상 정리**: 안쪽 블록에 `style.textAlign = align` 을 박은 뒤, editor 까지의 조상 중 inline `text-align` 이 있고 자체 inline 텍스트를 직접 갖지 않는 wrapper(외부 페이스트의 외곽 figure 등) 의 `text-align` 을 제거한다. `hasDirectInlineText()` 가드로 텍스트를 직접 가진 조상은 보존 — 다른 단락의 의도된 정렬을 빼앗지 않는다. **단, 조상을 비우기 전에 직속 블록 자식의 "현재 시각 정렬"을 `getComputedStyle` 로 snapshot 해 inline 으로 고정**(자체 inline 정렬이 있는 형제는 건드리지 않음). 단순히 ancestor 의 inline 값을 박으면 CSS 가 자체 정렬을 갖는 자식(`figcaption` 의 CSS `text-align:center` 등)이 의도치 않게 ancestor 값으로 덮여 시각이 변한다 — computed 를 읽어 *현재 화면값* 을 명시하므로 ancestor 가 사라져도 시각 연속성 유지.
+
+**페이스트 단계 노이즈 정리(`normalizePastedHtml`)**: mso-* 제거 직후 추가 패스에서 (a) `<img>`/`<span>` 의 `text-align` 선언 제거(replaced/inline 요소라 무의미) (b) 모든 요소에서 `text-align: justify` 제거(UI 에 양쪽 정렬 버튼 없음). 다른 정렬값(left/center/right)은 보존.
 
 ### 서버 sanitize
 `src/lib/sanitize.ts` `sanitizeContent()` 가 `/api/admin/articles` POST/PUT 에서 본문에 적용. 공개 페이지 렌더(`dangerouslySetInnerHTML`)에서도 한 번 더 적용(이중 sanitize, idempotent). 화이트리스트:

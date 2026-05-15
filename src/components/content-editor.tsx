@@ -104,7 +104,6 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
       let bold = false;
       let italic = false;
       let list = "";
-      let align = "left";
       while (node && node !== editor) {
         if (node.nodeType === Node.ELEMENT_NODE) {
           const el = node as HTMLElement;
@@ -123,22 +122,21 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
             if (parentTag === "ol") list = "ol";
             else if (parentTag === "ul") list = "ul";
           }
-          // 정렬 감지: 인라인 style.textAlign 우선, justify 포함.
-          // 인라인이 없을 때 클래스/상속 기반 정렬을 잡기 위해 계산값(getComputedStyle) 폴백.
-          // computed 의 'start'/'end' 는 LTR 기준 'left'/'right' 로 변환.
-          const inlineAlign = el.style.textAlign;
-          if (inlineAlign && ["left", "center", "right", "justify"].includes(inlineAlign)) {
-            align = inlineAlign;
-          } else if (!inlineAlign && align === "left") {
-            const computed = window.getComputedStyle(el).textAlign;
-            if (computed === "center" || computed === "right" || computed === "justify") {
-              align = computed;
-            } else if (computed === "end") {
-              align = "right";
-            }
-          }
         }
         node = node.parentNode;
+      }
+
+      // 정렬 감지: walk-up 누적이 아니라 "커서가 속한 가장 가까운 단락 블록 1개" 의 computed text-align 만 사용.
+      // 이렇게 해야 (a) 외곽 wrapper 의 inline text-align 이 안쪽 사용자 선택을 덮어쓰는 문제 차단
+      // (b) <span style="text-align">/<img style="text-align"> 같은 무의미한 inline 노이즈가 검출되지 않음
+      // (c) computed 는 이미 inline + CSS 상속을 모두 반영하므로 단일 read 로 충분.
+      let align = "left";
+      const alignBlock = findParentBlock(selection.anchorNode);
+      if (alignBlock) {
+        const computed = window.getComputedStyle(alignBlock).textAlign;
+        if (computed === "center") align = "center";
+        else if (computed === "right" || computed === "end") align = "right";
+        // 그 외(left/start/justify/match-parent/'') 는 좌측으로 매핑 — UI 에 양쪽 정렬 버튼이 없으므로 justify 도 좌측 버튼이 받는다.
       }
 
       setToolbar({ activeBlock: tag, isBold: bold, isItalic: italic, listType: list, alignType: align });
@@ -445,6 +443,35 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
       }
     });
 
+    // 정렬 노이즈 정리:
+    //  - <img>/<span> 의 text-align 은 무의미 (replaced/inline). 그대로 두면 detectBlock 의 노이즈
+    //    매칭이나 사용자 혼란의 원인이 됨.
+    //  - text-align: justify 는 에디터 UI 에 버튼이 없어 양쪽 정렬 적용·해제가 불가능.
+    //    좌측 정렬과 동등으로 매핑해 페이스트 단계에서 제거.
+    doc.querySelectorAll("*").forEach((el) => {
+      const style = el.getAttribute("style");
+      if (!style) return;
+      const tag = el.tagName.toLowerCase();
+      const stripInlineTextAlign = tag === "img" || tag === "span";
+      const decls = style
+        .split(/;\s*/)
+        .map((d) => d.trim())
+        .filter((d) => d !== "")
+        .filter((d) => {
+          const m = /^([a-z-]+)\s*:\s*(.+)$/i.exec(d);
+          if (!m) return true;
+          const prop = m[1].toLowerCase();
+          if (prop !== "text-align") return true;
+          const val = m[2].toLowerCase().trim();
+          if (stripInlineTextAlign) return false;
+          if (val === "justify") return false;
+          return true;
+        });
+      const cleaned = decls.join("; ").trim();
+      if (cleaned) el.setAttribute("style", cleaned);
+      else el.removeAttribute("style");
+    });
+
     // 빈 <p> 제거 (이미지·표·br 가 없고 텍스트도 없는 경우)
     Array.from(doc.querySelectorAll("p")).forEach((p) => {
       const hasMedia = p.querySelector("img, br, table, figure");
@@ -612,7 +639,9 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
     syncToParent();
   }
 
-  // 커서/선택 위치의 가장 가까운 블록 요소를 찾는 헬퍼
+  // 커서/선택 위치의 가장 가까운 블록 요소를 찾는 헬퍼.
+  // figure/figcaption/td/th 를 포함한다 — 외부 에디터(HWP/Word) 페이스트가 <figure> 를 단락 컨테이너로
+  // 쓰는 사례가 흔해, 안쪽 figure 가 매칭되지 않으면 정렬이 wrapping <div> 까지 올라가서 시각 변화 0 이 된다.
   function findParentBlock(node: Node | null): HTMLElement | null {
     const editor = editorRef.current;
     if (!editor) return null;
@@ -620,13 +649,29 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
       if (node.nodeType === Node.ELEMENT_NODE) {
         const el = node as HTMLElement;
         const name = el.tagName.toLowerCase();
-        if (["p", "h2", "h3", "h4", "div", "blockquote", "li", "ul", "ol"].includes(name)) {
+        if (
+          ["p", "h2", "h3", "h4", "div", "blockquote", "li", "ul", "ol", "figure", "figcaption", "td", "th"].includes(
+            name,
+          )
+        ) {
           return el;
         }
       }
       node = node.parentNode;
     }
     return null;
+  }
+
+  // 블록 요소 el 이 공백 외 텍스트를 직접 자식으로 갖는지.
+  // execAlign 의 조상 inline text-align 정리 가드 — 텍스트를 직접 가진 조상의 정렬은
+  // 다른 단락의 의도된 정렬일 수 있으므로 건드리지 않는다.
+  function hasDirectInlineText(el: Element): boolean {
+    for (const child of Array.from(el.childNodes)) {
+      if (child.nodeType === Node.TEXT_NODE && (child.textContent || "").trim() !== "") {
+        return true;
+      }
+    }
+    return false;
   }
 
   function execFormatBlock(tag: string) {
@@ -709,6 +754,10 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
   // execCommand("justifyLeft") 는 Chromium 에서 좌측을 "기본값" 으로 간주해 인라인 스타일을 기록하지 않는 비대칭이 있어
   // (center/right 만 스타일을 명시 기록 → 좌측 정렬이 저장 후 사라지는 사용자 보고로 이어짐),
   // 세 정렬을 한 코드패스로 통일해 항상 style.textAlign 을 명시한다.
+  //
+  // 추가: 적용한 블록의 조상 중 inline `text-align` 이 박혀 있고 자체 inline 텍스트를 갖지 않는
+  // wrapper (외부 에디터 페이스트의 외곽 <figure> 등) 의 정렬을 제거한다. 그렇지 않으면
+  // 안쪽 블록의 새 정렬이 외곽 wrapper 의 상속에 가려져 시각·검출 모두 회귀한다.
   function execAlign(align: "left" | "center" | "right") {
     const editor = editorRef.current;
     if (!editor) return;
@@ -721,6 +770,35 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
     const blocks = collectAffectedBlocks(range);
     for (const block of blocks) {
       block.style.textAlign = align;
+      let p: HTMLElement | null = block.parentElement;
+      while (p && p !== editor) {
+        const ancestorAlign = p.style.textAlign;
+        if (ancestorAlign && !hasDirectInlineText(p)) {
+          // 조상 정렬을 지우기 전에 직속 블록 자식의 "현재 시각 정렬"을 snapshot 해 inline 으로 고정.
+          // 단순히 ancestorAlign 을 박으면 figcaption 같이 CSS 가 자체 정렬(center)을 가진 자식이
+          // 의도치 않게 ancestor 의 inline 으로 덮여 시각이 바뀐다 → getComputedStyle 로 실제
+          // 화면값을 읽어 그 값을 inline 으로 명시.
+          const snapshots: Array<[HTMLElement, string]> = [];
+          for (const child of Array.from(p.children) as HTMLElement[]) {
+            if (child === block) continue;
+            if (child.style.textAlign) continue;
+            const ct = child.tagName.toLowerCase();
+            if (
+              !["p", "h1", "h2", "h3", "h4", "h5", "h6", "blockquote", "li", "ul", "ol", "figure", "figcaption", "td", "th", "div"].includes(
+                ct,
+              )
+            ) continue;
+            const eff = window.getComputedStyle(child).textAlign;
+            if (eff) snapshots.push([child, eff]);
+          }
+          for (const [child, eff] of snapshots) {
+            child.style.textAlign = eff;
+          }
+          p.style.textAlign = "";
+          if (!p.getAttribute("style")) p.removeAttribute("style");
+        }
+        p = p.parentElement;
+      }
     }
     editor.focus();
     syncToParent();

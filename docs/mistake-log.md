@@ -2,6 +2,24 @@
 
 기록 형식: 날짜 / 현상 / 원인 / 해결 / 교훈
 
+## 2026-05-15 — 빠른편집 "왼쪽 정렬 미반영" 후속: 외부 페이스트 figure 단락 + walk-up 검출의 조상 덮어쓰기
+- 현상: sanitize.ts allowedAttributes 수정 후에도, 외부 에디터(HWP/Word/CKEditor 류)로 작성된 본문을 빠른편집으로 다시 열면 **툴바 정렬 버튼이 활성화되지 않거나 클릭해도 활성 상태가 바뀌지 않는** 케이스가 남아 있음. 실측 대상: `news.jung-youl.com/articles/[…]-d3a6632e`
+- 분석: 해당 게시글 본문이 `<figure style="text-align:right"><figure><figure>텍스트</figure></figure></figure>` 처럼 **`<figure>` 가 단락 컨테이너로 다중 중첩**되어 있고 `text-align` 은 최외곽에만 박혀 있음. 그 외 `<img style="text-align:left">`, `<span style="text-align:center">` 같은 무의미한 inline 정렬 노이즈도 다수
+- root cause 두 갈래:
+  - (Bug A — 적용 경로) `findParentBlock` 의 블록 태그 목록에 `figure` 가 없어, 안쪽 figure 텍스트에 커서를 두고 정렬 버튼을 누르면 walk-up 이 모든 figure 를 건너뛰고 wrapping `<div>` 까지 올라간다. 그 div 에 `text-align: left` 를 박지만 outer figure 의 inline `text-align: right` 가 그대로 살아 있어 안쪽 텍스트는 계속 오른쪽 정렬 → 시각 변화 0
+  - (Bug B — 검출 경로) `detectBlock` 의 정렬 walk-up 이 조상의 inline/computed 로 매번 덮어쓰는 구조라, Bug A 를 고친 후에도 중간 figure 의 `getComputedStyle().textAlign` 이 외곽 figure 의 `right` 를 상속해 안쪽 사용자 선택을 "사라지게" 한다 → 왼쪽 버튼이 영영 활성화되지 못함
+- 해결:
+  - `findParentBlock` 에 `figure/figcaption/td/th` 추가
+  - `detectBlock` 의 정렬 검출을 walk-up 누적 → **`findParentBlock` 으로 얻은 가장 가까운 블록의 `getComputedStyle().textAlign` 한 번만 읽는 방식**으로 교체. 매핑: center → center, right/end → right, 그 외(left/start/justify/match-parent/'') → left. UI 에 양쪽 정렬 버튼이 없으므로 justify 도 좌측 버튼이 받음
+  - `execAlign` 에 조상 inline `text-align` 정리 루프 추가. `hasDirectInlineText()` 가드로 텍스트를 직접 가진 조상은 보존. 조상을 비우기 직전에 직속 블록 자식의 *현재 화면값* (`getComputedStyle().textAlign`) 을 snapshot 해 inline 으로 고정 — `<blockquote right><p>A</p><p>B</p></blockquote>` 에서 A 만 좌측으로 바꿔도 B 의 상속 우측이 사라지지 않게. 또한 figcaption 처럼 CSS 가 자체 정렬을 가진 자식의 시각이 ancestor 값으로 덮이는 회귀를 차단 (Playwright 실측에서 발견)
+  - 검증: Playwright 로 live 게시글(`d3a6632e`) 위에 sandbox 를 만들어 실측. 5 시나리오(nested figure / multi-p blockquote / figcaption-CSS-center / plain p / justify) 모두 통과. JSDOM 으로는 CSS 상속이 시뮬레이션되지 않아 정확한 검증 불가 — 실제 브라우저에서 `getComputedStyle().textAlign` 이 상속을 반영함을 확인
+  - `normalizePastedHtml` 에 paste 단계 노이즈 정리 패스 추가: `<img>`/`<span>` 의 text-align 제거, 모든 요소의 `text-align: justify` 제거
+- 교훈:
+  - (1) **walk-up 누적 형태의 상태 검출은 인라인-우선 정책에서 위험**. 조상이 매번 덮어쓰면 사용자가 안쪽에 막 적용한 변경이 한 틱 만에 사라진다. "가장 가까운 단락 1개 + computed" 가 inline + 상속을 모두 반영하는 단일 진실
+  - (2) **검출과 적용은 같은 블록 정의(`findParentBlock`)를 공유**해야 한다. 검출은 figure 를 의도적으로 잡지만 적용은 figure 를 건너뛰는 비대칭이 곧 버그
+  - (3) `<figure>` 가 단락 컨테이너로 들어오는 외부 페이스트 패턴은 sanitize 가 화이트리스트만 통과시키므로 그대로 살아남는다. 시맨틱 청소는 페이스트 단계(`normalizePastedHtml`) 에서 잡는 게 안전
+  - (4) 이전 사고(같은 날짜) 의 "Chromium 좌측 비대칭" 가설은 가설 그대로는 진실이었지만, 사용자가 경험한 "정렬이 안 된다" 라는 **표면 증상은 다중 root cause** 였음. 한 가지 해결책으로 모든 증상이 사라졌는지 다른 실측 데이터로 재검증 필요
+
 ## 2026-05-15 — 빠른편집 "왼쪽 정렬 미반영" 진단에서 잘못된 root cause 가설 → 통합 테스트로 발견
 - 현상: 빠른편집 모달에서 기존 텍스트가 작성된 글을 열어 왼쪽 정렬 후 저장 시 변경이 반영되지 않는다는 사용자 보고
 - 1차 가설 (오류): Chromium `execCommand("justifyLeft")` 가 좌측에 대해 인라인 스타일을 안 쓰는 비대칭. `content-editor.tsx:execAlign` 의 결함이 주 원인이라고 단정. 보조 Plan 에이전트도 sanitize-html 의 `text-align` 정규식만 단위 검증 후 "통과한다"고 판단해 같은 가설을 강화
