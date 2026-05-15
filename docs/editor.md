@@ -46,13 +46,26 @@
 드래그&드롭·툴바 업로드 등 단독 이미지 삽입 시 figcaption 은 `data-placeholder="이미지 설명 (선택)"` 속성만 가진 빈 contenteditable 요소로 생성된다. 어떤 마크도 자동 prefix 되지 않는다 (이전 버전의 △/▲ 자동 추가는 제거됨). 클립보드 이미지 페이스트(`normalizePastedHtml` 경로)는 기존대로 figcaption 자체를 만들지 않으므로 변경 없음.
 
 ### ▲ 마크 삽입
-이미지 캡션 앞에 두는 시각 마커. **어떤 경로에서도 자동 추가되지 않으며**, 툴바 Row 2 의 ▲ 버튼으로만 현재 커서 위치에 "▲ "(▲ + 공백) 가 삽입되고 동시에 해당 블록(figcaption/p/h…)이 가운데 정렬된다. figcaption 은 이미 CSS `text-align: center` 가 기본값이므로 캡션 안에서는 시각적 변화 없음, 본문 단락에서 사용하면 `justifyCenter` 가 그 단락만 가운데 정렬한다. 다른 정렬을 원하면 툴바 왼쪽/오른쪽 정렬 버튼으로 변경.
+이미지 캡션 앞에 두는 시각 마커. **어떤 경로에서도 자동 추가되지 않으며**, 툴바 Row 2 의 ▲ 버튼으로만 현재 커서 위치에 "▲ "(▲ + 공백) 가 삽입되고 동시에 해당 블록(figcaption/p/h…)에 `style="text-align: center"` 가 직접 기록되어 가운데 정렬된다. figcaption 은 이미 CSS `text-align: center` 가 기본값이라 캡션 안에서는 시각적 변화 없음, 본문 단락에서 사용하면 그 단락만 가운데 정렬. 다른 정렬을 원하면 툴바 왼쪽/오른쪽 정렬 버튼으로 변경.
+
+### 정렬 (왼쪽/가운데/오른쪽)
+툴바의 정렬 버튼은 **`document.execCommand("justifyLeft/Center/Right")` 에 의존하지 않고** 현재 커서 위치 블록(또는 다중 블록 선택 시 그 범위 안의 모든 최상위 블록)의 `style.textAlign` 을 직접 좌/우/가운데로 설정한다. 이유:
+- Chromium 의 `execCommand("justifyLeft")` 는 좌측을 "기본값" 으로 간주해 인라인 스타일을 기록하지 않고 기존 정렬을 제거만 한다 → center → left 전환 시 `text-align: left` 가 흔적 없이 사라져 사용자에게 "저장이 안 됐다" 로 보임 (Chromium bug #141729 류).
+- `justifyCenter/Right` 와 동작이 비대칭이라 좌측만 보존 실패.
+- 직접 DOM 조작으로 세 정렬이 동일 코드패스에서 인라인 스타일을 명시 → DB·공개 렌더 양쪽에 안정적으로 보존.
+
+추가 안전장치: `useEffect` 마운트 시 `document.execCommand("styleWithCSS", false, "true")` 를 호출해 bold/italic 등 잔존 execCommand 호출도 인라인 style 기반 markup 을 생성하도록 강제 (Chromium 의 `<font>`/`<b>` 레거시 회피). toolbar 버튼은 `onMouseDown={preventEditorBlur}` 로 click 직전 selection 이 무너지지 않도록 보호.
+
+정렬 감지(`detectBlock`) 는 인라인 `el.style.textAlign` 우선, 인라인이 없으면 `getComputedStyle(el).textAlign` 폴백(CSS 클래스/상속 기반 정렬 인지). 값 매트릭스: `left/center/right/justify` + computed `end` → `right` 변환.
 
 ### 서버 sanitize
-`src/lib/sanitize.ts` `sanitizeContent()` 가 `/api/admin/articles` POST/PUT 에서 본문에 적용. 화이트리스트:
+`src/lib/sanitize.ts` `sanitizeContent()` 가 `/api/admin/articles` POST/PUT 에서 본문에 적용. 공개 페이지 렌더(`dangerouslySetInnerHTML`)에서도 한 번 더 적용(이중 sanitize, idempotent). 화이트리스트:
 - 태그: 표 계열(`table/thead/tbody/tfoot/tr/th/td/caption/col/colgroup`) + 멀티미디어(`img/iframe/figure/figcaption/video`) 등
+- 속성: 정렬 등 인라인 스타일 보존을 위해 블록 태그(`p/h1-h6/blockquote/ul/ol/li/figure/figcaption`)와 인라인 컨테이너(`div/span`)에 `style` 허용. **단, 값은 `allowedStyles` 화이트리스트로 한정**(text-align 은 `left|center|right|justify` 만).
 - iframe 허용 호스트: `www.youtube.com`, `player.vimeo.com`
 - 스타일: 정규식 화이트리스트 — `expression()`, `url(javascript:)` 등 거부
+
+> ⚠️ **새 태그를 `allowedTags` 에 추가할 때 `allowedAttributes` 에 `style` 등 필요한 속성을 함께 등록**하지 않으면 attribute 단계에서 통째로 제거되어 `allowedStyles` 의 값 검사까지 도달하지 못한다. 정렬 비반영 사고(2026-05-15 mistake-log) 가 이 함정에서 발생.
 
 화이트리스트 추가 시 반드시 정규식으로 값을 좁힐 것 (e.g. `border-style: [/^(solid|dashed|dotted|double|none)$/]`).
 

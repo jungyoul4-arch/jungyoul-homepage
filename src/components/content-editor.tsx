@@ -85,8 +85,10 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
   const initializedRef = useRef(false);
 
   // 기본 단락 구분자를 <p>로 설정 (브라우저 기본 <div> 방지)
+  // styleWithCSS=true 강제: bold/italic 등 execCommand 가 <font>/<b> 레거시 대신 인라인 style 기반 markup 을 생성하도록.
   useEffect(() => {
     document.execCommand("defaultParagraphSeparator", false, "p");
+    document.execCommand("styleWithCSS", false, "true");
   }, []);
 
   // 커서 위치의 블록 태그를 감지하여 활성 상태 업데이트
@@ -121,8 +123,19 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
             if (parentTag === "ol") list = "ol";
             else if (parentTag === "ul") list = "ul";
           }
-          if (el.style.textAlign && ["left", "center", "right"].includes(el.style.textAlign)) {
-            align = el.style.textAlign;
+          // 정렬 감지: 인라인 style.textAlign 우선, justify 포함.
+          // 인라인이 없을 때 클래스/상속 기반 정렬을 잡기 위해 계산값(getComputedStyle) 폴백.
+          // computed 의 'start'/'end' 는 LTR 기준 'left'/'right' 로 변환.
+          const inlineAlign = el.style.textAlign;
+          if (inlineAlign && ["left", "center", "right", "justify"].includes(inlineAlign)) {
+            align = inlineAlign;
+          } else if (!inlineAlign && align === "left") {
+            const computed = window.getComputedStyle(el).textAlign;
+            if (computed === "center" || computed === "right" || computed === "justify") {
+              align = computed;
+            } else if (computed === "end") {
+              align = "right";
+            }
           }
         }
         node = node.parentNode;
@@ -584,10 +597,18 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
   }
 
   // ▲ 마크 삽입: 현재 커서 위치에 "▲ " 삽입 + 해당 블록 가운데 정렬
+  // 정렬은 execAlign 과 동일한 방식(인라인 style.textAlign 직접 설정)으로 통일.
   function insertTriangleMark() {
     document.execCommand("insertText", false, "▲ ");
-    document.execCommand("justifyCenter", false);
-    editorRef.current?.focus();
+    const editor = editorRef.current;
+    if (editor) {
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        const block = findParentBlock(selection.getRangeAt(0).startContainer);
+        if (block) block.style.textAlign = "center";
+      }
+      editor.focus();
+    }
     syncToParent();
   }
 
@@ -664,15 +685,44 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
     syncToParent();
   }
 
-  // 정렬 토글 (같은 정렬 다시 클릭 시 왼쪽으로 복귀)
-  function execAlign(align: "left" | "center" | "right") {
-    if (toolbar.alignType === align && align !== "left") {
-      document.execCommand("justifyLeft", false);
-    } else {
-      const cmd = align === "left" ? "justifyLeft" : align === "center" ? "justifyCenter" : "justifyRight";
-      document.execCommand(cmd, false);
+  // 선택 범위 내 영향받는 블록 수집.
+  //  - collapsed selection: 커서가 있는 가장 가까운 블록 1개
+  //  - 다중 블록 선택: editor 직속 자식 중 range 와 교차하는 것들
+  function collectAffectedBlocks(range: Range): HTMLElement[] {
+    const editor = editorRef.current;
+    if (!editor) return [];
+    if (range.collapsed) {
+      const b = findParentBlock(range.startContainer);
+      return b ? [b] : [];
     }
-    editorRef.current?.focus();
+    const blocks: HTMLElement[] = [];
+    for (let i = 0; i < editor.children.length; i++) {
+      const child = editor.children[i] as HTMLElement;
+      if (range.intersectsNode(child)) blocks.push(child);
+    }
+    if (blocks.length > 0) return blocks;
+    const fallback = findParentBlock(range.startContainer);
+    return fallback ? [fallback] : [];
+  }
+
+  // 정렬을 직접 DOM 조작으로 적용한다.
+  // execCommand("justifyLeft") 는 Chromium 에서 좌측을 "기본값" 으로 간주해 인라인 스타일을 기록하지 않는 비대칭이 있어
+  // (center/right 만 스타일을 명시 기록 → 좌측 정렬이 저장 후 사라지는 사용자 보고로 이어짐),
+  // 세 정렬을 한 코드패스로 통일해 항상 style.textAlign 을 명시한다.
+  function execAlign(align: "left" | "center" | "right") {
+    const editor = editorRef.current;
+    if (!editor) return;
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) {
+      editor.focus();
+      return;
+    }
+    const range = selection.getRangeAt(0);
+    const blocks = collectAffectedBlocks(range);
+    for (const block of blocks) {
+      block.style.textAlign = align;
+    }
+    editor.focus();
     syncToParent();
   }
 
@@ -688,61 +738,65 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
+  // toolbar 버튼이 mousedown 으로 editor selection 을 빼앗는 것을 막는다.
+  // (mousedown 이 contenteditable 의 selection 을 무너뜨려 직후 execCommand/직접조작이 잘못된 위치에 적용되는 케이스 방지)
+  const preventEditorBlur = (e: React.MouseEvent) => e.preventDefault();
+
   return (
     <div className="border border-gray-300 rounded-sm overflow-hidden focus-within:border-blue-600 transition-colors">
       {/* Toolbar Row 1 */}
       <div className="flex flex-wrap items-center gap-0.5 px-2 pt-1.5 pb-1 bg-gray-50 border-b border-gray-100 text-xs">
-        <button type="button" onClick={() => execCommand("bold")} className={toolbar.isBold ? tbtnOn : tbtnOff} title="굵게">
+        <button type="button" onMouseDown={preventEditorBlur} onClick={() => execCommand("bold")} className={toolbar.isBold ? tbtnOn : tbtnOff} title="굵게">
           굵게
         </button>
-        <button type="button" onClick={() => execCommand("italic")} className={toolbar.isItalic ? tbtnOn : tbtnOff} title="기울임">
+        <button type="button" onMouseDown={preventEditorBlur} onClick={() => execCommand("italic")} className={toolbar.isItalic ? tbtnOn : tbtnOff} title="기울임">
           기울임
         </button>
         <div className="w-px h-5 bg-gray-300 mx-0.5" />
-        <button type="button" onClick={() => execFormatBlock("p")} className={toolbar.activeBlock === "p" ? tbtnOn : tbtnOff} title="본문 단락">
+        <button type="button" onMouseDown={preventEditorBlur} onClick={() => execFormatBlock("p")} className={toolbar.activeBlock === "p" ? tbtnOn : tbtnOff} title="본문 단락">
           본문
         </button>
-        <button type="button" onClick={() => execFormatBlock("h2")} className={toolbar.activeBlock === "h2" ? tbtnOn : tbtnOff} title="소제목">
+        <button type="button" onMouseDown={preventEditorBlur} onClick={() => execFormatBlock("h2")} className={toolbar.activeBlock === "h2" ? tbtnOn : tbtnOff} title="소제목">
           소제목
         </button>
-        <button type="button" onClick={() => execFormatBlock("h3")} className={toolbar.activeBlock === "h3" ? tbtnOn : tbtnOff} title="소제목2">
+        <button type="button" onMouseDown={preventEditorBlur} onClick={() => execFormatBlock("h3")} className={toolbar.activeBlock === "h3" ? tbtnOn : tbtnOff} title="소제목2">
           소제목2
         </button>
-        <button type="button" onClick={() => execCommand("bold")} className={toolbar.isBold ? tbtnOn : tbtnOff} title="질문 (굵은 텍스트)">
+        <button type="button" onMouseDown={preventEditorBlur} onClick={() => execCommand("bold")} className={toolbar.isBold ? tbtnOn : tbtnOff} title="질문 (굵은 텍스트)">
           질문
         </button>
         <div className="w-px h-5 bg-gray-300 mx-0.5" />
-        <button type="button" onClick={() => execCommand("insertUnorderedList")} className={toolbar.listType === "ul" ? tbtnOn : tbtnOff} title="목록">
+        <button type="button" onMouseDown={preventEditorBlur} onClick={() => execCommand("insertUnorderedList")} className={toolbar.listType === "ul" ? tbtnOn : tbtnOff} title="목록">
           목록
         </button>
-        <button type="button" onClick={() => execCommand("insertOrderedList")} className={toolbar.listType === "ol" ? tbtnOn : tbtnOff} title="번호목록">
+        <button type="button" onMouseDown={preventEditorBlur} onClick={() => execCommand("insertOrderedList")} className={toolbar.listType === "ol" ? tbtnOn : tbtnOff} title="번호목록">
           번호목록
         </button>
-        <button type="button" onClick={() => execFormatBlock("blockquote")} className={toolbar.activeBlock === "blockquote" ? tbtnOn : tbtnOff} title="인용구">
+        <button type="button" onMouseDown={preventEditorBlur} onClick={() => execFormatBlock("blockquote")} className={toolbar.activeBlock === "blockquote" ? tbtnOn : tbtnOff} title="인용구">
           인용
         </button>
       </div>
       {/* Toolbar Row 2 */}
       <div className="flex flex-wrap items-center gap-0.5 px-2 pb-1.5 pt-1 bg-gray-50 border-b border-gray-200 text-xs">
-        <button type="button" onClick={() => execAlign("left")} className={toolbar.alignType === "left" ? tbtnOn : tbtnOff} title="왼쪽 정렬">
+        <button type="button" onMouseDown={preventEditorBlur} onClick={() => execAlign("left")} className={toolbar.alignType === "left" ? tbtnOn : tbtnOff} title="왼쪽 정렬">
           왼쪽
         </button>
-        <button type="button" onClick={() => execAlign("center")} className={toolbar.alignType === "center" ? tbtnOn : tbtnOff} title="가운데 정렬">
+        <button type="button" onMouseDown={preventEditorBlur} onClick={() => execAlign("center")} className={toolbar.alignType === "center" ? tbtnOn : tbtnOff} title="가운데 정렬">
           가운데
         </button>
-        <button type="button" onClick={() => execAlign("right")} className={toolbar.alignType === "right" ? tbtnOn : tbtnOff} title="오른쪽 정렬">
+        <button type="button" onMouseDown={preventEditorBlur} onClick={() => execAlign("right")} className={toolbar.alignType === "right" ? tbtnOn : tbtnOff} title="오른쪽 정렬">
           오른쪽
         </button>
         <div className="w-px h-5 bg-gray-300 mx-0.5" />
-        <button type="button" onClick={handleImageButton} className={`${tbtnOff} flex items-center gap-1`} title="이미지 삽입">
+        <button type="button" onMouseDown={preventEditorBlur} onClick={handleImageButton} className={`${tbtnOff} flex items-center gap-1`} title="이미지 삽입">
           <ImageIcon size={14} />
           이미지
         </button>
-        <button type="button" onClick={handleVideoButton} className={`${tbtnOff} flex items-center gap-1`} title="동영상 삽입">
+        <button type="button" onMouseDown={preventEditorBlur} onClick={handleVideoButton} className={`${tbtnOff} flex items-center gap-1`} title="동영상 삽입">
           <Video size={14} />
           동영상
         </button>
-        <button type="button" onClick={insertTriangleMark} className={`${tbtnOff} flex items-center gap-1`} title="▲ 마크 삽입 (커서 위치, 해당 블록 가운데 정렬)">
+        <button type="button" onMouseDown={preventEditorBlur} onClick={insertTriangleMark} className={`${tbtnOff} flex items-center gap-1`} title="▲ 마크 삽입 (커서 위치, 해당 블록 가운데 정렬)">
           ▲
         </button>
         {uploading && (

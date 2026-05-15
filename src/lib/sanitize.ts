@@ -31,6 +31,22 @@ export function sanitizeContent(html: string): string {
       iframe: ["src", "style", "allow", "allowfullscreen"],
       div: ["style", "contenteditable"],
       span: ["style"],
+      // 블록 요소에도 style 허용 — text-align 등 정렬 인라인 스타일이 살아남아야
+      // 빠른편집/풀편집에서 적용한 정렬이 DB → 공개 렌더까지 보존된다.
+      // 허용 가능한 속성 값은 allowedStyles 의 화이트리스트로 별도 제한.
+      p: ["style"],
+      h1: ["style"],
+      h2: ["style"],
+      h3: ["style"],
+      h4: ["style"],
+      h5: ["style"],
+      h6: ["style"],
+      blockquote: ["style"],
+      ul: ["style"],
+      ol: ["style"],
+      li: ["style"],
+      figure: ["style"],
+      figcaption: ["style"],
       table: ["style", "border", "cellpadding", "cellspacing"],
       tr: ["style"],
       td: ["colspan", "rowspan", "style", "align", "valign"],

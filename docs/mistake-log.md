@@ -2,6 +2,17 @@
 
 기록 형식: 날짜 / 현상 / 원인 / 해결 / 교훈
 
+## 2026-05-15 — 빠른편집 "왼쪽 정렬 미반영" 진단에서 잘못된 root cause 가설 → 통합 테스트로 발견
+- 현상: 빠른편집 모달에서 기존 텍스트가 작성된 글을 열어 왼쪽 정렬 후 저장 시 변경이 반영되지 않는다는 사용자 보고
+- 1차 가설 (오류): Chromium `execCommand("justifyLeft")` 가 좌측에 대해 인라인 스타일을 안 쓰는 비대칭. `content-editor.tsx:execAlign` 의 결함이 주 원인이라고 단정. 보조 Plan 에이전트도 sanitize-html 의 `text-align` 정규식만 단위 검증 후 "통과한다"고 판단해 같은 가설을 강화
+- 실제 root cause (smoke 테스트로 발견): `src/lib/sanitize.ts` 의 `allowedAttributes` 에 `<p>`, `<h1-6>`, `<blockquote>`, `<li>`, `<ul>`, `<ol>`, `<figure>`, `<figcaption>` 가 누락되어 있어 **모든 블록 태그의 `style` 속성이 통째 제거**. `text-align` 정규식까지 도달하기 전에 attribute 단계에서 차단. `<div>`·`<span>` 만 명시되어 정렬이 살아남는 비대칭 → 사용자가 정렬을 적용해도 흔적이 없는 결과
+- 해결: (1) `sanitize.ts` allowedAttributes 에 위 8개 블록 태그에 `style` 추가 (값은 기존 `allowedStyles` 화이트리스트로 별도 제한 — 보안 영향 없음). (2) `content-editor.tsx` 의 `execAlign` 을 `execCommand("justifyLeft/Center/Right")` 의존 → `block.style.textAlign = align` 직접 설정으로 재구현 (Chromium 좌측 비대칭 회피). (3) `styleWithCSS=true` 마운트 시 강제. (4) `detectBlock` 에 `justify` 추가 + `getComputedStyle` 폴백. (5) toolbar 버튼 `onMouseDown={preventEditorBlur}` 로 selection 보존
+- 교훈:
+  - (1) **단위 검증(정규식 테스트)만 보고 root cause 결정 금지.** sanitize-html 은 attribute 단계와 style 값 단계가 별도 → 정규식이 맞아도 attribute 가 허용 안 되어 있으면 무관. 가설은 항상 **end-to-end 통합 테스트** 로 검증.
+  - (2) 보조 에이전트의 분석이 깔끔하게 정리돼 있을수록 한 번 더 의심할 것. 본 사례에서 Plan 에이전트는 "85% 확신 (a) Chromium 비대칭" 으로 정량 표현했지만 실제 정답은 그 분석 밖에 있었음.
+  - (3) `sanitize-html` 같은 화이트리스트 도구는 새 태그를 `allowedTags` 에 추가할 때 **`allowedAttributes` 에도 함께 추가**해야 한다는 규칙을 코드 리뷰 체크리스트로 둘 것. `<p>` 같은 너무 흔한 태그는 default 의 빈 attribute 목록을 그대로 쓰기 쉬워 함정.
+  - (4) 회귀 테스트 자동화 부재 → 본 PR 의 `/tmp/smoke-alignment.mjs` 가 잡았듯 PUT → GET → 공개 페이지 HTML 까지 한 번에 어설션하는 스모크가 향후 회귀 차단에 효과적. `scripts/smoke-*.mjs` 로 이전 권장.
+
 ## 2026-05-13 — 디자인 토큰 마이그레이션 후 hex 잔재 추가 발견 (`text-[#666]`, `border-[#E0E0E0]`)
 - 현상: hex → 토큰 마이그레이션을 27 파일에 일괄 적용한 직후 검증 단계에서 (a) `text-[#666]` 8 곳(`article-list.tsx` × 5, `highlights-carousel.tsx` × 3), (b) `border-[#E0E0E0]`/`bg-[#e0e0e0]` 11 곳(`footer.tsx`/`latest-articles.tsx`/`media-library.tsx`/`highlights-carousel.tsx`/`[slug]/page.tsx`/`exam/page.tsx`/`articles/page.tsx`) 잔재 검출. **장 검색이 `#1A1A1A`/`#666666`/`#1E64FA`/`#0E41AD` 4 개 long-form 만 대상으로 진행돼 3-char shorthand(`#666`) 와 동일 색이지만 다른 토큰명에 매핑되는 값(`#E0E0E0` = `border-light`) 이 누락**
 - 원인: 마이그레이션 grep 대상 hex 가 brand color 4 개 long-form 만 포함. `#666` (= `#666666` shorthand) 과 `--color-border-light` 정의 후 추가된 `#E0E0E0` 잔재가 인지되지 않음
