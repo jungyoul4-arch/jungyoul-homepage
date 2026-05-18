@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, uniqueIndex, index } from "drizzle-orm/sqlite-core";
 
 export const articles = sqliteTable("articles", {
   id: text("id").primaryKey(),
@@ -19,7 +19,11 @@ export const articles = sqliteTable("articles", {
   examSubject: text("exam_subject").default(""),
   createdAt: text("created_at").$defaultFn(() => new Date().toISOString()),
   updatedAt: text("updated_at").$defaultFn(() => new Date().toISOString()),
-});
+}, (t) => [
+  // /exam·기사 목록의 카테고리 필터 / 날짜 정렬 경로 — 데이터 증가 시 풀스캔 방지
+  index("articles_category_idx").on(t.category),
+  index("articles_date_idx").on(t.date),
+]);
 
 export const highlights = sqliteTable("highlights", {
   id: text("id").primaryKey(),
@@ -153,7 +157,11 @@ export const communityPosts = sqliteTable("community_posts", {
   commentCount: integer("comment_count").default(0),
   isDeleted: integer("is_deleted", { mode: "boolean" }).default(false),
   createdAt: text("created_at").$defaultFn(() => new Date().toISOString()),
-});
+}, (t) => [
+  // 작성자별 글 조회 / 피드 cursor 정렬(createdAt|id) 경로
+  index("community_posts_session_id_idx").on(t.sessionId),
+  index("community_posts_created_at_idx").on(t.createdAt),
+]);
 
 // 좋아요. (post, session) 유니크 — 토글 가능.
 export const communityPostLikes = sqliteTable(
@@ -176,4 +184,7 @@ export const communityComments = sqliteTable("community_comments", {
   body: text("body").notNull(),                                 // sanitize-html, ≤1000자
   isDeleted: integer("is_deleted", { mode: "boolean" }).default(false),
   createdAt: text("created_at").$defaultFn(() => new Date().toISOString()),
-});
+}, (t) => [
+  // 게시글 상세의 댓글 일괄 로드 경로
+  index("community_comments_post_id_idx").on(t.postId),
+]);
