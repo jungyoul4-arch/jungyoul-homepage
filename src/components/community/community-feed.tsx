@@ -18,6 +18,7 @@ export function CommunityFeed({ initial, initialTag }: Props) {
   const [cursor, setCursor] = useState<string | null>(initial.nextCursor);
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(initial.nextCursor === null);
+  const [failed, setFailed] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   // 태그 변경 시 리셋 (URL ?tag= 변경에 반응).
@@ -28,6 +29,7 @@ export function CommunityFeed({ initial, initialTag }: Props) {
     setItems([]);
     setCursor(null);
     setDone(false);
+    setFailed(false);
     const qs = new URLSearchParams();
     if (tag) qs.set("tag", tag);
     fetch(`/api/community/posts?${qs.toString()}`)
@@ -38,7 +40,11 @@ export function CommunityFeed({ initial, initialTag }: Props) {
         setCursor(data.nextCursor);
         setDone(data.nextCursor === null);
       })
-      .catch(() => {})
+      .catch((e) => {
+        if (cancelled) return;
+        console.error("커뮤니티 피드 로드 실패:", e);
+        setFailed(true);
+      })
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
@@ -89,7 +95,9 @@ export function CommunityFeed({ initial, initialTag }: Props) {
   if (items.length === 0 && !loading) {
     return (
       <div className="text-center text-community-muted py-12 text-sm">
-        아직 게시글이 없어요. 첫 글을 작성해 보세요.
+        {failed
+          ? "게시글을 불러오지 못했어요. 잠시 후 다시 시도해 주세요."
+          : "아직 게시글이 없어요. 첫 글을 작성해 보세요."}
       </div>
     );
   }

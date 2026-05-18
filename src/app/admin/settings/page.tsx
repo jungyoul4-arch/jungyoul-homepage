@@ -15,7 +15,10 @@ export default function AdminSettingsPage() {
       .then((data) => {
         setLogoUrl(data.logo_url ?? "");
       })
-      .catch(() => {})
+      .catch((e) => {
+        console.error("사이트 설정 로드 실패:", e);
+        setMessage("설정을 불러오지 못했습니다. 새로고침 해주세요.");
+      })
       .finally(() => setLoading(false));
   }, []);
 

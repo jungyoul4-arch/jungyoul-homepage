@@ -26,7 +26,9 @@ export function LikeButton({ postId, initialCount }: Props) {
         setLiked(data.liked);
         setCount(data.count);
       })
-      .catch(() => {});
+      .catch((e) => {
+        console.error("좋아요 상태 로드 실패:", e);
+      });
     return () => {
       cancelled = true;
     };

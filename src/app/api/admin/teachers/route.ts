@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
 import { teachers } from "@/db/schema";
 import { requireAdmin } from "@/lib/admin-auth";
-import { insertTeacherSchema, errorResponse } from "@/lib/validation";
+import { insertTeacherSchema, errorResponse, isUniqueConstraintError } from "@/lib/validation";
 import { generateSlug } from "@/lib/utils";
 
 export async function POST(request: NextRequest) {
@@ -23,6 +23,12 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ id }, { status: 201 });
   } catch (e) {
+    if (isUniqueConstraintError(e)) {
+      return NextResponse.json(
+        { error: "이미 사용 중인 슬러그입니다. 다른 슬러그를 입력하세요." },
+        { status: 409 }
+      );
+    }
     return errorResponse(e);
   }
 }
