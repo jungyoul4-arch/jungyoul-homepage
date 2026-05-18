@@ -76,5 +76,7 @@
 - 빠른편집 에디터(페이스트 파이프라인·HWPX·sanitize·썸네일 오버레이) → [`docs/editor.md`](docs/editor.md)
 - 사업자 정보(JSON-LD Organization·푸터·연락처) → [`docs/business-info.md`](docs/business-info.md)
 - 빌드/타입 에러 디버깅 회고 → [`docs/mistake-log.md`](docs/mistake-log.md)
+- 기술부채 인벤토리·우선순위 개선 로드맵 → [`docs/tech-debt.md`](docs/tech-debt.md)
+- 기술부채 P0·P1 개선 수행서(항목별 수정/테스트/디버깅 절차) → [`docs/tech-debt-plan.md`](docs/tech-debt-plan.md)
 - 워크트리간 큐 프로토콜(content ↔ UI) → [`docs/worktree-protocol.md`](docs/worktree-protocol.md)
 - 콘텐츠(원고) 작성 규칙·카테고리·frontmatter → [`AGENTS.md`](AGENTS.md)
