@@ -21,6 +21,12 @@
 		{
 			"binding": "IMAGES_BUCKET",
 			"bucket_name": "jungyoul-images"
+		},
+		{
+			// OpenNext ISR 증분 캐시 — open-next.config.ts 의 r2IncrementalCache 가 사용.
+			// 캐시 객체는 `incremental-cache/` 프리픽스로 격리되어 이미지 버킷 재사용이 안전.
+			"binding": "NEXT_INC_CACHE_R2_BUCKET",
+			"bucket_name": "jungyoul-images"
 		}
 	],
 	"ratelimits": [
