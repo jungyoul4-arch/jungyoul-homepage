@@ -6,8 +6,23 @@ on:
   workflow_dispatch:
 
 jobs:
+  verify:
+    name: Verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+
   deploy:
     name: Deploy
+    needs: verify
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
