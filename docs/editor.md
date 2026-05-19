@@ -21,6 +21,10 @@
 `handlePaste` 진입 시 `console.info("[paste]", { types, htmlLen, htmlSample, plainLen, plainSample, itemTypes, filesCount })` 출력. 다양한 클립보드 페이로드(특히 Mac 한컴오피스 한글 뷰어) 디버그용. 충분히 데이터 수집되면 별도 PR 로 제거.
 
 ### `normalizePastedHtml()` 정리 규칙
+
+> 모듈 경로: `src/lib/normalize-paste.ts`. 함수 본체와 13개 정리 패스를 pure module 로 분리해 두어 `ContentEditor` 외에도 단위 테스트·SSR 환경에서 import 가능.
+> 호출 시 `uploadDataUrl: (file: File) => Promise<string | null>` 콜백을 옵션으로 받음 — 미제공 시 data:URL 이미지는 placeholder span 으로 교체된다(테스트·SSR 안전).
+
 - 위험·잡 노드 통째 제거: `<script>, <style>, <meta>, <link>, <xml>, <title>`
 - `on*` inline event handler 및 `javascript:` URL 제거
 - Office/HWP namespace 태그(`<o:p>`, `<w:*>`, `<m:*>`, `<v:*>`) 처리:
@@ -30,8 +34,18 @@
 - **`<img src="file://...">` placeholder 교체** — Mac 한컴오피스 한글 뷰어 등 로컬 파일 참조 이미지는 브라우저가 못 가져오므로 `[원본 이미지 — 이미지 영역만 다시 클립보드에 복사해 별도로 붙여넣어 주세요]` 안내 span 으로 교체
 - **`<div>` → `<p>` 변환** — 블록 자식 없이 텍스트만 갖는 `<div>` 는 `<p>` 로 교체 (정렬 등 인라인 스타일은 보존). 한컴 한글 뷰어/일부 브라우저 페이스트가 본문 단락을 div 로 감싸는 경우 대응.
 - 클래스/스타일에서 `mso-*`, `Mso*`, `Hwp*`, `hancell*` 흔적 제거
-- 빈 `<p>` 제거 (자식이 미디어 없고 텍스트도 비어있을 때)
-- `data:` URL `<img>` → R2 업로드 후 영구 URL 로 src 치환. **업로드 실패 시 조용히 제거하지 않고** placeholder span(`[이미지 업로드 실패 — 다시 붙여넣어 주세요]`)으로 교체
+- **정렬 노이즈 정리** (`b7afcc0`): `<img>`/`<span>` 의 `text-align` 제거(replaced/inline 요소에 무의미), 모든 요소의 `text-align: justify` 제거(UI 에 버튼 없음 → 좌측 매핑)
+- **`flattenRedundantFigures`** (2026-05-19): 자식이 단일 `<figure>` 만 있는 `<figure>` 를 재귀 unwrap(최대 3회). outer figure 의 인라인 style 은 inner 로 병합. Notion 클립보드가 모든 블록을 `<figure><figure><figure>...</figure></figure></figure>` 로 감싸는 패턴 평탄화.
+- **`liftBodyFigcaptions`** (2026-05-19): `<figcaption>` 의 **직속 부모** `<figure>` 가 형제로 `<img>/<video>/<iframe>` 을 갖지 않으면 진짜 캡션이 아니라 본문 단락 — `<p>` 로 치환. Notion 본문이 `<figure><figcaption>본문…</figcaption></figure>` 로 들어오는 패턴 해소.
+- **`unwrapBodyFigures`** (2026-05-19): `<figure>` 가 직속 자식으로 `<img>/<video>/<iframe>` 을 갖지 않으면 본문 단락 wrapping figure 로 보고 unwrap. `.article-content figure { display: flex; align-items: center; padding-top: 32px }` CSS 가 본문에 적용돼 가운데 정렬·과한 간격으로 렌더되는 회귀 차단. `flattenRedundantFigures`(단일 자식) 이후에 다중 자식 figure 처리.
+- **`unwrapInlineWrappingBlocks`** (2026-05-19): `<b>/<strong>/<i>/<em>/<span>` 이 직접 자식으로 `<p>/<h1-h6>/<div>/<blockquote>` 를 가지면 인라인을 블록 안쪽으로 옮김 (`<b><p>X</p></b>` → `<p><b>X</b></p>`). invalid HTML 정상화.
+- **`stripNonAllowlistedInlineStyles`** (2026-05-19): 인라인 `style` 화이트리스트. 보존 규칙:
+  - `<table>/<td>/<th>`: `border/border-collapse/border-spacing/width/vertical-align` (표 구조)
+  - `<iframe>`, video embed wrapper `<div>` (padding-bottom 비율 + iframe 자식): 임베드 좌표용 `position/top/left/width/height/padding-bottom/overflow/border-radius/margin/border` (그리고 embed div 는 `text-align` 도)
+  - 그 외 모든 태그: `text-align: left|center|right` 만
+  - 제거 대상(예외 외): `font-size`, `font-weight`, `font-style`, `color`, `background-color`, `line-height`, `letter-spacing`, `text-decoration`, `text-indent`, `vertical-align`, `margin`, `padding`, `border`, `border-radius`, `width/height` 등 — Notion 의 `lab(...)` 색, `font-size:0.75rem`, `width:328px` 등이 모두 여기서 사라져 `.article-content` CSS(samsung-newsroom-feature-ui 실측값)로 폴스루.
+- **빈 블록 제거 확장**: `<p>` 외 `<figcaption>` 도 대상. 텍스트 0 + 미디어 0 (br 만 있어도) 제거.
+- `data:` URL `<img>` → 업로드 콜백으로 R2 영구 URL 치환. **업로드 실패 시 조용히 제거하지 않고** placeholder span(`[이미지 업로드 실패 — 다시 붙여넣어 주세요]`)으로 교체
 
 ### `insertHtmlAtCursor()` 블록 안전 삽입
 - 삽입 fragment 가 `<table>/<figure>/<ul>/<ol>/<blockquote>/<h1-4>` 같은 블록 미디어를 포함하고 커서가 빈 `<p><br></p>` 안에 있으면 → 그 빈 `<p>` 를 fragment 로 통째 교체. 브라우저가 `<p>` 안 `<table>` 을 자동 변형하면서 셀/행이 누락되는 문제 방지.
@@ -67,9 +81,14 @@
 ### 서버 sanitize
 `src/lib/sanitize.ts` `sanitizeContent()` 가 `/api/admin/articles` POST/PUT 에서 본문에 적용. 공개 페이지 렌더(`dangerouslySetInnerHTML`)에서도 한 번 더 적용(이중 sanitize, idempotent). 화이트리스트:
 - 태그: 표 계열(`table/thead/tbody/tfoot/tr/th/td/caption/col/colgroup`) + 멀티미디어(`img/iframe/figure/figcaption/video`) 등
-- 속성: 정렬 등 인라인 스타일 보존을 위해 블록 태그(`p/h1-h6/blockquote/ul/ol/li/figure/figcaption`)와 인라인 컨테이너(`div/span`)에 `style` 허용. **단, 값은 `allowedStyles` 화이트리스트로 한정**(text-align 은 `left|center|right|justify` 만).
+- 속성: 정렬 등 인라인 스타일 보존을 위해 블록 태그(`p/h1-h6/blockquote/ul/ol/li/figure/figcaption`)와 인라인 컨테이너(`div/span`)에 `style` 허용. **단, 값은 `allowedStyles` 화이트리스트로 한정**.
 - iframe 허용 호스트: `www.youtube.com`, `player.vimeo.com`
 - 스타일: 정규식 화이트리스트 — `expression()`, `url(javascript:)` 등 거부
+
+**`allowedStyles` 정책** (2026-05-19 축소 — 클라이언트 `stripNonAllowlistedInlineStyles` 와 동일 정책의 서버측 백스톱):
+- `*` 키: `text-align: left|center|right` 만. `font-size/color/background-color/font-weight/font-style/border` 등은 보존하지 않는다(인라인 의도가 정상 작성 흐름에서 만들어질 수 없으며, 외부 페이스트는 paste 단계에서 1차 제거됨). `.article-content` CSS(samsung-newsroom-feature-ui 실측값)로 폴스루.
+- `iframe`, `div` (video embed wrapper) 별도 키: 임베드 좌표 declaration 보존 (`buildEmbedHtml()` 출력 라운드트립).
+- `table/td/th` 별도 키: 표 구조용 `border/border-collapse/border-spacing/width/vertical-align`.
 
 > ⚠️ **새 태그를 `allowedTags` 에 추가할 때 `allowedAttributes` 에 `style` 등 필요한 속성을 함께 등록**하지 않으면 attribute 단계에서 통째로 제거되어 `allowedStyles` 의 값 검사까지 도달하지 못한다. 정렬 비반영 사고(2026-05-15 mistake-log) 가 이 함정에서 발생.
 

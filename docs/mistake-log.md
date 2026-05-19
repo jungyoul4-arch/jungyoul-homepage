@@ -2,6 +2,27 @@
 
 기록 형식: 날짜 / 현상 / 원인 / 해결 / 교훈
 
+## 2026-05-19 — Notion 페이스트 시맨틱 청소 (2026-05-15 figure-wrapping 후속)
+- 현상: 동일 기사 `news.jung-youl.com/articles/[…]-d3a6632e` 의 본문이 정렬 fix 이후에도 시각적으로 어색함. 실측(`curl --globoff` 으로 받은 6,828 bytes 본문) 결과: (a) `<span style="font-size:0.75rem">` 토막이 한 문단을 본문크기·캡션크기로 분할, (b) `<img style="border:0px solid lab(90.952003 0 -0.000012);…width:328px">` 의 Notion 클립보드 시그니처 인라인 스타일, (c) 3중 중첩 `<figure>` + 본문 텍스트가 `<figcaption>` 안에 들어가 `.article-content figcaption` 의 작은 회색 톤이 본문에 적용됨, (d) `<b><p><b>▣ ...</b></p></b>` invalid HTML, (e) 빈 `<p>/<p><br></p>` 무더기로 단락 간격 불규칙
+- 원인: 2026-05-15 PR(`7fdd4e6`/`b7afcc0`) 이 정렬(text-align) 회로만 fix 했고, 회고 교훈(3) 이 명시적으로 "**`<figure>` 가 단락 컨테이너로 들어오는 외부 페이스트 패턴은 sanitize 가 화이트리스트만 통과시키므로 그대로 살아남는다. 시맨틱 청소는 페이스트 단계(`normalizePastedHtml`) 에서 잡는 게 안전**" 으로 후속을 예고. `normalizePastedHtml` 는 mso/Hwp/`<img>·<span>` 의 text-align/justify 까지만 청소했고, 일반 인라인 폰트·색·크기, 중첩 figure, 본문성 figcaption, 블록-인-인라인 invalid HTML 은 그대로 통과. 또 `sanitize.ts` `allowedStyles` 는 `font-size: /^\d+/` 로 `0.75rem` 의 선두 `0` 만 매치해 통과시키고, `border` 정규식이 끝앵커 없어 `0px solid lab(...)` 뒤를 그대로 통과시킴
+- 해결:
+  - 페이스트 정리 파이프라인을 `src/lib/normalize-paste.ts` pure module 로 분리. 기존 8개 패스에 4개 시맨틱 청소 패스 추가:
+    - `flattenRedundantFigures` — 자식이 단일 `<figure>` 만 있는 `<figure>` 를 재귀 unwrap (최대 3회). outer figure 의 인라인 style 은 inner 로 병합 후 외곽 제거
+    - `liftBodyFigcaptions` — `<figcaption>` 의 직속 부모 `<figure>` 에 형제 `<img>/<video>/<iframe>` 없으면 `<p>` 로 치환 (진짜 캡션만 보존)
+    - `unwrapBodyFigures` — `<figure>` 가 직속 자식으로 미디어 (img/video/iframe) 미보유 시 unwrap. `.article-content figure { display: flex; align-items: center; padding-top: 32px }` 가 본문 단락에 적용돼 가운데 정렬·과한 간격으로 렌더되는 회귀 차단. 다중 자식 body figure 처리 (`flattenRedundantFigures` 의 단일 자식 룰 사각지대)
+    - `unwrapInlineWrappingBlocks` — `<b>/<strong>/<i>/<em>/<span>` 이 블록 직접 자식을 가지면 인라인을 블록 안쪽으로 옮김 (`<b><p>X</p></b>` → `<p><b>X</b></p>`)
+    - `stripNonAllowlistedInlineStyles` — 인라인 style 화이트리스트. `*` 는 `text-align: left|center|right` 만, `table/td/th` 는 표 구조용 declaration 만, `iframe` 와 embed wrapper `<div>` 는 임베드 좌표 declaration 만. 그 외 (`font-size`/`color`/`background-color`/`font-weight`/`font-style`/`border` 등) 모두 제거 → `.article-content` CSS(samsung-newsroom-feature-ui 실측값)로 폴스루
+  - 빈 블록 제거 확장: `<p>` 외 `<figcaption>` 도, `<br>` 만 있어도 제거
+  - `sanitize.ts` `allowedStyles` 도 동일 정책으로 축소 — `*` 키는 `text-align: left|center|right` 만, `table/td/th/iframe/div` 별도 키로 좁게 허용. 클라이언트 1차 청소 + 서버 백스톱 이중화
+  - 검증: 신규 `src/lib/__tests__/normalize-paste.test.ts` (5 케이스 — Notion fixture, 사진+캡션, Google Docs 표, YouTube 임베드 라운드트립, HWPX) + 기존 `sanitize.test.ts` 4 케이스 추가 + `scripts/smoke-paste-cleanup.mjs` (PUT → GET → 공개 페이지 어설션, mistake-log 교훈(4) 권장 패턴)
+- 교훈:
+  - (1) **회고 교훈(3) 같은 "후속 작업" 표시는 같은 도메인의 다음 PR 에서 반드시 처리한다는 단일 출처가 되어야 함**. 본 사례에서 2026-05-15 PR 이 명시한 deferred 항목이 4일 뒤 동일 기사로 재발견됐고, 회고를 보지 않고 진단을 다시 처음부터 했다면 같은 분석을 중복 수행했을 것
+  - (2) **paste 단계와 서버 sanitize 의 정책은 한 SSOT 로 묶어야 회귀가 없다**. 본 PR 은 클라이언트 `stripNonAllowlistedInlineStyles` 와 서버 `allowedStyles` 가 동일 규칙(text-align 만 + table/iframe/embed 예외)을 갖도록 동시 변경. 한쪽만 좁히면 우회 경로(API 직접 호출 등)에서 회귀
+  - (3) **외부 페이스트가 인라인 폰트/크기/색을 강제하는 패턴은 화이트리스트로 폴스루를 보장하는 방향이 안전**. 본 프로젝트는 `.article-content` CSS 가 이미 *삼성 뉴스룸 기획기사 UI 레퍼런스 기반 실측값* 으로 정의돼 있어, 인라인 스타일만 제거하면 자동으로 하우스 톤으로 재설정됨. 페이스트 출처에 따라 다른 정리 로직을 분기하는 대신 "보존할 것만 화이트리스트" 일원화가 단순·안정
+  - (4) **정규식 화이트리스트는 끝앵커(`$`)와 단위 정확성을 반드시 검증**. 기존 `font-size: /^\d+/` 가 `0.75rem` 을 통과시킨 패턴은 정규식 표면만 보고 "숫자만 통과" 라고 오인할 위험. mistake-log 2026-05-15 교훈(1) "단위 검증만 보고 root cause 결정 금지" 의 변형 — 단위 검증의 정규식 자체가 의도와 다르게 동작할 수 있음
+  - (5) **HTML 태그 매칭 정규식은 word boundary (`\b`) 필수**. 본 PR 디버그 단계에서 `/<b[^>]*>\s*<p/i` 어설션이 `<br>\n<p>` 를 false-match. 이유: `[^>]` 가 `r` 을 받아들여 `<b` + `r` + `>` 가 매치. 수정 후 `/<b\b[^>]*>\s*<p/i` 로 word boundary 추가. 단순 `<tag` prefix 매칭은 `<tag2>` 같은 별개 태그까지 잡아내므로 항상 `\b` 또는 `(?=[\s>])` lookahead 로 종결을 보장
+  - (6) **`<figure>` 시맨틱 청소는 단일 자식·다중 자식 두 경로를 모두 잡아야 함**. v1 의 `flattenRedundantFigures` 만으로는 Notion 의 본문 단락 wrapping figure (다중 figure 자식) 가 살아남아 `.article-content figure` CSS 의 flex-center 가 본문에 적용. **실제 6,828 bytes 본문 통과 디버그 단계**에서 발견 — vitest 합성 fixture 만 봤다면 놓쳤을 가능성. 운영 데이터로의 end-to-end 디버그는 합성 테스트의 사각지대를 드러낸다 (mistake-log 2026-05-15 교훈(4) 의 강화 사례)
+
 ## 2026-05-15 — 빠른편집 "왼쪽 정렬 미반영" 후속: 외부 페이스트 figure 단락 + walk-up 검출의 조상 덮어쓰기
 - 현상: sanitize.ts allowedAttributes 수정 후에도, 외부 에디터(HWP/Word/CKEditor 류)로 작성된 본문을 빠른편집으로 다시 열면 **툴바 정렬 버튼이 활성화되지 않거나 클릭해도 활성 상태가 바뀌지 않는** 케이스가 남아 있음. 실측 대상: `news.jung-youl.com/articles/[…]-d3a6632e`
 - 분석: 해당 게시글 본문이 `<figure style="text-align:right"><figure><figure>텍스트</figure></figure></figure>` 처럼 **`<figure>` 가 단락 컨테이너로 다중 중첩**되어 있고 `text-align` 은 최외곽에만 박혀 있음. 그 외 `<img style="text-align:left">`, `<span style="text-align:center">` 같은 무의미한 inline 정렬 노이즈도 다수
