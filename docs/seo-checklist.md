@@ -35,8 +35,9 @@
 - sanitize 화이트리스트 확장 시 정규식으로 값 제한 — [`editor.md`](editor.md) 참조
 
 ## 자산 규격
-- OG 이미지: `/public/og-image.png` (1200×630)
-- 로고: `/public/logo.png` (최소 112×112)
+- OG 이미지: `/public/og-image.png` — 실재 (1200×630, 흰 배경)
+- 로고: `/public/logo.png` — 실재 (512×512, 투명 배경, JSON-LD `logo` 최소 112×112 요건 충족). `SiteLogo` 의 `JYFallback` 마크를 정적 자산화한 것
+- **`.gitignore` 함정**: 루트 `.gitignore` 의 `*.png` ("screenshots & logs" 목적 전역 무시) 바로 다음에 `!/public/**/*.png` 예외가 있어야 `public/` 정적 PNG 가 git 추적·Cloudflare Pages 배포 대상이 된다. `public/` 에 PNG 자산을 새로 추가했는데 `git status` 에 안 잡히면 이 예외 규칙부터 확인할 것
 
 ## 도메인 일관성 (주의)
 현재 `src/app/layout.tsx` 의 `metadataBase`/`alternates`/`openGraph.url` 과 EducationalOrganization JSON-LD 의 `url`/`logo` 가 `https://news.jung-youl.com` 으로, sitemap/robots/개별 페이지 JSON-LD 는 `https://www.jungyoul.net` 으로 분기되어 있다. 도메인 통일은 별도 작업 — 새 페이지 추가 시 기존 페이지가 사용하는 도메인을 그대로 따를 것 (대부분 `https://www.jungyoul.net`).

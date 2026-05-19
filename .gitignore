@@ -39,6 +39,8 @@ yarn-error.log*
 
 # screenshots & logs
 *.png
+# 단, public/ 정적 자산 PNG(og-image·logo 등)는 배포 대상이므로 추적
+!/public/**/*.png
 SESSION_LOG.md
 report.md
 .playwright-mcp/
