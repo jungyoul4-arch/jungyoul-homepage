@@ -5,6 +5,7 @@ import { requireAdmin } from "@/lib/admin-auth";
 import { insertArticleSchema, errorResponse, isUniqueConstraintError } from "@/lib/validation";
 import { generateSlug } from "@/lib/utils";
 import { sanitizeContent } from "@/lib/sanitize";
+import { normalizeArticleHtml } from "@/lib/normalize-server";
 
 export async function POST(request: NextRequest) {
   const authError = await requireAdmin(request);
@@ -13,7 +14,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const parsed = insertArticleSchema.parse(body);
-    if (parsed.content) parsed.content = sanitizeContent(parsed.content);
+    if (parsed.content) parsed.content = sanitizeContent(normalizeArticleHtml(parsed.content));
     if (!parsed.slug) parsed.slug = generateSlug(parsed.title);
     const db = await getDb();
     const id = crypto.randomUUID();

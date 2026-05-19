@@ -109,11 +109,11 @@ async function createArticle() {
       title: "스모크 페이스트 청소 테스트",
       slug: TEST_SLUG,
       content: DAMAGED_BODY,
-      summary: "smoke",
+      excerpt: "smoke 요약",
       category: "news",
-      subject: "수학",
+      categoryLabel: "뉴스",
+      date: "2026/05/19",
       author: "smoke-bot",
-      published: 1,
     }),
   });
   if (!res.ok) {

@@ -246,8 +246,31 @@ export function unwrapBodyFigures(doc: Document): void {
  * 10. 본문성 <figcaption> 을 <p> 로 lift.
  * 진짜 캡션의 조건: figcaption 의 **직속 부모** <figure> 가 **직속 자식**으로 <img>/<video>/<iframe> 을 갖는 경우.
  * (descendant 까지 보면 중첩 figure 안의 미디어가 외곽 figcaption 을 살려두는 회귀가 생긴다 — Notion paste 시그니처.)
- * 그 외 — 부모가 figure 가 아니거나, 형제 미디어가 없는 figcaption — 모두 본문 단락으로 보고 <p> 로 치환.
+ * 그 외 — 부모가 figure 가 아니거나, 형제 미디어가 없는 figcaption — 모두 본문 단락으로 본다.
+ *
+ * 자식 구성에 따라 두 가지 처리:
+ *   - 인라인 자식만(텍스트·span·b·br 등): <p> 로 wrap 한 뒤 figcaption 자리에 교체.
+ *   - 블록 자식(<p>/<h1-6>/<div>/<blockquote>/<figure>/<ul>/<ol>/<li>/<table>) 포함: 그냥 unwrap
+ *     (자식을 부모로 끌어올림). 블록을 <p> 로 감싸면 <p><p>X</p></p> 같은 invalid HTML 이 생성되어
+ *     브라우저 재파싱 시 nesting 이 무너진다. inline style (text-align 등) 은 자식들에게 분배.
  */
+const FIGCAPTION_BLOCK_CHILD_TAGS = new Set([
+  "p",
+  "h1",
+  "h2",
+  "h3",
+  "h4",
+  "h5",
+  "h6",
+  "div",
+  "blockquote",
+  "figure",
+  "ul",
+  "ol",
+  "li",
+  "table",
+]);
+
 export function liftBodyFigcaptions(doc: Document): void {
   Array.from(doc.querySelectorAll("figcaption")).forEach((cap) => {
     const parent = cap.parentElement;
@@ -257,6 +280,21 @@ export function liftBodyFigcaptions(doc: Document): void {
         return t === "img" || t === "video" || t === "iframe";
       });
       if (hasSiblingMedia) return; // 진짜 캡션 보존
+    }
+    const hasBlockChild = Array.from(cap.children).some((c) =>
+      FIGCAPTION_BLOCK_CHILD_TAGS.has(c.tagName.toLowerCase()),
+    );
+    if (hasBlockChild) {
+      // 블록 자식 보유 — unwrap. text-align style 은 자식에게 전달.
+      const capStyle = cap.getAttribute("style");
+      if (capStyle) {
+        Array.from(cap.children).forEach((child) => {
+          const childStyle = child.getAttribute("style") || "";
+          child.setAttribute("style", childStyle ? `${capStyle}; ${childStyle}` : capStyle);
+        });
+      }
+      unwrap(cap);
+      return;
     }
     const p = doc.createElement("p");
     while (cap.firstChild) p.appendChild(cap.firstChild);

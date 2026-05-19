@@ -12,6 +12,7 @@ import { ChevronRight } from "lucide-react";
 import { AdminEditButton } from "@/components/admin-edit-button";
 import { isValidThumbnail } from "@/lib/thumbnail";
 import { sanitizeContent } from "@/lib/sanitize";
+import { normalizeArticleHtml } from "@/lib/normalize-server";
 import { placeholderGradient } from "@/lib/utils";
 import { renderJsonLd } from "@/lib/json-ld";
 
@@ -185,7 +186,7 @@ export default async function ArticlePage({ params }: Props) {
 
         <div className="article-content mb-16">
           {article.content ? (
-            <div dangerouslySetInnerHTML={{ __html: sanitizeContent(article.content) }} />
+            <div dangerouslySetInnerHTML={{ __html: sanitizeContent(normalizeArticleHtml(article.content)) }} />
           ) : (
             <>
               <p>{article.excerpt}</p>

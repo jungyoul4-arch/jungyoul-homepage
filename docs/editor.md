@@ -94,6 +94,23 @@
 
 화이트리스트 추가 시 반드시 정규식으로 값을 좁힐 것 (e.g. `border-style: [/^(solid|dashed|dotted|double|none)$/]`).
 
+### 서버 normalize (구조 청소)
+`src/lib/normalize-server.ts` `normalizeArticleHtml()` 가 sanitize **앞에** 적용된다 — 어드민 저장(`/api/admin/articles` POST/PUT) 과 공개 페이지 렌더(`(main)/articles/[slug]/page.tsx`) 양쪽 모두.
+
+**왜 sanitize 만으로 부족한가**: `sanitizeContent` 는 인라인 style/속성 화이트리스트만 적용한다. figure/figcaption 의 **구조** 청소(중첩 평탄화, 본문성 figcaption → p lift, 미디어 없는 figure unwrap) 는 하지 않는다. 따라서 2026-05-19 paste cleanup(`baa3c6d`) 이전에 저장된 기사 본문은 어드민 재저장으로도 깨끗해지지 않고, 다음 패턴이 D1 에 굳어 있다 → `.article-content figcaption { text-align: center }` 와 `.article-content figure { display: flex; align-items: center }` CSS 가 적용되어 본문이 가운데 정렬로 렌더 (실측 — d3a6632e).
+
+`normalizeArticleHtml` 은 `normalize-paste.ts` 의 7 개 헬퍼(`cleanTextAlignNoise` · `flattenRedundantFigures` · `liftBodyFigcaptions` · `unwrapBodyFigures` · `unwrapInlineWrappingBlocks` · `stripNonAllowlistedInlineStyles` · `removeEmptyBlocks`)를 linkedom 으로 만든 서버 Document 에 동일 순서로 재실행한다.
+
+**핵심 효과 (idempotent)**:
+- 어드민 저장 경로: paste 우회(직접 API 호출 등) 로 들어오는 손상 본문도 동일 정책으로 정리되어 DB 에 깨끗하게 저장.
+- 공개 렌더 경로: 패치 이전에 저장된 기사도 다음 페이지뷰부터 자동 치유. DB 는 손대지 않음.
+
+**linkedom 선택 이유**: Cloudflare Workers 호환, 95KB. `nodejs_compat` 플래그 활성 환경에서 동작 검증. `normalize-paste.ts` 의 헬퍼들이 `(doc: Document): void` 순수 함수라 별도 포트(port) 없이 그대로 재사용. linkedom `Node` 클래스를 `globalThis.Node` 로 주입해 `unwrapInlineWrappingBlocks` 가 참조하는 `Node.ELEMENT_NODE`/`Node.TEXT_NODE` 상수가 동작하도록 한다.
+
+**liftBodyFigcaptions 의 블록 자식 처리** (2026-05-19 추가분): figcaption 이 자식으로 `<p>/<h1-6>/<div>/<blockquote>/<figure>/<ul>/<ol>/<li>/<table>` 을 가지면 `<p>` 로 wrap 하지 않고 unwrap 한다. wrap 하면 `<p><p>X</p></p>` invalid HTML 이 생성되어 브라우저 재파싱 시 nesting 이 무너지고 idempotent 가 깨진다. inline `style`(text-align) 은 자식들에게 분배.
+
+**테스트**: `src/lib/__tests__/normalize-server.test.ts` 가 라이브 d3a6632e raw HTML 을 fixture (`fixtures/article-d3a6632e-rendered.html`) 로 두고 검증. `scripts/smoke-paste-cleanup.mjs` 는 POST→GET→공개페이지 라운드트립을 wrangler dev 에서 실측 (POST 경로 normalize 검증).
+
 ## 썸네일 편집기
 
 ### `ThumbnailUploader`
