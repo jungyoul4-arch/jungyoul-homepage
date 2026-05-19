@@ -8,7 +8,7 @@
 
 ## 항상 적용 (보안 필수)
 - JSON-LD 출력 시 `.replace(/</g, "\\u003c")` XSS escape — 누락 금지 (location 페이지에서 누락된 적 있음, mistake-log 2026-05-11)
-- 어드민 API는 `requireAdmin()` (`src/lib/auth.ts`) 게이트 통과
+- 어드민 API는 `requireAdmin()` (`src/lib/admin-auth.ts`) 게이트 통과
 - 사용자 입력 콘텐츠는 `sanitize-html` 통과 후 저장
 
 ## 라우팅 모델

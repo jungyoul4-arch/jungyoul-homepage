@@ -51,7 +51,7 @@ graphify-out/             코드 그래프 (탐색 우선 자료)
 
 ## 보안 룰 (항상 적용)
 - **JSON-LD XSS escape**: 모든 `<script type="application/ld+json">` 출력은 `JSON.stringify(...).replace(/</g, "\\u003c")` 적용 필수
-- **어드민 인증**: `/api/admin/**` route handler 는 `requireAdmin()` (`src/lib/auth.ts`) 첫 줄 게이트. `/admin/*` 페이지는 `src/middleware.ts` 가 JWT 검증
+- **어드민 인증**: `/api/admin/**` route handler 는 `requireAdmin()` (`src/lib/admin-auth.ts`) 첫 줄 게이트. `/admin/*` 페이지는 `src/middleware.ts` 가 JWT 검증
 - **HTML sanitize**: 사용자 입력 본문은 저장 시 `sanitizeContent()` (`src/lib/sanitize.ts`) 통과. iframe 허용 호스트는 YouTube/Vimeo 만
 - 자세한 SEO·보안 룰 → [`docs/seo-checklist.md`](docs/seo-checklist.md)
 

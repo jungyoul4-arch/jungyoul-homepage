@@ -26,7 +26,7 @@
 - `nav_menus` 에서 `parent_id IS NULL AND href = "/{slug}"` 행을 찾으면, 자식 행들을 `sortOrder asc` 로 가져와 HeroBanner + H1 + NavTabs + JSON-LD CollectionPage 를 자동 렌더
 - 명시 라우트(`/articles`, `/exam`, `/teachers`, `/faq`, `/about`, `/contact`, `/location`, `/privacy`, `/terms`, `/highlights/*`, `/admin/*`, `/api/*`)는 Next.js 우선순위에 의해 catch-all 보다 먼저 매칭 → 충돌 없음
 - 부모 행이 없으면 `notFound()` — 정상 404
-- 로컬 dev/fresh-seed 폴백: catch-all 안의 `FALLBACK_PARENTS` 에 "정율사관" 부모만 inline 등록되어 있어, DB 가 비어도 `/jungyoul` 은 폴백으로 동작 (단일 소스 통합은 별도 작업 — `src/lib/default-nav.ts` 도입 계획)
+- 로컬 dev/fresh-seed 폴백: catch-all 은 `src/lib/default-nav.ts` 의 `getDefaultParentBySlug(slug)` 를 호출한다. `DEFAULT_NAV`(교육정보·정율사관·선생님·FAQ·상담신청) 가 단일 소스이며 헤더(`header.tsx`/`header-server.tsx`)·sitemap(`sitemap.ts`)·`articles/page.tsx` 와 동일 폴백을 공유 → DB 가 비어도 `/jungyoul` 등 부모 라우트가 폴백으로 동작
 
 ## 새 카테고리 추가 절차
 
