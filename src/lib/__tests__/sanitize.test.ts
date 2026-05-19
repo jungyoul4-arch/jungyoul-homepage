@@ -52,4 +52,52 @@ describe("sanitizeContent", () => {
     expect(result).toContain("<h3>");
     expect(result).toContain("<h4>");
   });
+
+  // ── 2026-05-19 추가: Notion 페이스트 잔여 인라인 스타일 백스톱 ──
+
+  it("strips font-size from spans (Notion 0.75rem 토막)", () => {
+    const result = sanitizeContent('<p><span style="font-size:0.75rem">x</span></p>');
+    expect(result).not.toMatch(/font-size/);
+  });
+
+  it("strips Notion lab() color via border shorthand on img", () => {
+    const result = sanitizeContent(
+      '<img src="/x.png" style="border:0px solid lab(90.952003 0 -0.000012);width:328px"/>',
+    );
+    // 이전 정규식 함정: 'border: /^[\\d.]+(px|em|rem)?\\s+(solid|...)/' 가 끝앵커 없어 통과시켰음.
+    // 새 정책은 img 에 inline style 자체를 허용 안함.
+    expect(result).not.toContain("lab(");
+    expect(result).not.toMatch(/width:328px/);
+    expect(result).toContain('src="/x.png"');
+  });
+
+  it("preserves text-align center on p", () => {
+    const result = sanitizeContent('<p style="text-align:center">x</p>');
+    expect(result).toContain("text-align:center");
+  });
+
+  it("preserves embed iframe coordinates (buildEmbedHtml output round-trip)", () => {
+    // buildEmbedHtml 출력 형태 — embed wrapper <div> 의 좌표 declaration 보존.
+    const html =
+      '<div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;margin:0;border-radius:0;">' +
+      '<iframe src="https://www.youtube.com/embed/abc12345678" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;"></iframe>' +
+      "</div>";
+    const result = sanitizeContent(html);
+    expect(result).toContain("padding-bottom:56.25%");
+    expect(result).toContain("youtube.com/embed/abc12345678");
+  });
+
+  it("strips justify text-align (UI 에 양쪽 정렬 버튼 없음)", () => {
+    const result = sanitizeContent('<p style="text-align:justify">x</p>');
+    expect(result).not.toMatch(/text-align:\s*justify/);
+  });
+
+  it("strips color and background-color (Notion 테마 누수 방지)", () => {
+    const result = sanitizeContent(
+      '<p style="color:rgb(102, 102, 102);background-color:rgb(255, 255, 255);font-weight:500">x</p>',
+    );
+    expect(result).not.toMatch(/color\s*:/);
+    expect(result).not.toMatch(/background-color/);
+    expect(result).not.toMatch(/font-weight/);
+  });
 });
