@@ -2,6 +2,7 @@
 
 import { useRef, useState, useCallback, useEffect } from "react";
 import { ImageIcon, Video } from "lucide-react";
+import { normalizePastedHtml } from "@/lib/normalize-paste";
 
 interface ContentEditorProps {
   value: string;
@@ -32,20 +33,6 @@ function parseVideoUrl(text: string): VideoEmbed | null {
   if (vimeoMatch) return { platform: "vimeo", id: vimeoMatch[1] };
 
   return null;
-}
-
-// base64 data URL → File 변환. 붙여넣은 HTML 의 inline 이미지를 업로드하기 위해 사용.
-function dataUrlToFile(dataUrl: string, name: string): File {
-  const commaIdx = dataUrl.indexOf(",");
-  const header = dataUrl.slice(0, commaIdx);
-  const b64 = dataUrl.slice(commaIdx + 1);
-  const mime = /data:([^;]+);base64/.exec(header)?.[1] ?? "image/png";
-  const bin = atob(b64);
-  const bytes = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-  const ext = (mime.split("/")[1] || "png").replace(/\+.*$/, "");
-  const safeName = (name || "image").replace(/[^\w.-]/g, "_");
-  return new File([bytes], `${safeName}.${ext}`, { type: mime });
 }
 
 function buildEmbedHtml(embed: VideoEmbed): string {
@@ -331,186 +318,6 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
     }
   }
 
-  // 붙여넣은 HTML 정규화 + data:URL 이미지 R2 업로드.
-  //  - HWP/한컴오피스/MS Word 잡 마크업 정리 (Office namespace 태그 unwrap, mso-* 제거 등)
-  //  - 표(<table>...) 구조 보존
-  //  - data:URL 이미지는 R2 업로드 후 영구 URL 로 치환 → 서버 sanitize 의 data:URL 스트립
-  //    이후에도 이미지가 살아남는다.
-  async function normalizePastedHtml(html: string): Promise<string> {
-    const doc = new DOMParser().parseFromString(html, "text/html");
-
-    // 위험·잡 노드 통째 제거
-    doc
-      .querySelectorAll("script, style, meta, link, xml, title")
-      .forEach((n) => n.remove());
-
-    // inline event handler / javascript: URL 제거 (XSS 방어)
-    doc.querySelectorAll("*").forEach((el) => {
-      for (const attr of Array.from(el.attributes)) {
-        const name = attr.name;
-        if (name.startsWith("on")) {
-          el.removeAttribute(name);
-          continue;
-        }
-        if (
-          (name === "href" || name === "src") &&
-          /^\s*javascript:/i.test(attr.value)
-        ) {
-          el.removeAttribute(name);
-        }
-      }
-    });
-
-    // Office/HWP namespace 태그 unwrap — 텍스트 보존, 컨테이너만 제거.
-    // 단, <v:imagedata src=...> 같이 이미지 src 를 들고 있는 노드는 <img> 로 승격해
-    // 후속 data:URL 업로드 파이프라인에 태운다.
-    function unwrap(el: Element) {
-      const parent = el.parentNode;
-      if (!parent) return;
-      while (el.firstChild) parent.insertBefore(el.firstChild, el);
-      parent.removeChild(el);
-    }
-    Array.from(doc.querySelectorAll("*")).forEach((el) => {
-      const tag = el.tagName.toLowerCase();
-      if (!(tag.includes(":") && /^(o|w|m|v):/.test(tag))) return;
-      const src =
-        el.getAttribute("src") ||
-        el.getAttribute("href") ||
-        // v:imagedata 는 namespace prefix 가 붙은 속성에 들어가 있을 수 있음
-        el.getAttributeNS("urn:schemas-microsoft-com:vml", "src") ||
-        el.getAttributeNS("http://www.w3.org/1999/xlink", "href");
-      if (src) {
-        const img = doc.createElement("img");
-        img.setAttribute("src", src);
-        el.replaceWith(img);
-      } else {
-        unwrap(el);
-      }
-    });
-
-    // <font> 도 unwrap
-    Array.from(doc.querySelectorAll("font")).forEach(unwrap);
-
-    // <img src="file://..."> 같이 로컬 파일 참조는 브라우저가 못 가져오므로 placeholder 로 교체.
-    // Mac 한컴오피스 한글 뷰어가 본문 이미지를 file:// 절대 경로로 참조하는 케이스 대응.
-    Array.from(doc.querySelectorAll('img[src^="file:"]')).forEach((img) => {
-      const placeholder = doc.createElement("span");
-      placeholder.setAttribute(
-        "style",
-        "padding:2px 6px;background-color:#fef3c7;color:#92400e;font-size:12px;border-radius:2px;",
-      );
-      placeholder.textContent =
-        "[원본 이미지 — 이미지 영역만 다시 클립보드에 복사해 별도로 붙여넣어 주세요]";
-      img.replaceWith(placeholder);
-    });
-
-    // <div> 가 표/이미지/리스트 같은 블록 자식 없이 텍스트만 갖고 있으면 <p> 로 교체.
-    // 한컴 한글 뷰어/일부 브라우저 페이스트가 본문 단락을 div 로 감싸는 경우 대응.
-    Array.from(doc.querySelectorAll("div")).forEach((div) => {
-      const hasBlockChild = div.querySelector(
-        "div, table, figure, ul, ol, blockquote, h1, h2, h3, h4, h5, h6, p",
-      );
-      if (hasBlockChild) return;
-      const p = doc.createElement("p");
-      while (div.firstChild) p.appendChild(div.firstChild);
-      // 정렬 등 핵심 인라인 스타일은 보존
-      const style = div.getAttribute("style");
-      if (style) p.setAttribute("style", style);
-      div.replaceWith(p);
-    });
-
-    // 클래스/스타일에서 mso-*, Mso*, Hwp* 흔적 제거
-    doc.querySelectorAll("*").forEach((el) => {
-      const cls = el.getAttribute("class");
-      if (cls) {
-        const cleaned = cls
-          .split(/\s+/)
-          .filter((c) => !/^(mso|Mso|Hwp|hancell)/.test(c))
-          .join(" ")
-          .trim();
-        if (cleaned) el.setAttribute("class", cleaned);
-        else el.removeAttribute("class");
-      }
-      const style = el.getAttribute("style");
-      if (style && /mso-/i.test(style)) {
-        const cleaned = style
-          .split(/;\s*/)
-          .filter((decl) => !/^\s*mso-/i.test(decl))
-          .join("; ")
-          .trim();
-        if (cleaned) el.setAttribute("style", cleaned);
-        else el.removeAttribute("style");
-      }
-    });
-
-    // 정렬 노이즈 정리:
-    //  - <img>/<span> 의 text-align 은 무의미 (replaced/inline). 그대로 두면 detectBlock 의 노이즈
-    //    매칭이나 사용자 혼란의 원인이 됨.
-    //  - text-align: justify 는 에디터 UI 에 버튼이 없어 양쪽 정렬 적용·해제가 불가능.
-    //    좌측 정렬과 동등으로 매핑해 페이스트 단계에서 제거.
-    doc.querySelectorAll("*").forEach((el) => {
-      const style = el.getAttribute("style");
-      if (!style) return;
-      const tag = el.tagName.toLowerCase();
-      const stripInlineTextAlign = tag === "img" || tag === "span";
-      const decls = style
-        .split(/;\s*/)
-        .map((d) => d.trim())
-        .filter((d) => d !== "")
-        .filter((d) => {
-          const m = /^([a-z-]+)\s*:\s*(.+)$/i.exec(d);
-          if (!m) return true;
-          const prop = m[1].toLowerCase();
-          if (prop !== "text-align") return true;
-          const val = m[2].toLowerCase().trim();
-          if (stripInlineTextAlign) return false;
-          if (val === "justify") return false;
-          return true;
-        });
-      const cleaned = decls.join("; ").trim();
-      if (cleaned) el.setAttribute("style", cleaned);
-      else el.removeAttribute("style");
-    });
-
-    // 빈 <p> 제거 (이미지·표·br 가 없고 텍스트도 없는 경우)
-    Array.from(doc.querySelectorAll("p")).forEach((p) => {
-      const hasMedia = p.querySelector("img, br, table, figure");
-      if (!hasMedia && !(p.textContent || "").trim()) p.remove();
-    });
-
-    // data:URL 이미지를 R2 업로드 후 영구 URL 로 치환.
-    // 업로드 실패 시 조용히 제거하지 않고 placeholder 로 교체해 사용자가 인지 가능하도록.
-    const imgs = Array.from(
-      doc.querySelectorAll('img[src^="data:"]'),
-    ) as HTMLImageElement[];
-    for (const img of imgs) {
-      const dataUrl = img.getAttribute("src")!;
-      let success = false;
-      try {
-        const file = dataUrlToFile(dataUrl, img.getAttribute("alt") || "image");
-        const url = await uploadImage(file);
-        if (url) {
-          img.setAttribute("src", url);
-          success = true;
-        }
-      } catch {
-        /* fallthrough — placeholder 처리 */
-      }
-      if (!success) {
-        const placeholder = doc.createElement("span");
-        // sanitize 화이트리스트 통과 가능한 속성만 사용 (display 는 허용 목록 외라 생략).
-        placeholder.setAttribute(
-          "style",
-          "padding:2px 6px;background-color:#fef3c7;color:#92400e;font-size:12px;border-radius:2px;",
-        );
-        placeholder.textContent = "[이미지 업로드 실패 — 다시 붙여넣어 주세요]";
-        img.replaceWith(placeholder);
-      }
-    }
-
-    return doc.body.innerHTML;
-  }
-
   // 클립보드 붙여넣기.
   //
   // 분기 우선순위 (HWPX/MS Word/Google Docs 같은 "구조 있는 페이스트"가 단독 이미지보다
@@ -563,7 +370,9 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
 
     if (hasStructuralMarkup || hasGenericMarkup) {
       e.preventDefault();
-      const processed = await normalizePastedHtml(htmlFromClipboard);
+      const processed = await normalizePastedHtml(htmlFromClipboard, {
+        uploadDataUrl: uploadImage,
+      });
       insertHtmlAtCursor(processed);
       // text/html 에 <img> 가 0개인데 image item 이 따로 있는 케이스 (HWPX) 보강:
       // 본문 끝에 figure 로 이미지 추가.

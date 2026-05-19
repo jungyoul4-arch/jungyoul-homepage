@@ -55,31 +55,53 @@ export function sanitizeContent(html: string): string {
       colgroup: ["span", "style"],
       "*": ["class"],
     },
+    // 인라인 스타일은 거의 모두 클라이언트 paste 단계의 stripNonAllowlistedInlineStyles 에서 1차 제거됨.
+    // 여기는 서버측 백스톱 — 외부 API 직접 호출 등 paste 우회 경로에서도 동일 정책이 적용되도록.
+    //
+    // 정책:
+    //   - 모든 태그: text-align: left|center|right 만.
+    //     (justify 는 에디터 UI 에 버튼이 없어 좌측 매핑으로 paste 단계에서 이미 제거됨.)
+    //   - <table>/<td>/<th>: 표 구조 보존을 위해 border/border-collapse/border-spacing/width/vertical-align 만.
+    //   - <iframe> / video embed wrapper <div>: buildEmbedHtml 의 좌표 declaration 보존을 위해 별도 키.
+    //   - 그 외 인라인 폰트/크기/색 등은 보존하지 않음 — .article-content CSS (samsung-newsroom-feature-ui 실측값) 로 폴스루.
+    //
+    // 정상 작성 흐름에서 본문에 font-size/color 가 들어올 경로가 부재(content-editor.tsx Toolbar 에 색·크기 버튼 없음).
+    // Notion·Google Docs 등 외부 페이스트의 lab(...) 색·font-size:0.75rem·width:328px 도 paste 단계와 이 백스톱 양쪽에서 차단.
     allowedStyles: {
       "*": {
-        "position": [/^relative$|^absolute$/],
+        "text-align": [/^(left|center|right)$/],
+      },
+      iframe: {
+        "position": [/^(relative|absolute)$/],
         "top": [/^-?\d+/],
         "left": [/^-?\d+/],
         "width": [/^\d+/],
         "height": [/^\d+/],
-        "max-width": [/^\d+/],
-        "padding": [/^\d+/],
+        "border": [/^0$|^none$/],
+      },
+      div: {
+        // YouTube/Vimeo 임베드 컨테이너용 (buildEmbedHtml 출력 좌표 보존).
+        "position": [/^relative$/],
         "padding-bottom": [/^\d+/],
+        "height": [/^0$/],
         "overflow": [/^hidden$/],
-        "margin": [/^-?\d+/],
-        "border": [/^[\d.]+(px|em|rem)?\s+(solid|dashed|dotted|double|none)/, /^0$|^none$/],
-        "border-color": [/^#[0-9a-fA-F]{3,8}$|^rgb/],
-        "border-style": [/^(solid|dashed|dotted|double|none)$/],
-        "border-width": [/^\d+/],
+        "margin": [/^0$/],
+        "border-radius": [/^0$/],
+      },
+      table: {
+        "border": [/^[\d.]+/],
         "border-collapse": [/^(collapse|separate)$/],
         "border-spacing": [/^\d+/],
-        "border-radius": [/^\d+/],
-        "background-color": [/^#[0-9a-fA-F]{3,8}$|^rgb/],
-        "color": [/^#[0-9a-fA-F]{3,8}$|^rgb/],
-        "font-size": [/^\d+/],
-        "font-weight": [/^\d+$|^bold$|^normal$/],
-        "font-style": [/^(italic|normal|oblique)$/],
-        "text-align": [/^left$|^center$|^right$|^justify$/],
+        "width": [/^\d+/],
+      },
+      td: {
+        "border": [/^[\d.]+/],
+        "width": [/^\d+/],
+        "vertical-align": [/^(top|middle|bottom|baseline)$/],
+      },
+      th: {
+        "border": [/^[\d.]+/],
+        "width": [/^\d+/],
         "vertical-align": [/^(top|middle|bottom|baseline)$/],
       },
     },

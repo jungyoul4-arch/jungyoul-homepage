@@ -19,6 +19,8 @@ const eslintConfig = defineConfig([
     ".wrangler/**",
     "graphify-out/**",
     ".playwright-mcp/**",
+    // vitest coverage v8 reporter 생성물 — .gitignore 에도 등재.
+    "coverage/**",
   ]),
 ]);
 
