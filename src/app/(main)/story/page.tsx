@@ -27,7 +27,7 @@ export default async function StoryPage() {
   const raw = await db
     .select()
     .from(articlesTable)
-    .where(eq(articlesTable.category, "success"))
+    .where(eq(articlesTable.category, "growth"))
     .orderBy(desc(articlesTable.date));
   const articles = raw.map(toArticle);
 
