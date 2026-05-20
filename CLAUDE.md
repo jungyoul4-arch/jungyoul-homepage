@@ -14,7 +14,7 @@
 ## 라우팅 모델
 - **라우트 그룹**: 메인 사이트 → `src/app/(main)/`, 익명 커뮤니티 → `src/app/(community)/` (URL 비반영)
 - 부모 메뉴 catch-all: `src/app/(main)/[slug]/page.tsx` 가 `nav_menus` DB 기반으로 부모/자식을 조회해 인덱스 페이지(HeroBanner + H1 + NavTabs + JSON-LD)를 자동 렌더. **어드민 `/admin/nav-menus` 에 부모 행만 등록하면 코드 변경 없이 새 라우트가 동작**
-- 명시 라우트(`/articles`, `/exam`, `/teachers`, `/faq`, `/about`, `/contact`, `/location`, ...)는 `(main)/` 아래에 위치. Next.js 우선순위에 의해 catch-all 보다 먼저 매칭. 별도 hero/콘텐츠/카테고리 필터가 필요할 때만 명시 페이지를 추가 → 절차 [`docs/categories.md`](docs/categories.md)
+- 명시 라우트(`/articles`, `/exam`, `/story`, `/teachers`, `/faq`, `/about`, `/contact`, `/location`, ...)는 `(main)/` 아래에 위치. Next.js 우선순위에 의해 catch-all 보다 먼저 매칭. 별도 hero/콘텐츠/카테고리 필터가 필요할 때만 명시 페이지를 추가 → 절차 [`docs/categories.md`](docs/categories.md). `/story` 는 `category="success"` 재사용 + 별도 라우트 변형 사례 (코드 참조)
 
 ## 헤더 링크 버튼 (외부/내부)
 - `nav_menus` 와 별개. 헤더 우측 상단 돋보기 왼편(`lg≥`) / 상단 바 아래 **좌측** 행(`<lg`)에 N개 노출, 모두 `target="_blank"` 새 탭

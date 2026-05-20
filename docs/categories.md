@@ -66,6 +66,21 @@
 5. 어드민에서 `/admin/nav-menus` 진입 → 부모 메뉴 아래에 자식 행 추가 (label, href=`/<slug>`, sortOrder)
    - DB 행은 코드와 무관하게 어드민 UI 로 관리
 
+#### 변형 시나리오 — 기존 카테고리 재사용 + 별도 명시 라우트 (예: `/story` = success 재사용)
+"카테고리 = 라우트" 1:1 가정이 깨지는 경우. 이미 존재하는 `articles.category` 값(예: `success`) 을 새 URL 슬러그(예: `/story`) 로도 노출해야 할 때 사용. 어드민이 자식 메뉴 href 를 `/articles?category=...` 가 아닌 새 슬러그로 입력한 시점에서 코드 라우트 동기화가 누락되면 자식 메뉴 404 가 발생함 (mistake-log 2026-05-11 (c) / 2026-05-20 — 동일 결함이 3 회 재발).
+
+1. 카테고리 enum 추가는 **하지 않음** (기존 값 재사용)
+2. `/articles` · 홈 탭 노출 분기 변경 **불필요** (기존 카테고리 그대로)
+3. **신규 라우트 페이지 생성** — 고급 시나리오 3 단계와 동일하되 쿼리는 기존 카테고리 값으로:
+   - 패턴 모방 대상: `src/app/(main)/exam/page.tsx` (simplified — 필터/태그옵션 없음)
+   - 쿼리: `eq(articlesTable.category, "<기존값>")`
+   - `<ArticleList articles={...} hideTabs />` · `renderJsonLd()` · metadata canonical 등 동일
+4. `src/app/sitemap.ts` 에 새 라우트 추가
+5. `src/lib/default-nav.ts` 폴백 자식 행의 href 를 새 슬러그로 정정 → 운영 D1 자식 행과 일치시킬 것. 어긋나면 폴백 환경에서 회귀가 "위장" 되어 다른 페이지로 흐름 (mistake-log 2026-05-20 교훈(2))
+6. 운영 D1 의 `nav_menus` 자식 행 href 가 새 슬러그와 일치하는지 사전 확인 — 보통 어드민이 이미 입력해 둔 상태이므로 코드 변경만 따라가면 됨
+
+→ **체크리스트**: (1) 라우트 page.tsx (2) sitemap.ts (3) default-nav.ts 폴백 (4) 운영 D1 href 일치 — 4 가지를 모두 동기화해야 자식 메뉴 404 회귀를 막을 수 있음
+
 ## 카테고리 vs. 시험 태그 — 구분
 
 `articles.category` 는 `src/lib/data.ts` 에 코드로 정의된 enum 이고 고정적이다. 반면 `/exam` 페이지의 연도/학년/과목 태그는 `exam_tag_options` DB 테이블로 관리되는 별도 메타데이터 레이어다:

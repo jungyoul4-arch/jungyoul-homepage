@@ -34,7 +34,7 @@ export const DEFAULT_NAV: NavGroup[] = [
       { id: "f-jy-teachers", parentId: "f-jy", label: "선생님", href: "/teachers", sortOrder: 0 },
       { id: "f-jy-faq", parentId: "f-jy", label: "FAQ", href: "/faq", sortOrder: 1 },
       { id: "f-jy-exam", parentId: "f-jy", label: "시험지 분석", href: "/exam", sortOrder: 2 },
-      { id: "f-jy-success", parentId: "f-jy", label: "성장스토리", href: "/articles?category=success", sortOrder: 3 },
+      { id: "f-jy-success", parentId: "f-jy", label: "성장스토리", href: "/story", sortOrder: 3 },
     ],
   },
   { parent: { id: "f-teachers", parentId: null, label: "선생님", href: "/teachers", sortOrder: 2 }, children: [] },

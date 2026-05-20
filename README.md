@@ -18,7 +18,7 @@ src/app/                  Next.js App Router 페이지/라우트
   │   ├ layout.tsx        HeaderServer + main + Footer
   │   ├ page.tsx          홈
   │   ├ [slug]/page.tsx   동적 부모 메뉴 catch-all (nav_menus 기반 자동 인덱스)
-  │   └ articles/, exam/, teachers/, faq/, ...  명시 라우트 (별도 hero·콘텐츠 가짐)
+  │   └ articles/, exam/, story/, teachers/, faq/, ...  명시 라우트 (별도 hero·콘텐츠 가짐)
   ├ (community)/          익명 커뮤니티 라우트 그룹 (URL 비반영)
   │   ├ layout.tsx        미니 헤더 + 축소 푸터
   │   └ community/        /community, /community/new, /community/[id]
@@ -37,7 +37,7 @@ graphify-out/             코드 그래프 (탐색 우선 자료)
 ## 라우팅 모델 (핵심)
 헤더 네비게이션은 D1 `nav_menus` 테이블에서 DB-driven 으로 빌드됩니다. 부모 메뉴 클릭 시 동작:
 
-1. **명시 라우트** (`/articles`, `/exam`, `/teachers`, `/faq`, `/about`, `/contact`, `/location`, `/privacy`, `/terms`) — 각자 고유한 hero·메타·콘텐츠를 갖는 페이지. `src/app/(main)/` 아래에 위치. Next.js 우선순위에 의해 catch-all 보다 먼저 매칭.
+1. **명시 라우트** (`/articles`, `/exam`, `/story`, `/teachers`, `/faq`, `/about`, `/contact`, `/location`, `/privacy`, `/terms`) — 각자 고유한 hero·메타·콘텐츠를 갖는 페이지. `src/app/(main)/` 아래에 위치. Next.js 우선순위에 의해 catch-all 보다 먼저 매칭.
 2. **catch-all `(main)/[slug]/page.tsx`** — 위에 매칭되지 않은 단일 세그먼트 경로를 받아 `nav_menus` 에서 `href = "/{slug}"` 부모 행을 조회. 부모가 있으면 자식 행들을 자식 탭 인덱스로 자동 렌더 (HeroBanner + H1 + NavTabs + JSON-LD CollectionPage). 부모가 없으면 `notFound()`.
 3. **`(community)/community/**`** — 별도 미니 레이아웃(카테고리 메뉴·검색·헤더 링크 버튼 미노출).
 

@@ -2,6 +2,18 @@
 
 기록 형식: 날짜 / 현상 / 원인 / 해결 / 교훈
 
+## 2026-05-20 — /story 명시 라우트 신설로 성장스토리 자식 메뉴 404 회귀 해소
+- 현상: 헤더 "정율사관 → 성장스토리" 자식 메뉴 클릭 시 404. 운영 D1 의 `nav_menus` 자식 행은 `href=/story` 로 저장돼 있는데(backup-20260508.sql:122 기준), 코드에는 `/story` 명시 라우트가 없고 catch-all `(main)/[slug]/page.tsx` 도 `nav_menus` 부모 행(`parent_id IS NULL`) 만 인덱스 페이지로 렌더하므로 자식 href 는 부모로 매칭되지 않아 404 로 떨어짐. 2026-05-11 항목 (c) 에서 "DB 행 정정" 으로 단발 처방 제안만 남기고 코드 레벨 회귀는 미해결 상태로 침전
+- 원인: (1) 폴백(`src/lib/default-nav.ts`) 의 성장스토리 href 가 `/articles?category=success` 로 운영 D1 와 어긋나 있어 폴백 환경에서도 같은 자식 클릭이 articles 페이지로 흐르는 형태로 위장됨 → 회귀 표면화 지연. (2) 본 프로젝트의 "어드민 자유 입력 href + 명시 라우트는 코드" 분리 모델에서 어드민 href 입력에 대한 코드측 라우트 동기화 절차가 `docs/categories.md` 에 "기존 카테고리 재사용 + 별도 명시 라우트" 변형 케이스로 명문화돼 있지 않아, 한 번 누락되면 다음 PR 까지 부채로 남기 쉬움
+- 해결:
+  - `src/app/(main)/story/page.tsx` 신설 — `/exam` 페이지의 simplified 패턴(필터·태그옵션 없음). `category="success"` 기사를 최신순으로 `<ArticleList ... hideTabs />` 로 렌더, JSON-LD CollectionPage + `renderJsonLd()` (XSS escape 헬퍼) 적용
+  - `src/lib/default-nav.ts:37` 폴백 자식 href 를 `/articles?category=success` → `/story` 로 정정. 운영 D1 자식 행 href 와 일치 → 폴백 환경과 운영 환경 모두 동일 라우트로 수렴
+  - `src/app/sitemap.ts` `STATIC_ROUTES` 에 `{ path: "/story", changeFrequency: "weekly", priority: 0.8 }` 추가
+- 교훈:
+  - (1) **어드민 자유 입력 href 는 코드 명시 라우트와 동기화 절차가 명문화돼야 후속 회귀를 예방한다**. 2026-05-08 (`nav_menus href 만 추가하고 라우트 누락`)·2026-05-11 (c) 와 동일 결함 패턴이 세 번째 재발. 단발성 진단은 매번 "DB 행을 어떻게 입력했는지" 로 분기되지만 메타 부채는 "어드민 href ↔ 코드 라우트" 결합 그 자체. `docs/categories.md` 의 시나리오 분기에 "기존 카테고리 재사용 + 별도 명시 라우트" 변형(예: success 카테고리 + `/story`) 을 추가해 어드민이 자식 href 를 새 경로로 입력할 때 코드 작업 누락을 막을 것
+  - (2) **폴백 단일 소스와 운영 D1 의 href 가 어긋나면 회귀가 "위장" 된다**. 본 사례에서 폴백 자식 href 가 `/articles?category=success` 로 살아있어 로컬·fresh-seed 환경에서는 404 가 아니라 articles 페이지로 흐르므로 개발 단계에서 잡히지 않음. `default-nav.ts` 같은 폴백 SSOT 는 운영 D1 데이터(`backup-*.sql`) 와 주기적으로 diff 해 어긋남을 사전 발견할 것
+  - (3) **회고 항목의 "정황상 가장 유력한 가설" 을 그대로 후속 처방 책임자에게 떠넘기지 말 것**. 2026-05-11 (c) 가 "운영 D1 에 잘못 입력된 자식 href 로 추정" 으로 끝났지만, 실제로는 운영 입력이 정상(`/story`)이고 코드 라우트 부재가 진짜 원인이었음. 가설은 "어드민 정정" 과 "코드 라우트 신설" 두 시나리오를 모두 명시한 후 실측으로 분기해야 동일 회고가 잘못된 방향으로 침전되는 것을 막음
+
 ## 2026-05-19 — paste 단계 normalize 만으로는 패치 이전 DB row 가 영구히 깨진 채 노출됨
 - 현상: 2026-05-19 PR (`baa3c6d`) 이후에도 동일 기사 `d3a6632e` 본문이 가운데 정렬로 굳어 있음. curl 로 받은 라이브 HTML 안의 `.article-content` 본문에 다음 패턴이 그대로 잔존: `<figcaption>` 이 본문 단락 wrap, 직속 미디어 없는 `<figure style="text-align:left">` 가 본문 wrap, 3중 중첩 figure, `<b><p>X</p></b>` invalid HTML. `.article-content figcaption { text-align: center }` + `.article-content figure { display: flex; align-items: center }` CSS 가 이 패턴에 적용되어 가운데 정렬·과한 간격으로 렌더
 - 원인: `normalizePastedHtml`(13개 패스, 5 개 구조 청소 포함) 가 **브라우저 paste 이벤트에서만** 동작. 다음 두 경로가 우회: (a) `/api/admin/articles` POST/PUT 은 `sanitizeContent` 만 호출 — sanitize 는 인라인 style/속성 화이트리스트만 거를 뿐 figure/figcaption 구조 청소는 하지 않음, (b) `(main)/articles/[slug]/page.tsx` 공개 렌더도 `sanitizeContent` 만. 즉 paste cleanup PR 이전에 paste 된 d3a6632e 본문이 이미 D1 에 굳어 있고, 어드민이 재저장해도 인라인 style 만 다듬어질 뿐 figure/figcaption 구조는 그대로 살아남음. paste 단계만 본 사고의 사각지대: **새 페이스트만 수리하고 기존 DB row 는 손대지 않음**
