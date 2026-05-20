@@ -13,8 +13,13 @@ export interface NavGroup {
   children: NavMenuItem[];
 }
 
+// 교육정보(헤더 드롭다운·/articles 탭·홈 최신 탭) 에서 숨길 카테고리.
+// - "exam": 별도 라우트 /exam 으로 분리
+// - "growth": 별도 라우트 /story (정율사관 → 성장스토리) 전용
+export const EDUCATION_HIDDEN_CATEGORIES = new Set<string>(["exam", "growth"]);
+
 const educationChildren: NavMenuItem[] = categories
-  .filter((c) => c.value !== "exam")
+  .filter((c) => !EDUCATION_HIDDEN_CATEGORIES.has(c.value))
   .map((c, i) => ({
     id: `f-edu-${c.value}`,
     parentId: "f-edu",

@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { categories, type Article, type Category } from "@/lib/data";
+import { EDUCATION_HIDDEN_CATEGORIES } from "@/lib/default-nav";
 import { AdminEditButton } from "./admin-edit-button";
 import { isValidThumbnail } from "@/lib/thumbnail";
 import { placeholderGradient } from "@/lib/utils";
@@ -62,7 +63,7 @@ export function ArticleList({ articles, hideTabs = false }: ArticleListProps) {
       {/* Tab Filter */}
       {!hideTabs && (
         <div className="flex border-b border-[#d9d9d9] overflow-x-auto" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
-          {categories.filter((cat) => cat.value !== "exam").map((cat) => (
+          {categories.filter((cat) => !EDUCATION_HIDDEN_CATEGORIES.has(cat.value)).map((cat) => (
             <button
               key={cat.value}
               onClick={() => handleTab(cat.value)}

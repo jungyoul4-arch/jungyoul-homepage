@@ -150,12 +150,15 @@ export default function AdminLayout({
             <LogOut size={18} />
             로그아웃
           </button>
-          <Link
+          {/* 어드민 ↔ 공개 사이트 전환은 풀 리로드로 처리 — 클라이언트 라우터의 프리페치된
+              RSC payload(어드민 nav_menus 변경 전 스냅샷)를 우회해 헤더가 즉시 최신 상태를 반영. */}
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+          <a
             href="/"
             className="flex items-center gap-3 px-3 py-2 rounded-md text-xs text-gray-400 hover:text-gray-600 transition-colors mt-1"
           >
             ← 사이트로 돌아가기
-          </Link>
+          </a>
         </div>
       </aside>
 
