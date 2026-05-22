@@ -28,9 +28,10 @@ export interface PdfConvertResult {
 
 export const PDF_CONVERT_MODEL = "claude-sonnet-4-6";
 
-// 표가 다수 들어간 페이지는 출력 토큰이 빠르게 늘어 4000 으로는 응답이 잘려 JSON 이 깨졌다.
+// 표가 다수 들어간 페이지는 출력 토큰이 빠르게 늘어 4000/8000 으로는 응답이 잘려 일부 블록이 누락됐다.
 // tool_use 로 구조화 출력을 강제하더라도 max_tokens 초과 시 부분 결과가 도착하므로 여유 마진을 둠.
-export const PDF_CONVERT_MAX_TOKENS = 8000;
+// 잘림 자체는 `stop_reason === "max_tokens"` 로 라우트에서 감지해 `truncated: true` 로 클라이언트에 전달.
+export const PDF_CONVERT_MAX_TOKENS = 16000;
 
 /** LLM 이 figure src 자리에 출력하는 마커. 서버가 페이지 raster R2 URL 로 치환. */
 export const PAGE_RASTER_MARKER = "__PAGE_RASTER__";
@@ -144,12 +145,23 @@ export interface AnthropicContentBlock {
   input?: unknown;
 }
 
+export interface ToolUseExtractionResult {
+  blocks: PdfBlock[];
+  /** 형식이 깨져 폐기된 항목 수. max_tokens 잘림으로 인한 마지막 객체 truncation 도 여기 계상. */
+  dropped: number;
+}
+
 /**
  * tool_use 응답에서 emit_blocks 의 input.blocks 를 추출 + 검증.
  * 정상 경로. 결과가 빈 배열이면 호출자가 텍스트 폴백을 시도하도록 한다.
+ * 형식이 깨진 항목(`type` 또는 `html` 누락·타입 불일치·enum 미일치)은 폐기하되,
+ * 폐기 수를 함께 반환해 호출자가 누락 사실을 사용자에게 알리도록 한다.
  */
-export function extractToolUseBlocks(content: readonly AnthropicContentBlock[]): PdfBlock[] {
+export function extractToolUseBlocks(
+  content: readonly AnthropicContentBlock[],
+): ToolUseExtractionResult {
   const out: PdfBlock[] = [];
+  let dropped = 0;
   for (const c of content) {
     if (c.type !== "tool_use" || c.name !== PDF_CONVERT_TOOL.name) continue;
     const input = c.input;
@@ -157,15 +169,24 @@ export function extractToolUseBlocks(content: readonly AnthropicContentBlock[]):
     const blocksUnknown = (input as { blocks?: unknown }).blocks;
     if (!Array.isArray(blocksUnknown)) continue;
     for (const item of blocksUnknown) {
-      if (!item || typeof item !== "object") continue;
+      if (!item || typeof item !== "object") {
+        dropped++;
+        continue;
+      }
       const t = (item as { type?: unknown }).type;
       const h = (item as { html?: unknown }).html;
-      if (typeof t !== "string" || typeof h !== "string") continue;
-      if (!isPdfBlockType(t)) continue;
+      if (typeof t !== "string" || typeof h !== "string") {
+        dropped++;
+        continue;
+      }
+      if (!isPdfBlockType(t)) {
+        dropped++;
+        continue;
+      }
       out.push({ type: t, html: h });
     }
   }
-  return out;
+  return { blocks: out, dropped };
 }
 
 /**

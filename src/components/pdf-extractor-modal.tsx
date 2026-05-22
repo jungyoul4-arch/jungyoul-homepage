@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { FileText, Upload, X, Loader2, CheckCircle2, AlertCircle, RotateCw } from "lucide-react";
+import { FileText, Upload, X, Loader2, CheckCircle2, AlertCircle, AlertTriangle, RotateCw } from "lucide-react";
 import {
   loadPdf,
   renderPageRaster,
@@ -9,6 +9,17 @@ import {
   type PageRaster,
 } from "@/lib/pdf-extract";
 import type { PdfBlock } from "@/lib/pdf-convert-prompt";
+
+interface PdfConvertResponse {
+  blocks: PdfBlock[];
+  usage?: { input_tokens: number; output_tokens: number };
+  /** 응답이 max_tokens 한도에 부딪쳐 잘렸음. 마지막 블록이 누락됐을 가능성. */
+  truncated?: boolean;
+  /** 형식이 깨져 폐기된 항목 수. 0 이상이면 일부 블록이 누락됐을 가능성. */
+  droppedBlocks?: number;
+  /** blocks 가 0개. 페이지 자체가 비어있거나 LLM 응답 실패. */
+  empty?: boolean;
+}
 
 interface Props {
   open: boolean;
@@ -26,6 +37,8 @@ interface PageState {
   blocks?: PdfBlock[];
   error?: string;
   usage?: { input_tokens: number; output_tokens: number };
+  /** 누락 우려 — done 상태인데 잘림/폐기/빈 응답 신호가 있을 때 true. */
+  warning?: { truncated?: boolean; droppedBlocks?: number; empty?: boolean };
 }
 
 const MAX_PDF_BYTES = 25 * 1024 * 1024;
@@ -148,28 +161,32 @@ export function PdfExtractorModal({ open, onClose, onInsert }: Props) {
   }
 
   const convertOne = useCallback(
-    async (page: PageState): Promise<PageState> => {
+    async (page: PageState, pageText: string): Promise<PageState> => {
       if (!page.raster) {
         return { ...page, status: "error", error: "raster 미준비" };
       }
-      const file_ = await fetch("/api/admin/pdf-convert", {
+      const res = await fetch("/api/admin/pdf-convert", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           pageImageBase64: page.raster.jpegBase64,
-          pageText: "", // 클라이언트 텍스트는 변환 직전에 채움 (PDF.js 인스턴스가 모달 내부에 있어 직접 호출)
+          pageText,
           pageNumber: page.num,
         }),
       });
-      if (!file_.ok) {
-        const data = await file_.json().catch(() => ({ error: file_.statusText }));
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({ error: res.statusText }));
         return { ...page, status: "error", error: data?.error || "변환 실패" };
       }
-      const data = (await file_.json()) as {
-        blocks: PdfBlock[];
-        usage?: { input_tokens: number; output_tokens: number };
+      const data = (await res.json()) as PdfConvertResponse;
+      return {
+        ...page,
+        status: "done",
+        blocks: data.blocks,
+        usage: data.usage,
+        warning: buildWarning(data),
+        error: undefined,
       };
-      return { ...page, status: "done", blocks: data.blocks, usage: data.usage, error: undefined };
     },
     [],
   );
@@ -193,7 +210,7 @@ export function PdfExtractorModal({ open, onClose, onInsert }: Props) {
     const targets = pages.filter((p) => p.selected && p.status !== "done");
     for (const t of targets) {
       if (cancelRef.current) break;
-      setPages((prev) => prev.map((p) => (p.num === t.num ? { ...p, status: "converting", error: undefined } : p)));
+      setPages((prev) => prev.map((p) => (p.num === t.num ? { ...p, status: "converting", error: undefined, warning: undefined } : p)));
 
       const text = await extractPageText(pdf, t.num).then((r) => r.joined).catch(() => "");
       const res = await fetch("/api/admin/pdf-convert", {
@@ -213,13 +230,19 @@ export function PdfExtractorModal({ open, onClose, onInsert }: Props) {
         );
         continue;
       }
-      const data = (await res.json()) as {
-        blocks: PdfBlock[];
-        usage?: { input_tokens: number; output_tokens: number };
-      };
+      const data = (await res.json()) as PdfConvertResponse;
       setPages((prev) =>
         prev.map((p) =>
-          p.num === t.num ? { ...p, status: "done", blocks: data.blocks, usage: data.usage, error: undefined } : p,
+          p.num === t.num
+            ? {
+                ...p,
+                status: "done",
+                blocks: data.blocks,
+                usage: data.usage,
+                warning: buildWarning(data),
+                error: undefined,
+              }
+            : p,
         ),
       );
     }
@@ -235,14 +258,29 @@ export function PdfExtractorModal({ open, onClose, onInsert }: Props) {
     if (!file) return;
     const page = pages.find((p) => p.num === num);
     if (!page) return;
-    setPages((prev) => prev.map((p) => (p.num === num ? { ...p, status: "converting", error: undefined } : p)));
-    const next = await convertOne(page);
+    setPages((prev) => prev.map((p) => (p.num === num ? { ...p, status: "converting", error: undefined, warning: undefined } : p)));
+    let text = "";
+    try {
+      const pdf = await loadPdf(file);
+      text = await extractPageText(pdf, num).then((r) => r.joined).catch(() => "");
+    } catch {
+      // PDF 재로드 실패해도 이미지 기반 변환은 가능 — text 만 빈 문자열로
+    }
+    const next = await convertOne(page, text);
     setPages((prev) => prev.map((p) => (p.num === num ? next : p)));
   }
 
   function insertAll() {
     const done = pages.filter((p) => p.selected && p.status === "done" && p.blocks);
     if (done.length === 0) return;
+    const warnedSelected = done.filter((p) => p.warning);
+    if (warnedSelected.length > 0) {
+      const nums = warnedSelected.map((p) => p.num).join(", ");
+      const ok = window.confirm(
+        `다음 페이지는 누락 우려가 있습니다 (잘림/빈 응답/형식 폐기). 그래도 본문에 삽입할까요?\n페이지: ${nums}\n\n취소하고 해당 페이지를 다시 변환할 수 있습니다.`,
+      );
+      if (!ok) return;
+    }
     const html = done
       .flatMap((p) => p.blocks ?? [])
       .map((b) => b.html)
@@ -263,6 +301,7 @@ export function PdfExtractorModal({ open, onClose, onInsert }: Props) {
 
   const allSelected = pages.length > 0 && pages.every((p) => p.selected);
   const doneCount = pages.filter((p) => p.status === "done").length;
+  const warnCount = pages.filter((p) => p.status === "done" && p.warning).length;
   const selectedCount = pages.filter((p) => p.selected).length;
   const totalInputTokens = pages.reduce((s, p) => s + (p.usage?.input_tokens ?? 0), 0);
   const totalOutputTokens = pages.reduce((s, p) => s + (p.usage?.output_tokens ?? 0), 0);
@@ -373,28 +412,68 @@ export function PdfExtractorModal({ open, onClose, onInsert }: Props) {
                 ))}
               </div>
 
-              {/* 변환 결과: 페이지별 HTML 미리보기 (done 상태만) */}
+              {/* 변환 결과: 페이지별 HTML 미리보기 (done 상태만) — 누락 우려 페이지 우선 정렬, 기본 펼침 */}
               {pages.some((p) => p.status === "done") && (
                 <div className="space-y-3 pt-3 border-t border-border-light">
-                  <h3 className="text-sm font-bold text-text-primary">변환 결과 미리보기</h3>
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-bold text-text-primary">변환 결과 미리보기</h3>
+                    {warnCount > 0 && (
+                      <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-amber-50 border border-amber-300 text-amber-800 rounded">
+                        <AlertTriangle size={12} /> 누락 우려 {warnCount}개 — 본문 삽입 전 재변환 권장
+                      </span>
+                    )}
+                  </div>
                   {pages
                     .filter((p) => p.status === "done")
+                    .slice()
+                    .sort((a, b) => {
+                      const aw = a.warning ? 0 : 1;
+                      const bw = b.warning ? 0 : 1;
+                      if (aw !== bw) return aw - bw;
+                      return a.num - b.num;
+                    })
                     .map((p) => (
-                      <details key={p.num} className="border border-border-light rounded">
-                        <summary className="cursor-pointer px-3 py-2 text-sm bg-gray-50 hover:bg-gray-100 flex items-center justify-between">
-                          <span>
-                            <strong>페이지 {p.num}</strong> · 블록 {p.blocks?.length ?? 0}개
+                      <details
+                        key={p.num}
+                        open={!!p.warning}
+                        className={`border rounded ${p.warning ? "border-amber-300" : "border-border-light"}`}
+                      >
+                        <summary className={`cursor-pointer px-3 py-2 text-sm flex items-center justify-between ${p.warning ? "bg-amber-50 hover:bg-amber-100" : "bg-gray-50 hover:bg-gray-100"}`}>
+                          <span className="flex items-center gap-2">
+                            {p.warning && <AlertTriangle size={14} className="text-amber-600" />}
+                            <strong>페이지 {p.num}</strong>
+                            <span className="text-text-secondary">· 블록 {p.blocks?.length ?? 0}개</span>
+                            {p.warning && (
+                              <span className="text-amber-800 text-xs">
+                                {formatWarning(p.warning)}
+                              </span>
+                            )}
                           </span>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              insertPage(p.num);
-                            }}
-                            className="text-xs px-2 py-1 bg-brand-blue text-white rounded hover:bg-brand-blue-dark"
-                          >
-                            이 페이지 삽입
-                          </button>
+                          <span className="flex items-center gap-2">
+                            {p.warning && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  void retryPage(p.num);
+                                }}
+                                disabled={converting}
+                                className="inline-flex items-center gap-1 text-xs px-2 py-1 border border-amber-300 text-amber-800 bg-white rounded hover:bg-amber-50 disabled:opacity-50"
+                              >
+                                <RotateCw size={11} /> 이 페이지만 다시 변환
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                insertPage(p.num);
+                              }}
+                              className="text-xs px-2 py-1 bg-brand-blue text-white rounded hover:bg-brand-blue-dark"
+                            >
+                              이 페이지 삽입
+                            </button>
+                          </span>
                         </summary>
                         <div
                           className="px-3 py-3 article-content text-sm max-h-96 overflow-y-auto"
@@ -416,6 +495,9 @@ export function PdfExtractorModal({ open, onClose, onInsert }: Props) {
             {pages.length > 0 && (
               <>
                 선택 {selectedCount} / {pages.length} · 변환 완료 {doneCount}
+                {warnCount > 0 && (
+                  <span className="ml-1 text-amber-700 font-medium">(누락 우려 {warnCount})</span>
+                )}
                 {totalInputTokens + totalOutputTokens > 0 && (
                   <span className="ml-2">
                     · 토큰 in {totalInputTokens.toLocaleString()} / out{" "}
@@ -496,7 +578,8 @@ function PageCard({
         />
         <div className="absolute top-2 right-2 z-10 flex items-center gap-1">
           {page.status === "converting" && <Loader2 size={14} className="animate-spin text-brand-blue" />}
-          {page.status === "done" && <CheckCircle2 size={14} className="text-green-600" />}
+          {page.status === "done" && !page.warning && <CheckCircle2 size={14} className="text-green-600" />}
+          {page.status === "done" && page.warning && <AlertTriangle size={14} className="text-amber-600" />}
           {page.status === "error" && <AlertCircle size={14} className="text-red-600" />}
         </div>
         <div className="aspect-[3/4] bg-gray-100 flex items-center justify-center">
@@ -510,25 +593,45 @@ function PageCard({
       </label>
       <div className="px-2 py-1.5 text-xs flex items-center justify-between bg-white">
         <span className="text-text-secondary">페이지 {page.num}</span>
-        {page.status === "done" && (
-          <button
-            type="button"
-            onClick={onInsert}
-            className="text-brand-blue hover:underline"
-          >
-            삽입
-          </button>
-        )}
-        {page.status === "error" && (
-          <button
-            type="button"
-            onClick={onRetry}
-            className="inline-flex items-center gap-0.5 text-red-600 hover:underline"
-          >
-            <RotateCw size={11} /> 재시도
-          </button>
-        )}
+        <span className="flex items-center gap-2">
+          {page.status === "done" && page.warning && (
+            <button
+              type="button"
+              onClick={onRetry}
+              disabled={disabled}
+              className="inline-flex items-center gap-0.5 text-amber-700 hover:underline disabled:opacity-50"
+            >
+              <RotateCw size={11} /> 다시 변환
+            </button>
+          )}
+          {page.status === "done" && (
+            <button
+              type="button"
+              onClick={onInsert}
+              className="text-brand-blue hover:underline"
+            >
+              삽입
+            </button>
+          )}
+          {page.status === "error" && (
+            <button
+              type="button"
+              onClick={onRetry}
+              className="inline-flex items-center gap-0.5 text-red-600 hover:underline"
+            >
+              <RotateCw size={11} /> 재시도
+            </button>
+          )}
+        </span>
       </div>
+      {page.status === "done" && page.warning && (
+        <p
+          className="px-2 py-1.5 text-[11px] leading-snug text-amber-800 bg-amber-50 border-t border-amber-200 break-words whitespace-pre-wrap"
+          role="alert"
+        >
+          누락 우려 — {formatWarning(page.warning)}
+        </p>
+      )}
       {page.status === "error" && page.error && (
         <p
           className="px-2 py-1.5 text-[11px] leading-snug text-red-700 bg-red-50 border-t border-red-100 break-words whitespace-pre-wrap"
@@ -539,4 +642,20 @@ function PageCard({
       )}
     </div>
   );
+}
+
+function buildWarning(data: PdfConvertResponse): PageState["warning"] {
+  const truncated = !!data.truncated;
+  const droppedBlocks = data.droppedBlocks ?? 0;
+  const empty = !!data.empty;
+  if (!truncated && droppedBlocks === 0 && !empty) return undefined;
+  return { truncated, droppedBlocks, empty };
+}
+
+function formatWarning(w: NonNullable<PageState["warning"]>): string {
+  const parts: string[] = [];
+  if (w.truncated) parts.push("응답 잘림 (max_tokens 초과)");
+  if (w.droppedBlocks && w.droppedBlocks > 0) parts.push(`형식 폐기 ${w.droppedBlocks}개`);
+  if (w.empty) parts.push("빈 응답");
+  return parts.join(" · ");
 }

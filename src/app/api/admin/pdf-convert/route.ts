@@ -124,7 +124,9 @@ export async function POST(request: NextRequest) {
   }
 
   // 정상 경로: tool_use 응답에서 emit_blocks 의 input.blocks 를 추출.
-  let blocks = extractToolUseBlocks(apiJson.content);
+  const toolUseResult = extractToolUseBlocks(apiJson.content);
+  let blocks = toolUseResult.blocks;
+  const droppedBlocks = toolUseResult.dropped;
   let usedFallback = false;
 
   // 보조 폴백: tool_use 가 비어 있고 텍스트만 도착한 예외 케이스.
@@ -138,6 +140,13 @@ export async function POST(request: NextRequest) {
       usedFallback = true;
     }
   }
+
+  // 누락 우려 플래그. 셋 중 하나라도 truthy 면 클라이언트가 페이지를 "주의" 상태로 분류.
+  // - truncated: 응답이 max_tokens 한도에 부딪쳐 잘렸으므로 마지막 블록(또는 후속 블록 전체)이 누락 가능
+  // - droppedBlocks > 0: 형식 검증을 통과 못한 항목이 폐기됨 (대개 max_tokens 잘린 마지막 객체)
+  // - empty: blocks 가 0개 — 페이지 자체가 비어있거나 LLM 이 응답을 못 만든 경우
+  const truncated = apiJson.stop_reason === "max_tokens";
+  const empty = blocks.length === 0;
 
   // figure src=__PAGE_RASTER__ 가 하나라도 있으면 페이지 raster 를 R2 에 영구 저장하고 마커를 영구 URL 로 치환.
   // 본문에 실제로 삽입되지 않는 페이지의 raster 는 영구 저장 안 됨 — LLM 이 figure 를 출력한 페이지만 비용 발생.
@@ -179,11 +188,17 @@ export async function POST(request: NextRequest) {
     stopReason: apiJson.stop_reason,
     rasterUploaded: !!rasterUrl,
     usedFallback,
+    truncated,
+    droppedBlocks,
+    empty,
   });
 
   return NextResponse.json({
     blocks: cleanedBlocks,
     usage: apiJson.usage,
+    truncated,
+    droppedBlocks,
+    empty,
   });
 }
 
