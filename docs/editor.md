@@ -177,7 +177,12 @@ LLM 응답이 `max_tokens` 한도에 부딪쳐 잘리거나 형식 검증 실패
 - "완료된 페이지 본문에 삽입" 클릭 시 누락 우려 페이지가 선택에 포함돼 있으면 `window.confirm` 으로 한 번 더 경고.
 
 ### max_tokens 정책
-`PDF_CONVERT_MAX_TOKENS = 16000` (`src/lib/pdf-convert-prompt.ts`). 표 다수 페이지(예: 17행 평가표)도 안전한 마진. 8000 회귀 시 한 화면 분량의 표·본문이 통째 누락된 사례(`상원고-test-e56f69cf` 라이브 검증). 변경 시 `src/lib/__tests__/pdf-convert-prompt.test.ts` 의 회귀 가드(`toBeGreaterThanOrEqual(16000)`) 가 잡는다.
+`PDF_CONVERT_MAX_TOKENS = 32000` (`src/lib/pdf-convert-prompt.ts`). Claude Sonnet 4.6 출력 한도(64k)의 절반으로 안전 마진. 평균 비용은 LLM 이 실제 출력한 만큼만 부과되어 큰 페이지에서만 약 2배. 변경 시 `src/lib/__tests__/pdf-convert-prompt.test.ts` 의 회귀 가드(`toBeGreaterThanOrEqual(32000)`) 가 잡는다.
+
+**상향 이력**:
+- 4000 → 8000 (commit 9d0ef79): 표 응답 JSON 파싱 회귀 해소
+- 8000 → 16000 (commit 111f990): 17행 평가표 페이지에서 truncated + 페이지 통째 누락(`상원고-test-e56f69cf` 사례)
+- 16000 → 32000 (2026-05-22 회귀): 표 + 본문이 함께 큰 페이지에서 `truncated && empty` 동시 발생. LLM 이 tool_use 의 input JSON 생성 도중 max_tokens 에 도달하면 Anthropic 이 미완성 input.blocks 를 정상 형태로 노출하지 않아 `extractToolUseBlocks` 가 0 블록을 반환 → 페이지 통째 누락. 클라이언트는 `formatWarning()` 에서 두 신호 동시 발생을 "출력 한도 초과 — 페이지가 너무 큼" 단일 메시지로 통합 표시한다.
 
 ### 페이지 raster 영구화
 LLM 이 figure 블록을 출력한 페이지에 한해 (`html.includes("__PAGE_RASTER__")`) 페이지 JPEG 를 R2 (`pdf-extract/YYYY/MM/...`) 에 업로드하고 마커를 `/api/admin/upload/{key}` 로 치환. figure 가 없는 페이지의 raster 는 영구 저장하지 않아 비용을 최소화한다.

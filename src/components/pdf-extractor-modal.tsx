@@ -653,9 +653,15 @@ function buildWarning(data: PdfConvertResponse): PageState["warning"] {
 }
 
 function formatWarning(w: NonNullable<PageState["warning"]>): string {
+  // truncated + empty 가 동시일 때는 같은 원인(LLM 이 tool_use 의 input JSON 을 만들기 전에
+  // max_tokens 에 도달 → Anthropic 이 미완성 input.blocks 를 정상 노출 안 함)의 다른 측면이라
+  // 두 라벨을 따로 나열하지 않고 단일 메시지로 정돈한다.
+  if (w.truncated && w.empty) {
+    return "출력 한도 초과 — 페이지가 너무 큼 (다시 변환 또는 페이지 분할 필요)";
+  }
   const parts: string[] = [];
   if (w.truncated) parts.push("응답 잘림 (max_tokens 초과)");
   if (w.droppedBlocks && w.droppedBlocks > 0) parts.push(`형식 폐기 ${w.droppedBlocks}개`);
-  if (w.empty) parts.push("빈 응답");
+  if (w.empty) parts.push("빈 응답 (페이지에 추출 가능한 내용 없음)");
   return parts.join(" · ");
 }

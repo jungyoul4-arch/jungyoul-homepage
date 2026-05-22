@@ -8,9 +8,10 @@ import {
 } from "../pdf-convert-prompt";
 
 describe("PDF_CONVERT_MAX_TOKENS", () => {
-  // 회귀 가드 — 8000 으로 내려가면 표 많은 페이지에서 응답 잘림 회귀가 다시 발생.
-  it("is at least 16000 to avoid mid-response truncation on table-heavy pages", () => {
-    expect(PDF_CONVERT_MAX_TOKENS).toBeGreaterThanOrEqual(16000);
+  // 회귀 가드 — 8k/16k 로 내려가면 표·본문이 함께 큰 페이지에서 응답 잘림 회귀가 다시 발생.
+  // 16k 가 부족했던 사례: commit 111f990 직후 더 큰 PDF 페이지에서 truncated + empty 동시 발생(2026-05-22).
+  it("is at least 32000 to avoid mid-response truncation on large pages", () => {
+    expect(PDF_CONVERT_MAX_TOKENS).toBeGreaterThanOrEqual(32000);
   });
 });
 

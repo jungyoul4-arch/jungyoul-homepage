@@ -28,10 +28,14 @@ export interface PdfConvertResult {
 
 export const PDF_CONVERT_MODEL = "claude-sonnet-4-6";
 
-// 표가 다수 들어간 페이지는 출력 토큰이 빠르게 늘어 4000/8000 으로는 응답이 잘려 일부 블록이 누락됐다.
-// tool_use 로 구조화 출력을 강제하더라도 max_tokens 초과 시 부분 결과가 도착하므로 여유 마진을 둠.
+// 표가 다수 들어간 페이지는 출력 토큰이 빠르게 늘어 응답이 잘려 일부 블록이 누락됐다.
+// 8k → 16k (commit 111f990) 로도 표·본문이 함께 큰 페이지에서 truncated + empty 가 동시에 set 되는
+// 회귀가 재현(2026-05-22). LLM 이 tool_use 의 input JSON 을 만드는 도중 max_tokens 에 도달하면
+// Anthropic 은 미완성 input.blocks 를 정상 형태로 노출하지 않아 extractToolUseBlocks 가 0 블록을
+// 반환 → 페이지 통째 누락. 16k → 32k 로 추가 상향. Claude Sonnet 4.6 의 출력 한도(64k)의 절반으로
+// 안전 마진 충분하고, 평균 비용은 LLM 이 실제 출력한 만큼만 부과되어 큰 페이지에서만 약 2배 증가.
 // 잘림 자체는 `stop_reason === "max_tokens"` 로 라우트에서 감지해 `truncated: true` 로 클라이언트에 전달.
-export const PDF_CONVERT_MAX_TOKENS = 16000;
+export const PDF_CONVERT_MAX_TOKENS = 32000;
 
 /** LLM 이 figure src 자리에 출력하는 마커. 서버가 페이지 raster R2 URL 로 치환. */
 export const PAGE_RASTER_MARKER = "__PAGE_RASTER__";
