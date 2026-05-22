@@ -1,12 +1,28 @@
 "use client";
 
-import { useRef, useState, useCallback, useEffect } from "react";
+import { useRef, useState, useCallback, useEffect, useImperativeHandle, type Ref } from "react";
 import { ImageIcon, Video } from "lucide-react";
 import { normalizePastedHtml } from "@/lib/normalize-paste";
+
+/**
+ * 외부에서 에디터 본문에 HTML 을 주입할 때 쓰는 imperative handle.
+ * - `insertHtml(html)`: 현재 커서 위치에 fragment 삽입 (커서가 editor 바깥이면 본문 끝).
+ *                       표/figure 등 블록 미디어가 포함되면 빈 `<p><br></p>` 를 통째 교체한다 (브라우저가
+ *                       `<p>` 안 `<table>` 을 자동 변형하면서 셀이 깨지는 회귀 방지 — 기존 insertHtmlAtCursor 의 동작).
+ *                       data:URL `<img>` 는 자동으로 R2 로 업로드되어 영구 URL 로 치환된다.
+ * - `focus()`: 에디터에 포커스.
+ *
+ * 사용처: `PdfExtractorModal` 등 어드민 본문 주입 도구. 일반 폼 입력은 기존 `value`/`onChange` 만 쓰면 충분.
+ */
+export interface ContentEditorHandle {
+  insertHtml: (html: string) => Promise<void>;
+  focus: () => void;
+}
 
 interface ContentEditorProps {
   value: string;
   onChange: (value: string) => void;
+  ref?: Ref<ContentEditorHandle>;
 }
 
 /* ── 동영상 URL 파싱 ── */
@@ -57,7 +73,7 @@ const tbtnOn = `${tbtnBase} text-blue-600 bg-blue-50`;
 
 /* ── ContentEditor ── */
 
-export function ContentEditor({ value, onChange }: ContentEditorProps) {
+export function ContentEditor({ value, onChange, ref }: ContentEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -628,6 +644,34 @@ export function ContentEditor({ value, onChange }: ContentEditorProps) {
   // toolbar 버튼이 mousedown 으로 editor selection 을 빼앗는 것을 막는다.
   // (mousedown 이 contenteditable 의 selection 을 무너뜨려 직후 execCommand/직접조작이 잘못된 위치에 적용되는 케이스 방지)
   const preventEditorBlur = (e: React.MouseEvent) => e.preventDefault();
+
+  // 외부(PDF 추출 모달 등)에서 본문에 HTML 을 주입하는 진입점.
+  // - normalizePastedHtml 파이프라인을 한 번 거쳐 외부 페이스트와 동일한 정리 정책 적용
+  //   (style 화이트리스트, data:URL <img> R2 업로드, 위험 노드 제거).
+  // - 커서가 editor 바깥이면 본문 끝에 캐럿을 두어 항상 안전하게 삽입.
+  // deps 생략으로 매 렌더 새 핸들 생성 → stale closure 회피 (uploadImage/insertHtmlAtCursor 가 useCallback 이 아님).
+  useImperativeHandle(ref, () => ({
+    insertHtml: async (html: string) => {
+      const editor = editorRef.current;
+      if (!editor) return;
+      const processed = await normalizePastedHtml(html, { uploadDataUrl: uploadImage });
+      editor.focus();
+      const selection = window.getSelection();
+      const hasValidSelection =
+        !!selection &&
+        selection.rangeCount > 0 &&
+        editor.contains(selection.getRangeAt(0).startContainer);
+      if (!hasValidSelection) {
+        const range = document.createRange();
+        range.setStart(editor, editor.childNodes.length);
+        range.collapse(true);
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+      }
+      insertHtmlAtCursor(processed);
+    },
+    focus: () => editorRef.current?.focus(),
+  }));
 
   return (
     <div className="border border-gray-300 rounded-sm overflow-hidden focus-within:border-blue-600 transition-colors">

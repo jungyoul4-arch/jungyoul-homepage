@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ContentEditor } from "@/components/content-editor";
+import { FileText } from "lucide-react";
+import { ContentEditor, type ContentEditorHandle } from "@/components/content-editor";
 import { ThumbnailUploader } from "@/components/thumbnail-uploader";
 import { ExamTagSelects } from "@/components/exam-tag-selects";
+import { PdfExtractorModal } from "@/components/pdf-extractor-modal";
 import { categories } from "@/lib/data";
 
 const categoryOptions = categories.filter((c) => c.value !== "all");
@@ -12,6 +14,8 @@ const categoryOptions = categories.filter((c) => c.value !== "all");
 export default function NewArticlePage() {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
+  const [pdfOpen, setPdfOpen] = useState(false);
+  const editorRef = useRef<ContentEditorHandle>(null);
   const [form, setForm] = useState({
     title: "",
     excerpt: "",
@@ -138,8 +142,20 @@ export default function NewArticlePage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">본문</label>
+          <div className="flex items-center justify-between mb-1">
+            <label className="text-sm font-medium text-gray-700">본문</label>
+            <button
+              type="button"
+              onClick={() => setPdfOpen(true)}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-brand-blue border border-border-light rounded hover:bg-media-bg transition-colors"
+              title="PDF 파일에서 텍스트/표/이미지를 객체 단위로 추출해 본문에 삽입"
+            >
+              <FileText size={12} />
+              PDF에서 가져오기
+            </button>
+          </div>
           <ContentEditor
+            ref={editorRef}
             value={form.content}
             onChange={(val) => update("content", val)}
           />
@@ -171,6 +187,14 @@ export default function NewArticlePage() {
           </button>
         </div>
       </form>
+
+      <PdfExtractorModal
+        open={pdfOpen}
+        onClose={() => setPdfOpen(false)}
+        onInsert={(html) => {
+          void editorRef.current?.insertHtml(html);
+        }}
+      />
     </div>
   );
 }
