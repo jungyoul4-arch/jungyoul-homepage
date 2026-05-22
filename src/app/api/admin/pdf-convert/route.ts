@@ -6,9 +6,12 @@ import {
   PDF_CONVERT_MODEL,
   PDF_CONVERT_MAX_TOKENS,
   PDF_CONVERT_SYSTEM_PROMPT,
+  PDF_CONVERT_TOOL,
   PAGE_RASTER_MARKER,
   buildUserMessageText,
+  extractToolUseBlocks,
   parsePdfConvertResponse,
+  type AnthropicContentBlock,
   type PdfBlock,
 } from "@/lib/pdf-convert-prompt";
 
@@ -17,8 +20,9 @@ import {
 // 내부 toBase64 round-trip 이 Cloudflare Workers 에서 RangeError(stack overflow) 로 throw.
 // 우리는 1600px JPEG (≈1MB) 를 매 페이지마다 보내므로 정확히 트리거 조건에 들어맞아 raw fetch 로 우회.
 interface AnthropicMessagesResponse {
-  content: Array<{ type: string; text?: string }>;
+  content: AnthropicContentBlock[];
   usage?: { input_tokens: number; output_tokens: number };
+  stop_reason?: string;
 }
 
 // base64 약 11MB 까지만 허용 (8MB raw 이미지 ≈ base64 11MB). Anthropic 이미지 한도(5MB)를 클라이언트 측에서
@@ -79,6 +83,10 @@ export async function POST(request: NextRequest) {
         model: PDF_CONVERT_MODEL,
         max_tokens: PDF_CONVERT_MAX_TOKENS,
         system: PDF_CONVERT_SYSTEM_PROMPT,
+        // tool_use 로 구조화 출력 강제. tool_choice 로 emit_blocks 호출을 의무화하여
+        // 표 셀의 본문 따옴표 escape 실패·max_tokens 초과 잘림으로 JSON.parse 가 깨지던 경로를 제거.
+        tools: [PDF_CONVERT_TOOL],
+        tool_choice: { type: "tool", name: PDF_CONVERT_TOOL.name },
         messages: [
           {
             role: "user",
@@ -115,16 +123,25 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: `LLM 호출 실패: ${message}` }, { status: 502 });
   }
 
-  const rawText = apiJson.content
-    .filter((c) => c.type === "text" && typeof c.text === "string")
-    .map((c) => c.text as string)
-    .join("\n");
+  // 정상 경로: tool_use 응답에서 emit_blocks 의 input.blocks 를 추출.
+  let blocks = extractToolUseBlocks(apiJson.content);
+  let usedFallback = false;
 
-  const parsed = parsePdfConvertResponse(rawText);
+  // 보조 폴백: tool_use 가 비어 있고 텍스트만 도착한 예외 케이스.
+  if (blocks.length === 0) {
+    const rawText = apiJson.content
+      .filter((c) => c.type === "text" && typeof c.text === "string")
+      .map((c) => c.text as string)
+      .join("\n");
+    if (rawText) {
+      blocks = parsePdfConvertResponse(rawText).blocks;
+      usedFallback = true;
+    }
+  }
 
   // figure src=__PAGE_RASTER__ 가 하나라도 있으면 페이지 raster 를 R2 에 영구 저장하고 마커를 영구 URL 로 치환.
   // 본문에 실제로 삽입되지 않는 페이지의 raster 는 영구 저장 안 됨 — LLM 이 figure 를 출력한 페이지만 비용 발생.
-  const needsRaster = parsed.blocks.some((b) => b.html.includes(PAGE_RASTER_MARKER));
+  const needsRaster = blocks.some((b) => b.html.includes(PAGE_RASTER_MARKER));
   let rasterUrl: string | null = null;
   if (needsRaster) {
     try {
@@ -143,7 +160,7 @@ export async function POST(request: NextRequest) {
   }
 
   // 마커 치환 + 블록 단위 sanitize. sanitize 가 화이트리스트 외 태그·속성을 1차 차단.
-  const cleanedBlocks: PdfBlock[] = parsed.blocks.map((b) => {
+  const cleanedBlocks: PdfBlock[] = blocks.map((b) => {
     let html = b.html;
     if (rasterUrl) {
       html = html.split(PAGE_RASTER_MARKER).join(rasterUrl);
@@ -159,7 +176,9 @@ export async function POST(request: NextRequest) {
     pageNumber: safePageNumber,
     blocks: cleanedBlocks.length,
     usage: apiJson.usage,
+    stopReason: apiJson.stop_reason,
     rasterUploaded: !!rasterUrl,
+    usedFallback,
   });
 
   return NextResponse.json({
