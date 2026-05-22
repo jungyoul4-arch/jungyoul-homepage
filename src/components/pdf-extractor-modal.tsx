@@ -524,12 +524,19 @@ function PageCard({
             type="button"
             onClick={onRetry}
             className="inline-flex items-center gap-0.5 text-red-600 hover:underline"
-            title={page.error}
           >
             <RotateCw size={11} /> 재시도
           </button>
         )}
       </div>
+      {page.status === "error" && page.error && (
+        <p
+          className="px-2 py-1.5 text-[11px] leading-snug text-red-700 bg-red-50 border-t border-red-100 break-words whitespace-pre-wrap"
+          role="alert"
+        >
+          {page.error}
+        </p>
+      )}
     </div>
   );
 }
