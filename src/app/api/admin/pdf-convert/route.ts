@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { requireAdmin } from "@/lib/admin-auth";
 import { sanitizeContent } from "@/lib/sanitize";
@@ -12,6 +11,15 @@ import {
   parsePdfConvertResponse,
   type PdfBlock,
 } from "@/lib/pdf-convert-prompt";
+
+// Anthropic Messages API 직접 호출 응답 형태 (필요한 필드만).
+// SDK 우회 이유: anthropics/anthropic-sdk-typescript#932 — 대용량 base64 이미지를 SDK 의
+// 내부 toBase64 round-trip 이 Cloudflare Workers 에서 RangeError(stack overflow) 로 throw.
+// 우리는 1600px JPEG (≈1MB) 를 매 페이지마다 보내므로 정확히 트리거 조건에 들어맞아 raw fetch 로 우회.
+interface AnthropicMessagesResponse {
+  content: Array<{ type: string; text?: string }>;
+  usage?: { input_tokens: number; output_tokens: number };
+}
 
 // base64 약 11MB 까지만 허용 (8MB raw 이미지 ≈ base64 11MB). Anthropic 이미지 한도(5MB)를 클라이언트 측에서
 // 더 보수적으로 깎아 보내야 하지만, 서버에서도 백스톱.
@@ -58,42 +66,58 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const client = new Anthropic({ apiKey });
-
-  let response;
+  let apiJson: AnthropicMessagesResponse;
   try {
-    response = await client.messages.create({
-      model: PDF_CONVERT_MODEL,
-      max_tokens: PDF_CONVERT_MAX_TOKENS,
-      system: PDF_CONVERT_SYSTEM_PROMPT,
-      messages: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "image",
-              source: {
-                type: "base64",
-                media_type: "image/jpeg",
-                data: pageImageBase64,
+    const apiRes = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        model: PDF_CONVERT_MODEL,
+        max_tokens: PDF_CONVERT_MAX_TOKENS,
+        system: PDF_CONVERT_SYSTEM_PROMPT,
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "image",
+                source: {
+                  type: "base64",
+                  media_type: "image/jpeg",
+                  data: pageImageBase64,
+                },
               },
-            },
-            {
-              type: "text",
-              text: buildUserMessageText({ pageNumber: safePageNumber, pageText: safeText }),
-            },
-          ],
-        },
-      ],
+              {
+                type: "text",
+                text: buildUserMessageText({ pageNumber: safePageNumber, pageText: safeText }),
+              },
+            ],
+          },
+        ],
+      }),
     });
+
+    if (!apiRes.ok) {
+      const errBody = await apiRes.text();
+      return NextResponse.json(
+        { error: `LLM 호출 실패: ${apiRes.status} ${errBody.slice(0, 500)}` },
+        { status: 502 },
+      );
+    }
+
+    apiJson = (await apiRes.json()) as AnthropicMessagesResponse;
   } catch (e) {
     const message = e instanceof Error ? e.message : "알 수 없는 오류";
     return NextResponse.json({ error: `LLM 호출 실패: ${message}` }, { status: 502 });
   }
 
-  const rawText = response.content
-    .filter((c): c is Anthropic.TextBlock => c.type === "text")
-    .map((c) => c.text)
+  const rawText = apiJson.content
+    .filter((c) => c.type === "text" && typeof c.text === "string")
+    .map((c) => c.text as string)
     .join("\n");
 
   const parsed = parsePdfConvertResponse(rawText);
@@ -134,13 +158,13 @@ export async function POST(request: NextRequest) {
   console.info("[pdf-convert]", {
     pageNumber: safePageNumber,
     blocks: cleanedBlocks.length,
-    usage: response.usage,
+    usage: apiJson.usage,
     rasterUploaded: !!rasterUrl,
   });
 
   return NextResponse.json({
     blocks: cleanedBlocks,
-    usage: response.usage,
+    usage: apiJson.usage,
   });
 }
 
