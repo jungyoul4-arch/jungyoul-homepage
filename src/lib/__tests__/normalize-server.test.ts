@@ -97,4 +97,37 @@ describe("normalizeArticleHtml", () => {
     expect(out).toContain("그냥 평문 단락입니다.");
     expect(out).toMatch(/<p[^>]*>그냥 평문 단락입니다\.<\/p>/);
   });
+
+  // ── 의도적 빈 줄(2줄 개행) 보존 — keepEmptyParagraphs (회귀: "수정 시 2줄 개행 미적용") ──
+
+  it("9. preserves intentional empty paragraph (2줄 개행)", () => {
+    const out = normalizeArticleHtml(`<p>첫 단락</p><p><br></p><p>둘째 단락</p>`);
+    expect(out).toMatch(/<p>\s*<br\s*\/?>\s*<\/p>/);
+    expect(out).toContain("첫 단락");
+    expect(out).toContain("둘째 단락");
+  });
+
+  it("10. normalizes bare empty <p></p> to <p><br></p>", () => {
+    const out = normalizeArticleHtml(`<p>a</p><p></p><p>b</p>`);
+    expect(out).toMatch(/<p>\s*<br\s*\/?>\s*<\/p>/);
+    expect(out).not.toMatch(/<p>\s*<\/p>/);
+  });
+
+  it("11. preserves ALL consecutive empty paragraphs (no collapse)", () => {
+    const out = normalizeArticleHtml(`<p>a</p><p><br></p><p><br></p><p>b</p>`);
+    const empties = out.match(/<p>\s*<br\s*\/?>\s*<\/p>/g) || [];
+    expect(empties.length).toBe(2);
+  });
+
+  it("12. empty-line preservation is idempotent", () => {
+    const once = normalizeArticleHtml(`<p>a</p><p></p><p><br></p><p>b</p>`);
+    expect(normalizeArticleHtml(once)).toBe(once);
+  });
+
+  it("13. still removes empty figcaption even in keep mode", () => {
+    const out = normalizeArticleHtml(
+      `<figure><img src="/x.png" alt="" /><figcaption></figcaption></figure>`,
+    );
+    expect(out).not.toMatch(/<figcaption>\s*<\/figcaption>/);
+  });
 });

@@ -54,7 +54,9 @@ export function normalizeArticleHtml(html: string): string {
   // 순서는 normalize-paste.ts 의 canonical pipeline 과 동일 (lines 488-495).
   // 0) <img>/<span> 의 의미없는 text-align 및 justify 제거 (구조 청소 판단에 노이즈로 끼지 않도록 선행).
   // 1) 단일 자식 중첩 figure 평탄화 → 2) 본문성 figcaption → p lift → 3) 미디어 없는 figure unwrap →
-  // 4) <b><p>X</p></b> 같은 invalid 정상화 → 5) 인라인 style 화이트리스트 → 6) 빈 <p>/<figcaption> 제거.
+  // 4) <b><p>X</p></b> 같은 invalid 정상화 → 5) 인라인 style 화이트리스트 →
+  // 6) 빈 <figcaption> 제거 + 빈 <p> 는 <p><br></p> 로 보존 (keepEmptyParagraphs — 사용자가 에디터에서
+  //    Enter 로 만든 의도적 2줄 개행 유지. paste 단계 normalizePastedHtml 은 인자 없이 호출해 노이즈 제거 유지).
   const doc = document as unknown as Document;
   cleanTextAlignNoise(doc);
   flattenRedundantFigures(doc);
@@ -62,7 +64,7 @@ export function normalizeArticleHtml(html: string): string {
   unwrapBodyFigures(doc);
   unwrapInlineWrappingBlocks(doc);
   stripNonAllowlistedInlineStyles(doc);
-  removeEmptyBlocks(doc);
+  removeEmptyBlocks(doc, { keepEmptyParagraphs: true });
 
   return document.body.innerHTML;
 }

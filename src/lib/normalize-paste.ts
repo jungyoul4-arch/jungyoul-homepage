@@ -462,13 +462,39 @@ export function stripNonAllowlistedInlineStyles(doc: Document): void {
  * 13. 빈 <p>/<figcaption> 제거.
  * 텍스트 0 + 미디어 0. <br> 만 있어도 제거 (단, <p><br></p> 가 캐럿 placeholder 로 의도된 경우 -- 에디터가 빈 상태로 시작할 때 사용 --
  * 는 페이스트 단계에서는 무관. 페이스트 결과 HTML 에서 빈 단락은 잡 노이즈).
+ *
+ * options.keepEmptyParagraphs=true (저장/공개 렌더 정규화 normalizeArticleHtml 경로): 사용자가 에디터에서
+ * Enter 로 만든 의도적 빈 줄(2줄 개행)을 보존한다. 빈 <p> 는 <p><br></p> 로 정규화해 보존(재진입 캐럿 보장 +
+ * idempotency), 빈 <figcaption>(캡션 미입력 잔재)은 보존 모드에서도 계속 제거. paste 경로(normalizePastedHtml)는
+ * 인자 없이 호출해 Notion 등의 단락 노이즈 제거 동작을 유지 — paste/저장 정책 분리.
  */
-export function removeEmptyBlocks(doc: Document): void {
+export interface RemoveEmptyBlocksOptions {
+  /** true 면 빈 <p>(완전 빈 / <br>만 있는)를 제거하지 않고 <p><br></p> 로 정규화해 보존한다.
+   *  빈 <figcaption>(캡션 미입력 잔재)은 보존 모드에서도 계속 제거. 기본 false(= 기존 paste 동작). */
+  keepEmptyParagraphs?: boolean;
+}
+
+export function removeEmptyBlocks(doc: Document, options?: RemoveEmptyBlocksOptions): void {
+  const keep = options?.keepEmptyParagraphs ?? false;
   Array.from(doc.querySelectorAll("p, figcaption")).forEach((el) => {
     const hasNonBrMedia = el.querySelector("img, table, figure, iframe, video");
     if (hasNonBrMedia) return;
     const text = (el.textContent || "").trim();
-    if (!text) el.remove();
+    if (text) return;
+
+    // 빈 블록 (텍스트 0, 미디어 0)
+    if (!keep) {
+      el.remove();
+      return;
+    }
+    // 보존 모드: 빈 <figcaption>(캡션 미입력 잔재)은 의도적 빈 줄이 아니므로 계속 제거.
+    if (el.tagName.toLowerCase() === "figcaption") {
+      el.remove();
+      return;
+    }
+    // 빈 <p> / <p><span><br></span></p> 등 → <p><br></p> 로 통일 (재진입 캐럿 보장 + idempotency 핵심).
+    while (el.firstChild) el.removeChild(el.firstChild);
+    el.appendChild(doc.createElement("br"));
   });
 }
 

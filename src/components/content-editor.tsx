@@ -416,13 +416,22 @@ export function ContentEditor({ value, onChange, ref }: ContentEditorProps) {
       }
     }
 
-    // 4. 일반 텍스트: 외부 서식 제거 후 <p> 태그로 정규화
+    // 4. 일반 텍스트: 외부 서식 제거 후 <p> 태그로 정규화.
+    //    중간 빈 줄(2줄 개행)은 <p><br></p> 로 보존 — 선행/후행 빈 줄만 클립보드 노이즈로 트림.
+    //    plain 텍스트의 &,<,> 는 마크업으로 해석되지 않도록 escape (서식 제거가 목적).
     if (plainFromClipboard) {
       e.preventDefault();
-      const paragraphs = plainFromClipboard
-        .split(/\r?\n/)
-        .filter((line) => line.trim() !== "");
-      const html = paragraphs.map((line) => `<p>${line}</p>`).join("");
+      const lines = plainFromClipboard.replace(/\r\n?/g, "\n").split("\n");
+      let start = 0;
+      let end = lines.length;
+      while (start < end && lines[start].trim() === "") start++;
+      while (end > start && lines[end - 1].trim() === "") end--;
+      const esc = (t: string) =>
+        t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      const html = lines
+        .slice(start, end)
+        .map((line) => (line.trim() === "" ? "<p><br></p>" : `<p>${esc(line)}</p>`))
+        .join("");
       document.execCommand("insertHTML", false, html);
       syncToParent();
     }

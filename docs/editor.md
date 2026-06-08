@@ -15,7 +15,7 @@
 
 2. **단독 이미지**: `clipboardData.items` 에 `image/*` 단독 (스크린샷 캡쳐 등) → `handleImageFiles()` → R2 업로드 → `<figure><img><figcaption>`
 3. **동영상 URL**: text/plain 이 YouTube/Vimeo URL 이면 임베드 iframe 으로 변환
-4. **plain text 폴백**: 줄 단위 split → `<p>` 태그로 정규화
+4. **plain text 폴백**: 줄 단위 split → `<p>` 태그로 정규화. **중간 빈 줄(2줄 개행)은 `<p><br></p>` 로 보존**(선행/후행 빈 줄만 클립보드 노이즈로 트림), 각 줄은 `&,<,>` escape 후 삽입(서식 제거 목적)
 
 ### 페이스트 진단 로깅
 `handlePaste` 진입 시 `console.info("[paste]", { types, htmlLen, htmlSample, plainLen, plainSample, itemTypes, filesCount })` 출력. 다양한 클립보드 페이로드(특히 Mac 한컴오피스 한글 뷰어) 디버그용. 충분히 데이터 수집되면 별도 PR 로 제거.
@@ -44,7 +44,7 @@
   - `<iframe>`, video embed wrapper `<div>` (padding-bottom 비율 + iframe 자식): 임베드 좌표용 `position/top/left/width/height/padding-bottom/overflow/border-radius/margin/border` (그리고 embed div 는 `text-align` 도)
   - 그 외 모든 태그: `text-align: left|center|right` 만
   - 제거 대상(예외 외): `font-size`, `font-weight`, `font-style`, `color`, `background-color`, `line-height`, `letter-spacing`, `text-decoration`, `text-indent`, `vertical-align`, `margin`, `padding`, `border`, `border-radius`, `width/height` 등 — Notion 의 `lab(...)` 색, `font-size:0.75rem`, `width:328px` 등이 모두 여기서 사라져 `.article-content` CSS(samsung-newsroom-feature-ui 실측값)로 폴스루.
-- **빈 블록 제거 확장**: `<p>` 외 `<figcaption>` 도 대상. 텍스트 0 + 미디어 0 (br 만 있어도) 제거.
+- **빈 블록 제거(`removeEmptyBlocks`)**: `<p>`/`<figcaption>` 중 텍스트 0 + 미디어 0 (br 만 있어도) 제거. **단 paste 경로에서만 전량 제거** — 저장/공개 렌더 정규화(`normalizeArticleHtml`)는 `{ keepEmptyParagraphs: true }` 로 호출해 사용자가 만든 빈 `<p>` 를 보존한다(아래 "서버 normalize" 참고). paste/저장 정책 분리.
 - `data:` URL `<img>` → 업로드 콜백으로 R2 영구 URL 치환. **업로드 실패 시 조용히 제거하지 않고** placeholder span(`[이미지 업로드 실패 — 다시 붙여넣어 주세요]`)으로 교체
 
 ### `insertHtmlAtCursor()` 블록 안전 삽입
@@ -109,7 +109,9 @@
 
 **liftBodyFigcaptions 의 블록 자식 처리** (2026-05-19 추가분): figcaption 이 자식으로 `<p>/<h1-6>/<div>/<blockquote>/<figure>/<ul>/<ol>/<li>/<table>` 을 가지면 `<p>` 로 wrap 하지 않고 unwrap 한다. wrap 하면 `<p><p>X</p></p>` invalid HTML 이 생성되어 브라우저 재파싱 시 nesting 이 무너지고 idempotent 가 깨진다. inline `style`(text-align) 은 자식들에게 분배.
 
-**테스트**: `src/lib/__tests__/normalize-server.test.ts` 가 라이브 d3a6632e raw HTML 을 fixture (`fixtures/article-d3a6632e-rendered.html`) 로 두고 검증. `scripts/smoke-paste-cleanup.mjs` 는 POST→GET→공개페이지 라운드트립을 wrangler dev 에서 실측 (POST 경로 normalize 검증).
+**빈 줄(2줄 개행) 보존** (회귀 "수정 시 2줄 개행 미적용"): `removeEmptyBlocks` 는 paste 경로(`normalizePastedHtml`)에서는 인자 없이 호출되어 모든 빈 `<p>`/`<figcaption>` 를 제거(Notion 등 단락 노이즈 청소)하지만, 서버 `normalizeArticleHtml` 에서는 `{ keepEmptyParagraphs: true }` 로 호출해 사용자가 에디터에서 Enter 로 만든 빈 `<p>` 를 `<p><br></p>` 로 정규화해 **보존**한다(빈 `<figcaption>` 캡션 잔재는 보존 모드에서도 계속 제거). paste 본문은 이미 paste 단계에서 노이즈가 제거된 뒤 에디터에 들어오므로, 저장 단계 보존이 노이즈를 되살리지 않는다(정책 분리). 빈 `<p>` → `<p><br></p>` 정규화가 idempotency 의 핵심. CSS 는 `.article-content p { padding-top:32px; line-height:30px }` 로 빈 단락당 약 2배(≈62px) 간격을 만들어 별도 CSS 불필요. 연속 빈 줄은 제한 없이 입력한 만큼 보존.
+
+**테스트**: `src/lib/__tests__/normalize-server.test.ts` 가 라이브 d3a6632e raw HTML 을 fixture (`fixtures/article-d3a6632e-rendered.html`) 로 두고 검증(빈 줄 보존·정규화·idempotency 는 케이스 9~13). `scripts/smoke-paste-cleanup.mjs` 는 POST→GET→공개페이지 라운드트립을 wrangler dev 에서 실측 (POST 경로 normalize 검증).
 
 ## 썸네일 편집기
 
