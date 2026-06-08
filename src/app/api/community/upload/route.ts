@@ -7,7 +7,7 @@ import { requireAnonSession } from "@/lib/anon-session";
 // R2 키 prefix 는 `community/YYYY/MM/...` 로 분리하여 운영 어드민 자산과 격리.
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
 const ALLOWED_EXTS = ["jpg", "jpeg", "png", "gif", "webp"];
-const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_SIZE = 30 * 1024 * 1024; // 30MB
 
 export async function POST(request: NextRequest) {
   const guard = await requireAnonSession(request);
@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     }
     if (file.size > MAX_SIZE) {
       return NextResponse.json(
-        { error: "파일 크기는 10MB 이하여야 합니다." },
+        { error: `파일 크기는 ${MAX_SIZE / 1024 / 1024}MB 이하여야 합니다.` },
         { status: 400 }
       );
     }

@@ -117,7 +117,7 @@
 - 드래그&드롭, 클릭, Ctrl+V 지원
 - 이미지 있을 때 우상단 3개 버튼: **Type(텍스트 오버레이) / Upload(변경) / X(삭제)**
 - 이미지 없을 때 업로드 영역 아래에 "텍스트만으로 썸네일 만들기" 보조 버튼 노출 → `ThumbnailOverlayEditor` 를 placeholder 모드로 호출
-- 업로드 엔드포인트: `POST /api/admin/upload` (`image/jpeg|png|gif|webp`, 10MB 한도, R2 저장, `/api/admin/upload/{key}` 프록시 URL 반환)
+- 업로드 엔드포인트: `POST /api/admin/upload` (`image/jpeg|png|gif|webp`, 30MB 한도, R2 저장, `/api/admin/upload/{key}` 프록시 URL 반환)
 
 ### `ThumbnailOverlayEditor` (Canvas 2D)
 - `imageUrl: string | null` — 이미지가 없으면 그라디언트(135deg, 220/40/70 → 240/50/50) 배경 위에 텍스트만 합성하여 새 썸네일 이미지 생성

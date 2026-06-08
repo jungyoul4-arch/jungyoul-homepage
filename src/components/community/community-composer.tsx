@@ -142,7 +142,7 @@ export function CommunityComposer({ tags }: Props) {
       </div>
 
       <div className="mb-4">
-        <label className="block text-xs text-community-muted mb-1">이미지 (1장, 최대 10MB)</label>
+        <label className="block text-xs text-community-muted mb-1">이미지 (1장, 최대 30MB)</label>
         {imageUrl ? (
           <div className="relative w-full max-w-md aspect-[16/9] overflow-hidden rounded-sm border border-community-border bg-community-surface">
             <Image
