@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { requireAnonSession } from "@/lib/anon-session";
+import { generateThumbVariants } from "@/lib/image-variants-server";
 
 // 익명 세션 사용자의 이미지 업로드 (글당 1장).
 // src/app/api/admin/upload/route.ts 와 동일한 검증 규약 — requireAdmin 만 requireAnonSession 으로 교체.
@@ -44,11 +45,18 @@ export async function POST(request: NextRequest) {
     const random = crypto.randomUUID().slice(0, 8);
     const key = `${path}/${Date.now()}-${random}.${ext}`;
 
-    const { env } = await getCloudflareContext({ async: true });
+    const { env, ctx } = await getCloudflareContext({ async: true });
     const arrayBuffer = await file.arrayBuffer();
     await env.IMAGES_BUCKET.put(key, arrayBuffer, {
       httpMetadata: { contentType: file.type },
     });
+
+    // 카드로 렌더되는(thumbSrc ?w) 업로드만 옵트인으로 변형 생성 → 무료 할당량 절약.
+    if (formData.get("thumbVariants") === "1") {
+      const job = generateThumbVariants(env, key, arrayBuffer);
+      if (ctx?.waitUntil) ctx.waitUntil(job);
+      else await job;
+    }
 
     const url = `/api/community/upload/${key}`;
     return NextResponse.json({ url, key });

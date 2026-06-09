@@ -43,6 +43,7 @@ export function CommunityComposer({ tags }: Props) {
       const uploadable = await resizeImageFile(file, { maxEdge: 1600 });
       const fd = new FormData();
       fd.append("file", uploadable);
+      fd.append("thumbVariants", "1"); // 카드 서빙용 640/1280 webp 변형 생성
       const res = await fetch("/api/community/upload", { method: "POST", body: fd });
       const data = await res.json();
       if (!res.ok) {

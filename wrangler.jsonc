@@ -9,6 +9,10 @@
 		"directory": ".open-next/assets",
 		"binding": "ASSETS"
 	},
+	// 업로드 라우트가 카드용 썸네일 변형(640/1280 webp)을 생성하는 데 사용.
+	"images": {
+		"binding": "IMAGES"
+	},
 	"d1_databases": [
 		{
 			"binding": "DB",

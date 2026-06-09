@@ -205,7 +205,7 @@ function Pagination({
 /* ── Article Card ── */
 function ArticleCard({ article }: { article: Article }) {
   return (
-    <article className="relative">
+    <article className="relative cv-card">
       <div className="absolute top-2 right-2 z-10">
         <AdminEditButton type="article" data={article} />
       </div>

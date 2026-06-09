@@ -50,6 +50,7 @@ export function ThumbnailUploader({ value, overlays, onChange }: ThumbnailUpload
       const uploadable = await resizeImageFile(file);
       const formData = new FormData();
       formData.append("file", uploadable);
+      formData.append("thumbVariants", "1"); // 카드 서빙용 640/1280 webp 변형 생성
 
       const res = await fetch("/api/admin/upload", {
         method: "POST",

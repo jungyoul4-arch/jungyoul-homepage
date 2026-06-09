@@ -13,7 +13,7 @@ export function CommunityPostCard({ post }: Props) {
   return (
     <Link
       href={`/community/${post.id}`}
-      className="block border border-community-border rounded-md p-4 bg-white hover:bg-community-surface transition-colors"
+      className="block cv-card border border-community-border rounded-md p-4 bg-white hover:bg-community-surface transition-colors"
     >
       <div className="flex items-center gap-2 text-xs text-community-muted mb-2">
         <span

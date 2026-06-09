@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { requireAdmin } from "@/lib/admin-auth";
+import { generateThumbVariants } from "@/lib/image-variants-server";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
 const ALLOWED_EXTS = ["jpg", "jpeg", "png", "gif", "webp"];
@@ -44,12 +45,19 @@ export async function POST(request: NextRequest) {
     const random = crypto.randomUUID().slice(0, 8);
     const key = `${path}/${Date.now()}-${random}.${ext}`;
 
-    const { env } = await getCloudflareContext({ async: true });
+    const { env, ctx } = await getCloudflareContext({ async: true });
     const arrayBuffer = await file.arrayBuffer();
 
     await env.IMAGES_BUCKET.put(key, arrayBuffer, {
       httpMetadata: { contentType: file.type },
     });
+
+    // 카드로 렌더되는(thumbSrc ?w) 업로드만 옵트인으로 변형 생성 → 무료 할당량 절약.
+    if (formData.get("thumbVariants") === "1") {
+      const job = generateThumbVariants(env, key, arrayBuffer);
+      if (ctx?.waitUntil) ctx.waitUntil(job);
+      else await job;
+    }
 
     // R2 퍼블릭 URL (커스텀 도메인 설정 후 변경)
     // 기본: https://<account-id>.r2.cloudflarestorage.com/<bucket>/<key>

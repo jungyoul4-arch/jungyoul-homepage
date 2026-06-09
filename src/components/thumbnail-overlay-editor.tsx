@@ -187,6 +187,7 @@ export function ThumbnailOverlayEditor({
       const file = await resizeImageFile(composed);
       const fd = new FormData();
       fd.append("file", file);
+      fd.append("thumbVariants", "1"); // 카드 서빙용 640/1280 webp 변형 생성
       const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
       if (!res.ok) {
         const data = await res.json().catch(() => null);
