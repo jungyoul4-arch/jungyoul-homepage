@@ -46,20 +46,30 @@ const MAX_EDGE = Number(arg("max-edge", "1920"));
 const MIN_BYTES = Number(arg("min-bytes", String(300 * 1024)));
 const QUALITY = Number(arg("quality", "80"));
 
-const { R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY } = process.env;
-if (!R2_ACCOUNT_ID || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY) {
+// 복붙 시 끼어드는 공백/줄바꿈 제거(호스트명에 들어가면 TLS SNI 무효 → handshake 실패).
+const ACCOUNT_ID = (process.env.R2_ACCOUNT_ID ?? "").trim();
+const ACCESS_KEY_ID = (process.env.R2_ACCESS_KEY_ID ?? "").trim();
+const SECRET_ACCESS_KEY = (process.env.R2_SECRET_ACCESS_KEY ?? "").trim();
+// 관할권(jurisdiction) 버킷 등은 엔드포인트가 다를 수 있어 전체 URL 직접 지정 허용.
+//   예: export R2_ENDPOINT="https://<id>.eu.r2.cloudflarestorage.com"
+const ENDPOINT =
+  (process.env.R2_ENDPOINT ?? "").trim() ||
+  (ACCOUNT_ID ? `https://${ACCOUNT_ID}.r2.cloudflarestorage.com` : "");
+
+if (!ACCESS_KEY_ID || !SECRET_ACCESS_KEY || !ENDPOINT) {
   console.error(
-    "환경변수 R2_ACCOUNT_ID / R2_ACCESS_KEY_ID / R2_SECRET_ACCESS_KEY 가 필요합니다.",
+    "환경변수 R2_ACCOUNT_ID(또는 R2_ENDPOINT) / R2_ACCESS_KEY_ID / R2_SECRET_ACCESS_KEY 가 필요합니다.",
   );
   process.exit(1);
 }
+console.log(`[recompress] endpoint=${ENDPOINT}`); // 호스트명이 올바른지 눈으로 확인
 
 const s3 = new S3Client({
   region: "auto",
-  endpoint: `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+  endpoint: ENDPOINT,
   credentials: {
-    accessKeyId: R2_ACCESS_KEY_ID,
-    secretAccessKey: R2_SECRET_ACCESS_KEY,
+    accessKeyId: ACCESS_KEY_ID,
+    secretAccessKey: SECRET_ACCESS_KEY,
   },
 });
 
