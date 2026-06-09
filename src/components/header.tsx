@@ -4,10 +4,11 @@ import Link from "next/link";
 import Image from "next/image";
 import { createElement, type ReactNode } from "react";
 import { useState } from "react";
-import { Search, X, Menu, Lock, LayoutDashboard, ChevronDown } from "lucide-react";
+import { Search, X, Menu, Lock, LayoutDashboard, ChevronDown, Frame } from "lucide-react";
 // ChevronDown: 모바일 메뉴에서만 사용
 import { useAuth } from "./auth-provider";
 import { SiteLogo } from "./site-logo";
+import { PictureFrameOverlay } from "./picture-frame-overlay";
 import { DEFAULT_NAV, type NavGroup, type NavMenuItem } from "@/lib/default-nav";
 import { getHeaderLinkIcon } from "@/lib/header-link-icons";
 
@@ -52,12 +53,15 @@ interface HeaderProps {
   // RSC 래퍼(HeaderServer)에서 prefetch 한 초기값. 없으면 DEFAULT_NAV 폴백.
   initialNavGroups?: NavGroup[];
   initialHeaderLinks?: HeaderLink[];
+  // 액자 콘텐츠가 1개 이상일 때만 '액자' 버튼 노출.
+  hasPictureFrame?: boolean;
 }
 
-export function Header({ initialNavGroups, initialHeaderLinks }: HeaderProps = {}) {
+export function Header({ initialNavGroups, initialHeaderLinks, hasPictureFrame }: HeaderProps = {}) {
   const { isAdmin } = useAuth();
   const [searchOpen, setSearchOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [frameOpen, setFrameOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [navGroups] = useState<NavGroup[]>(
     initialNavGroups && initialNavGroups.length > 0 ? initialNavGroups : DEFAULT_NAV
@@ -127,8 +131,19 @@ export function Header({ initialNavGroups, initialHeaderLinks }: HeaderProps = {
           {/* Search + Admin + Mobile Menu */}
           <div className="flex items-center gap-3">
             {/* 데스크탑: 돋보기 왼편 인라인 헤더 링크 버튼 */}
-            {headerLinks.length > 0 && (
+            {(headerLinks.length > 0 || hasPictureFrame) && (
               <div className="hidden lg:flex items-center gap-2">
+                {/* 액자 버튼 — 헤더 링크(예: qa튜터링) 왼쪽에 위치 */}
+                {hasPictureFrame && (
+                  <button
+                    onClick={() => setFrameOpen(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 text-text-primary text-xs font-medium rounded-full hover:border-gray-400 hover:bg-gray-50 transition-colors"
+                    aria-label="액자"
+                  >
+                    <Frame size={14} />
+                    <span>액자</span>
+                  </button>
+                )}
                 {headerLinks.map((link) => (
                   <a
                     key={link.id}
@@ -180,8 +195,19 @@ export function Header({ initialNavGroups, initialHeaderLinks }: HeaderProps = {
         </div>
 
         {/* 모바일: 상단 바 아래 좌측 정렬 헤더 링크 행 */}
-        {headerLinks.length > 0 && (
+        {(headerLinks.length > 0 || hasPictureFrame) && (
           <div className="lg:hidden flex flex-wrap justify-start gap-2 pb-2">
+            {/* 액자 버튼 — 헤더 링크 왼쪽에 위치 */}
+            {hasPictureFrame && (
+              <button
+                onClick={() => setFrameOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 text-text-primary text-xs font-medium rounded-full hover:border-gray-400 hover:bg-gray-50 transition-colors"
+                aria-label="액자"
+              >
+                <Frame size={14} />
+                <span>액자</span>
+              </button>
+            )}
             {headerLinks.map((link) => (
               <a
                 key={link.id}
@@ -304,6 +330,9 @@ export function Header({ initialNavGroups, initialHeaderLinks }: HeaderProps = {
           </nav>
         </div>
       )}
+
+      {/* 액자 풀스크린 슬라이드쇼 오버레이 */}
+      {frameOpen && <PictureFrameOverlay onClose={() => setFrameOpen(false)} />}
     </header>
   );
 }

@@ -5,7 +5,9 @@ vi.mock("next/server", () => ({
   NextResponse: { json: vi.fn() },
 }));
 vi.mock("drizzle-zod", () => {
-  const chain = () => ({ omit: vi.fn(() => ({})), pick: vi.fn(() => ({})) });
+  // .omit()/.pick() 이후 .refine() 체이닝(picture frame 스키마)도 지원
+  const refinable = () => ({ refine: vi.fn(() => refinable()) });
+  const chain = () => ({ omit: vi.fn(() => refinable()), pick: vi.fn(() => refinable()) });
   return {
     createInsertSchema: vi.fn(chain),
     createUpdateSchema: vi.fn(chain),
@@ -20,6 +22,7 @@ vi.mock("@/db/schema", () => ({
   navMenus: {},
   headerLinks: {},
   examTagOptions: {},
+  pictureFrameItems: {},
   communityPosts: {},
   communityComments: {},
   communityTags: {},

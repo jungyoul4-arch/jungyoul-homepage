@@ -18,6 +18,7 @@ import {
   Tags,
   MessageSquare,
   Tag,
+  Frame,
 } from "lucide-react";
 import { SiteLogo } from "@/components/site-logo";
 
@@ -37,6 +38,7 @@ const sidebarGroups = [
       { label: "하이라이트", href: "/admin/highlights", icon: Star },
       { label: "강사 관리", href: "/admin/teachers", icon: Users },
       { label: "영상 관리", href: "/admin/videos", icon: Video },
+      { label: "액자", href: "/admin/picture-frames", icon: Frame },
     ],
   },
   {

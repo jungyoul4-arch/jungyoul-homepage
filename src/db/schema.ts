@@ -123,6 +123,23 @@ export const examTagOptions = sqliteTable(
   (t) => [uniqueIndex("exam_tag_options_type_value_idx").on(t.tagType, t.value)]
 );
 
+// 메인 헤더 '액자' 버튼이 여는 풀스크린 슬라이드쇼 항목.
+// mediaType=image 면 image_url(자사 R2 경로) 노출, youtube 면 youtube_id(11자) 임베드.
+// duration_sec 은 이미지 표시 시간(초) — 유튜브는 영상 종료 시 자동 전환하므로 무시.
+export const pictureFrameItems = sqliteTable(
+  "picture_frame_items",
+  {
+    id: text("id").primaryKey(),
+    mediaType: text("media_type").notNull(),          // "image" | "youtube"
+    imageUrl: text("image_url").default(""),          // /api/admin/upload/{key}
+    youtubeId: text("youtube_id").default(""),        // 11자 ID
+    durationSec: integer("duration_sec").default(7),  // 이미지 표시 시간(초)
+    sortOrder: integer("sort_order").default(0),
+    createdAt: text("created_at").$defaultFn(() => new Date().toISOString()),
+  },
+  (t) => [index("picture_frame_items_sort_order_idx").on(t.sortOrder)]
+);
+
 // ── 익명 커뮤니티 (/community) — 고등학생 위주 익명 게시판 ──────────────
 // 익명 세션. 쿠키 anon_session 의 JWT 페이로드 sid 와 1:1 매핑. 닉네임은 영속.
 export const communitySessions = sqliteTable("community_sessions", {

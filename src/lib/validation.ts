@@ -12,8 +12,10 @@ import {
   communityPosts,
   communityComments,
   communityTags,
+  pictureFrameItems,
 } from "@/db/schema";
 import { categories } from "@/lib/data";
+import { isYouTubeId } from "@/lib/youtube";
 import { NextResponse } from "next/server";
 
 const allowedCategoryValues = categories
@@ -163,6 +165,36 @@ export const insertExamTagOptionSchema = createInsertSchema(examTagOptions, {
   tagType: (schema) => schema.refine(examTagTypeRefine, examTagTypeMsg),
   value: (schema) => schema.min(1).max(50),
 }).omit({ id: true, sortOrder: true });
+
+// Picture Frame — 메인 헤더 '액자' 풀스크린 슬라이드쇼 항목
+export const pictureFrameMediaTypes = ["image", "youtube"] as const;
+export type PictureFrameMediaType = (typeof pictureFrameMediaTypes)[number];
+const pictureFrameTypeRefine = (v: string) =>
+  (pictureFrameMediaTypes as readonly string[]).includes(v);
+const pictureFrameTypeMsg = { message: "미디어 종류는 image 또는 youtube 여야 합니다." };
+const pfImageMsg = { message: "이미지를 업로드하세요.", path: ["imageUrl"] };
+const pfYoutubeMsg = { message: "유효한 유튜브 영상이 아닙니다.", path: ["youtubeId"] };
+
+export const insertPictureFrameItemSchema = createInsertSchema(pictureFrameItems, {
+  mediaType: (schema) => schema.refine(pictureFrameTypeRefine, pictureFrameTypeMsg),
+  imageUrl: (schema) => schema.max(500).optional(),
+  youtubeId: (schema) => schema.max(50).optional(),
+  durationSec: (schema) => schema.min(1).max(3600).optional(),
+})
+  .omit({ id: true, sortOrder: true, createdAt: true })
+  .refine((v) => v.mediaType !== "image" || !!v.imageUrl, pfImageMsg)
+  .refine((v) => v.mediaType !== "youtube" || isYouTubeId(v.youtubeId), pfYoutubeMsg);
+
+export const updatePictureFrameItemSchema = createUpdateSchema(pictureFrameItems, {
+  mediaType: (schema) =>
+    schema.refine((v) => v === undefined || pictureFrameTypeRefine(v), pictureFrameTypeMsg),
+  imageUrl: (schema) => schema.max(500).optional(),
+  youtubeId: (schema) => schema.max(50).optional(),
+  durationSec: (schema) => schema.min(1).max(3600).optional(),
+})
+  .omit({ id: true, sortOrder: true, createdAt: true })
+  .refine((v) => v.mediaType !== "image" || !!v.imageUrl, pfImageMsg)
+  .refine((v) => v.mediaType !== "youtube" || isYouTubeId(v.youtubeId), pfYoutubeMsg);
 
 // Community — 익명 커뮤니티 게시글/댓글/태그
 export const insertCommunityPostSchema = createInsertSchema(communityPosts, {

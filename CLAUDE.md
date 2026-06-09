@@ -29,6 +29,13 @@
 - **SSR 선 렌더**: `src/components/header-server.tsx` (RSC)가 `nav_menus`·`header_links`를 D1에서 직접 fetch해 `<Header initialNavGroups initialHeaderLinks>`에 prop으로 전달 → 첫 paint에 실제 DB 데이터 포함, FOUC 없음. `src/app/(main)/layout.tsx`가 `<HeaderServer />`를 렌더. `/api/nav-menus`·`/api/header-links` API는 어드민 페이지용으로 유지되지만 공개 헤더에서는 더 이상 사용하지 않음
 - **캡슐 버튼 노출 범위**: `header_links` 버튼은 `(main)/layout.tsx` 의 헤더에서만 노출. `/community` 내부(`(community)/layout.tsx`)에서는 미니 헤더만 표시됨
 
+## 메인 헤더 '액자' 풀스크린 슬라이드쇼
+- `header_links` 와 별개의 **헤더 내장 전용 액션 버튼**(데이터 주도 링크 아님). 헤더 링크 버튼(예: qa튜터링) **왼쪽**에 노출, `picture_frame_items` 가 1개 이상일 때만 표시
+- 클릭 시 풀스크린 오버레이(`fixed inset-0`)로 이미지·유튜브를 sort_order 순 무한 재생. 이미지=항목별 `durationSec`(초) 타이머, **유튜브=영상 종료(`ENDED`) 시 전환**(YouTube IFrame Player API)
+- 데이터: `picture_frame_items` (drizzle 마이그 `0010_magical_ink.sql`). 전역 기본 시간은 `site_settings` key `picture_frame_default_interval` (로고 전용 부수효과 있는 `/api/admin/settings` 와 분리한 `/api/admin/picture-frames/settings` 로 관리)
+- 어드민: `/admin/picture-frames` (사이드바 "콘텐츠 관리"). 유튜브는 URL 입력 → `parseYouTubeId`(`src/lib/youtube.ts`)로 11자 ID 추출 후 저장. 이미지 업로드는 `/api/admin/upload` 재사용
+- SSR: `header-server.tsx` 가 개수만 조회해 `<Header hasPictureFrame>` 전달(버튼 노출 결정), 슬라이드 데이터는 오버레이 오픈 시 `/api/picture-frames` 지연 fetch. 오버레이: `src/components/picture-frame-overlay.tsx`. 절차·주의 → [`docs/picture-frame.md`](docs/picture-frame.md)
+
 ## /community — 익명 커뮤니티
 - 고등학생 위주 익명 게시판. 가입 X — `anon_session` 쿠키로 닉네임 영속화 (`src/lib/anon-session.ts`, `src/lib/community-nickname.ts`). 어드민 `admin_token` 과 별도 쿠키, 같은 `JWT_SECRET` 공유하지만 페이로드 키(`{ sid }` vs `{ username }`)로 구분
 - 데이터: `community_sessions`/`community_tags`/`community_posts`/`community_post_likes`/`community_comments` (drizzle 마이그 `0008_add_community.sql`, 6개 기본 태그 시드 포함)
@@ -73,6 +80,7 @@
 - 페이지/링크/메타데이터/sitemap 추가 → [`docs/seo-checklist.md`](docs/seo-checklist.md)
 - 카테고리·네비게이션 추가 절차(catch-all 라우팅, 단일 소스, /exam 같은 별도 라우트) → [`docs/categories.md`](docs/categories.md)
 - 익명 커뮤니티(/community): 익명 세션·닉네임 생성·API·디자인 토큰 → [`docs/community.md`](docs/community.md)
+- 메인 헤더 '액자' 풀스크린 슬라이드쇼(이미지/유튜브·자동전환·어드민) → [`docs/picture-frame.md`](docs/picture-frame.md)
 - 빠른편집 에디터(페이스트 파이프라인·HWPX·sanitize·썸네일 오버레이) → [`docs/editor.md`](docs/editor.md)
 - 사업자 정보(JSON-LD Organization·푸터·연락처) → [`docs/business-info.md`](docs/business-info.md)
 - 빌드/타입 에러 디버깅 회고 → [`docs/mistake-log.md`](docs/mistake-log.md)
