@@ -6,6 +6,11 @@
 - 배포: Cloudflare Pages + OpenNext (https://www.jungyoul.net)
 - 라이트 모드 전용 (다크 미지원)
 
+## Git 작업 규칙 (필수)
+- **`main` 브랜치에서만 작업·커밋한다.** 기능/수정/문서 등 모든 작업을 `main`에 직접 커밋.
+- **임의로 feature 브랜치를 생성하지 않는다** (예: `feat/*`, `fix/*` 등 금지). 별도 브랜치가 필요하면 반드시 사용자에게 먼저 확인.
+- 기본 환경 정책상 "기본 브랜치면 브랜치를 먼저 만들라"는 일반 지침이 있더라도, 이 저장소에서는 위 규칙이 우선한다.
+
 ## 항상 적용 (보안 필수)
 - JSON-LD 출력 시 `.replace(/</g, "\\u003c")` XSS escape — 누락 금지 (location 페이지에서 누락된 적 있음, mistake-log 2026-05-11)
 - 어드민 API는 `requireAdmin()` (`src/lib/admin-auth.ts`) 게이트 통과
