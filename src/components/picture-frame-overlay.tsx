@@ -58,6 +58,36 @@ function loadYouTubeApi(): Promise<void> {
   return ytApiPromise;
 }
 
+// 이미지 노출시간 진행바: 슬라이드마다 key 로 remount → mount 시 더블 rAF 로 scaleX(0)→scaleX(1)
+// 전환을 트리거(초기 0% 프레임 paint 보장). transform 기반이라 GPU 컴포지팅, 매 프레임 리렌더 없음.
+function ImageProgressBar({ durationSec }: { durationSec: number }) {
+  const [filled, setFilled] = useState(false);
+  useEffect(() => {
+    let raf2 = 0;
+    const raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => setFilled(true));
+    });
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+    };
+  }, []);
+  return (
+    <div
+      aria-hidden="true"
+      className="absolute bottom-0 left-0 right-0 z-10 h-1 bg-white/20 overflow-hidden"
+    >
+      <div
+        className="h-full w-full origin-left bg-white/80 will-change-transform"
+        style={{
+          transform: filled ? "scaleX(1)" : "scaleX(0)",
+          transition: `transform ${durationSec}s linear`,
+        }}
+      />
+    </div>
+  );
+}
+
 export function PictureFrameOverlay({ onClose }: { onClose: () => void }) {
   const [items, setItems] = useState<PFItem[]>([]);
   const [defaultInterval, setDefaultInterval] = useState(7);
@@ -126,6 +156,9 @@ export function PictureFrameOverlay({ onClose }: { onClose: () => void }) {
   }, []);
 
   const current = items[index];
+  // 이미지 노출시간(초): durationSec 우선, 없으면 전역 기본값. 재생 타이머와 진행바가 공유(드리프트 방지)
+  const imageDurationSec =
+    current?.durationSec && current.durationSec >= 1 ? current.durationSec : defaultInterval;
 
   // 현재 항목 재생 제어: 이미지=타이머, 유튜브=IFrame API(ENDED 시 전환)
   useEffect(() => {
@@ -148,11 +181,9 @@ export function PictureFrameOverlay({ onClose }: { onClose: () => void }) {
     if (!current) return;
 
     if (current.mediaType === "image") {
-      const sec =
-        current.durationSec && current.durationSec >= 1 ? current.durationSec : defaultInterval;
       // 항목이 1개뿐이면 전환 불필요(정지 화면)
       if (items.length > 1) {
-        imageTimerRef.current = setTimeout(advance, sec * 1000);
+        imageTimerRef.current = setTimeout(advance, imageDurationSec * 1000);
       }
       return clearAll;
     }
@@ -204,7 +235,7 @@ export function PictureFrameOverlay({ onClose }: { onClose: () => void }) {
       destroyed = true;
       clearAll();
     };
-  }, [current, defaultInterval, items.length, advance]);
+  }, [current, defaultInterval, imageDurationSec, items.length, advance]);
 
   // 컨트롤 표시: 터치는 항상, 마우스는 해당 가장자리 hover/focus 시 등장
   const reveal = coarse
@@ -240,6 +271,11 @@ export function PictureFrameOverlay({ onClose }: { onClose: () => void }) {
           </div>
         ) : null}
       </div>
+
+      {/* 이미지 노출시간 진행바 — 맨 아래 풀너비, 이미지 + 2개 이상(타이머 동작)일 때만 */}
+      {loaded && items.length > 1 && current?.mediaType === "image" && current.imageUrl && (
+        <ImageProgressBar key={index} durationSec={imageDurationSec} />
+      )}
 
       {/* 수동 이동 — 좌/우 가장자리 hover 존 + 인덱스 (2개 이상일 때) */}
       {items.length > 1 && (
