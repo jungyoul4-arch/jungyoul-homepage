@@ -6,7 +6,7 @@ import Image from "next/image";
 import { ChevronLeft, ChevronRight, Pause, Play } from "lucide-react";
 import type { HeroSlide, HeroSlideItem } from "@/lib/data";
 import { AdminEditButton } from "./admin-edit-button";
-import { isValidThumbnail } from "@/lib/thumbnail";
+import { isValidThumbnail, thumbSrc } from "@/lib/thumbnail";
 import { placeholderGradient } from "@/lib/utils";
 
 interface HeroCarouselProps {
@@ -403,7 +403,7 @@ function SubCard({ article, tall }: { article: { id: string; title: string; exce
       <div className="absolute inset-0">
         {hasImage ? (
           <Image
-            src={article.thumbnail}
+            src={thumbSrc(article.thumbnail, 1280)}
             alt={article.title}
             fill
             className="object-cover will-change-transform transition-transform duration-300 ease-out group-hover:scale-110"

@@ -6,7 +6,7 @@ import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { Highlight } from "@/lib/data";
 import { AdminEditButton } from "./admin-edit-button";
-import { isValidThumbnail } from "@/lib/thumbnail";
+import { isValidThumbnail, thumbSrc } from "@/lib/thumbnail";
 import { placeholderGradient } from "@/lib/utils";
 
 interface HighlightsCarouselProps {
@@ -125,7 +125,7 @@ export function HighlightsCarousel({ highlights }: HighlightsCarouselProps) {
                     />
                     {isValidThumbnail(item.thumbnail) && !failedImages.has(item.id) && (
                       <Image
-                        src={item.thumbnail}
+                        src={thumbSrc(item.thumbnail, 1280)}
                         alt={item.title}
                         fill
                         unoptimized

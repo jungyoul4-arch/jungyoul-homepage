@@ -6,7 +6,7 @@ import Image from "next/image";
 import { categories, type Article, type Category } from "@/lib/data";
 import { EDUCATION_HIDDEN_CATEGORIES } from "@/lib/default-nav";
 import { AdminEditButton } from "./admin-edit-button";
-import { isValidThumbnail } from "@/lib/thumbnail";
+import { isValidThumbnail, thumbSrc } from "@/lib/thumbnail";
 import { placeholderGradient } from "@/lib/utils";
 
 interface LatestArticlesProps {
@@ -102,14 +102,14 @@ function ArticleCard({ article, headlineMode = false }: { article: Article; head
           {/* Thumbnail — 삼성 뉴스룸 기사 썸네일 비율 */}
           <div className="relative aspect-[16/9] bg-gray-100 rounded-lg overflow-hidden mb-4">
             <div
-              className="absolute inset-0 will-change-transform transition-transform duration-300 ease-in-out group-hover:scale-110"
+              className="absolute inset-0 transition-transform duration-300 ease-in-out group-hover:scale-110"
               style={{
                 background: placeholderGradient(article.id, "article"),
               }}
             />
             {isValidThumbnail(article.thumbnail) && (
               <Image
-                src={article.thumbnail}
+                src={thumbSrc(article.thumbnail, 640)}
                 alt={article.title}
                 fill
                 unoptimized
@@ -151,7 +151,7 @@ function ArticleCard({ article, headlineMode = false }: { article: Article; head
               />
               {isValidThumbnail(article.thumbnail) && (
                 <Image
-                  src={article.thumbnail}
+                  src={thumbSrc(article.thumbnail, 640)}
                   alt={article.title}
                   fill
                   unoptimized

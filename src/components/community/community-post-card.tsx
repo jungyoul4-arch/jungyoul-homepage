@@ -4,6 +4,7 @@ import Image from "next/image";
 import { Heart, MessageCircle, ImageIcon } from "lucide-react";
 import type { CommunityPostListItem } from "./types";
 import { formatRelativeTime, nicknameHue } from "./format";
+import { thumbSrc } from "@/lib/thumbnail";
 
 type Props = { post: CommunityPostListItem };
 
@@ -45,7 +46,7 @@ export function CommunityPostCard({ post }: Props) {
       {post.hasImage && post.imageUrl ? (
         <div className="relative w-full aspect-[16/9] mb-3 overflow-hidden rounded-sm bg-community-surface">
           <Image
-            src={post.imageUrl}
+            src={thumbSrc(post.imageUrl, 1280)}
             alt=""
             fill
             sizes="(max-width: 1024px) 100vw, 720px"
