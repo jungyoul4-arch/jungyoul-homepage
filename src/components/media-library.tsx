@@ -111,7 +111,7 @@ export function MediaLibrary({ videos }: MediaLibraryProps) {
                         alt={video.title}
                         fill
                         unoptimized
-                        className="object-cover will-change-transform transition-transform duration-300 group-hover:scale-110"
+                        className="object-cover group-hover:will-change-transform transition-transform duration-300 group-hover:scale-110"
                         onError={() =>
                           setFailedImages((prev) => {
                             const next = new Set(prev);

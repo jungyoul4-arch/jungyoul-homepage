@@ -392,7 +392,9 @@
 .card-animate {
   opacity: 0;
   animation: card-fade-up 0.5s ease-out forwards;
-  will-change: opacity, transform;
+  /* will-change 제거: 0.5s 일회성 진입 애니메이션은 브라우저가 실행 중
+     자동 합성 레이어를 만든다. 영구 will-change 는 카드마다 상시 레이어를
+     남겨 GPU 메모리/컴포지터 부담만 키운다(hover jank 의 한 원인). */
 }
 @media (prefers-reduced-motion: reduce) {
   .card-animate {

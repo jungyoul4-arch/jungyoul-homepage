@@ -222,7 +222,7 @@ function ArticleCard({ article }: { article: Article }) {
               alt={article.title}
               fill
               unoptimized
-              className="object-cover will-change-transform transition-transform duration-300 ease-in-out group-hover:scale-110"
+              className="object-cover group-hover:will-change-transform transition-transform duration-300 ease-in-out group-hover:scale-110"
             />
           )}
         </div>

@@ -240,7 +240,7 @@ export default async function ArticlePage({ params }: Props) {
                         alt={related.title}
                         fill
                         unoptimized
-                        className="object-cover will-change-transform transition-transform duration-300 group-hover:scale-110"
+                        className="object-cover group-hover:will-change-transform transition-transform duration-300 group-hover:scale-110"
                       />
                     )}
                   </div>

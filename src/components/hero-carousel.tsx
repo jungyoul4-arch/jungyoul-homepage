@@ -24,10 +24,12 @@ export function HeroCarousel({ slides }: HeroCarouselProps) {
 
   const [currentSlide, setCurrentSlide] = useState(hasMultiple ? 1 : 0);
   const [isPaused, setIsPaused] = useState(false);
-  const [progress, setProgress] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
   const [noTransition, setNoTransition] = useState(false);
   const progressRef = useRef<number | null>(null);
+  // 진행바는 width(%) 대신 transform: scaleX 로 표현하고, rAF 에서 ref 로 직접
+  // 갱신한다(매 프레임 setState 리렌더 + width 레이아웃 제거 → 상시 jank 방지).
+  const progressBarRef = useRef<HTMLDivElement>(null);
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
   const touchDeltaX = useRef(0);
@@ -47,12 +49,10 @@ export function HeroCarousel({ slides }: HeroCarouselProps) {
 
   const next = useCallback(() => {
     setCurrentSlide((prev) => prev + 1);
-    setProgress(0);
   }, []);
 
   const prev = useCallback(() => {
     setCurrentSlide((prev) => prev - 1);
-    setProgress(0);
   }, []);
 
   // Clone boundary: snap to real position after transition
@@ -80,12 +80,15 @@ export function HeroCarousel({ slides }: HeroCarouselProps) {
       if (progressRef.current) cancelAnimationFrame(progressRef.current);
       return;
     }
+    if (progressBarRef.current) progressBarRef.current.style.transform = "scaleX(0)";
     let start: number | null = null;
     const animate = (timestamp: number) => {
       if (!start) start = timestamp;
-      const pct = Math.min(((timestamp - start) / intervalDuration) * 100, 100);
-      setProgress(pct);
-      if (pct >= 100) {
+      const ratio = Math.min((timestamp - start) / intervalDuration, 1);
+      if (progressBarRef.current) {
+        progressBarRef.current.style.transform = `scaleX(${ratio})`;
+      }
+      if (ratio >= 1) {
         next();
         return;
       }
@@ -201,12 +204,13 @@ export function HeroCarousel({ slides }: HeroCarouselProps) {
 
           {/* Progress bar */}
           <div
-            className="h-[2px] bg-gray-200 rounded-full"
+            className="h-[2px] bg-gray-200 rounded-full overflow-hidden"
             style={{ width: "320px", maxWidth: "100%" }}
           >
             <div
-              className="h-full bg-gray-900 rounded-full"
-              style={{ width: `${progress}%`, transition: "none" }}
+              ref={progressBarRef}
+              className="h-full w-full origin-left bg-gray-900 rounded-full"
+              style={{ transform: "scaleX(0)", transition: "none" }}
             />
           </div>
 
@@ -406,7 +410,7 @@ function SubCard({ article, tall }: { article: { id: string; title: string; exce
             src={thumbSrc(article.thumbnail, 1280)}
             alt={article.title}
             fill
-            className="object-cover will-change-transform transition-transform duration-300 ease-out group-hover:scale-110"
+            className="object-cover group-hover:will-change-transform transition-transform duration-300 ease-out group-hover:scale-110"
             unoptimized
           />
         ) : (
@@ -418,7 +422,7 @@ function SubCard({ article, tall }: { article: { id: string; title: string; exce
       </div>
       <GradientOverlay />
       <AdminBtn article={article} small />
-      <div className="absolute left-0 right-0 bottom-0 p-4 lg:p-5 transition-[top,padding] duration-300 ease-in-out group-hover:top-0 group-hover:flex group-hover:flex-col group-hover:justify-start group-hover:pt-6 z-[3]">
+      <div className="absolute left-0 right-0 bottom-0 p-4 lg:p-5 group-hover:top-0 group-hover:flex group-hover:flex-col group-hover:justify-start group-hover:pt-6 z-[3]">
         <p className="text-xs font-semibold mb-1" style={{ color: "#89b4fa" }}>
           {article.categoryLabel}
         </p>
@@ -504,10 +508,10 @@ function ImageBg({
     <div className="absolute inset-0">
       {hasImage ? (
         <Image
-          src={src}
+          src={thumbSrc(src, 1280)}
           alt={alt}
           fill
-          className="object-cover will-change-transform transition-transform duration-300 ease-out group-hover:scale-110"
+          className="object-cover group-hover:will-change-transform transition-transform duration-300 ease-out group-hover:scale-110"
           priority={priority}
           unoptimized
         />
@@ -550,7 +554,7 @@ function ContentOverlay({
   large?: boolean;
 }) {
   return (
-    <div className="absolute left-0 right-0 bottom-0 p-6 md:p-8 lg:p-10 transition-[top,padding] duration-300 ease-in-out group-hover:top-0 group-hover:flex group-hover:flex-col group-hover:justify-start group-hover:pt-10 z-[3]">
+    <div className="absolute left-0 right-0 bottom-0 p-6 md:p-8 lg:p-10 group-hover:top-0 group-hover:flex group-hover:flex-col group-hover:justify-start group-hover:pt-10 z-[3]">
       <p className="text-xs font-semibold mb-2" style={{ color: "#89b4fa" }}>
         {category}
       </p>
