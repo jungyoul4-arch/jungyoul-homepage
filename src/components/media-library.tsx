@@ -100,7 +100,7 @@ export function MediaLibrary({ videos }: MediaLibraryProps) {
                     aria-label={`${video.title} 재생`}
                   >
                     <div
-                      className="absolute inset-0 transition-transform duration-300 group-hover:scale-110"
+                      className="absolute inset-0 will-change-transform transition-transform duration-300 group-hover:scale-110"
                       style={{
                         background: placeholderGradient(video.id, "video"),
                       }}
@@ -111,7 +111,7 @@ export function MediaLibrary({ videos }: MediaLibraryProps) {
                         alt={video.title}
                         fill
                         unoptimized
-                        className="object-cover transition-transform duration-300 group-hover:scale-110"
+                        className="object-cover will-change-transform transition-transform duration-300 group-hover:scale-110"
                         onError={() =>
                           setFailedImages((prev) => {
                             const next = new Set(prev);

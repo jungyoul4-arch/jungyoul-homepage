@@ -213,7 +213,7 @@ function ArticleCard({ article }: { article: Article }) {
         {/* Thumbnail — 16:9, rounded-lg */}
         <div className="relative aspect-[16/9] bg-gray-100 rounded-lg overflow-hidden mb-5">
           <div
-            className="absolute inset-0 transition-transform duration-300 ease-in-out group-hover:scale-110"
+            className="absolute inset-0 will-change-transform transition-transform duration-300 ease-in-out group-hover:scale-110"
             style={{ background: placeholderGradient(article.id, "article") }}
           />
           {isValidThumbnail(article.thumbnail) && (
@@ -222,7 +222,7 @@ function ArticleCard({ article }: { article: Article }) {
               alt={article.title}
               fill
               unoptimized
-              className="object-cover transition-transform duration-300 ease-in-out group-hover:scale-110"
+              className="object-cover will-change-transform transition-transform duration-300 ease-in-out group-hover:scale-110"
             />
           )}
         </div>

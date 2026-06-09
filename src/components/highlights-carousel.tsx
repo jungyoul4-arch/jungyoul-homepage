@@ -129,7 +129,7 @@ export function HighlightsCarousel({ highlights }: HighlightsCarouselProps) {
                         alt={item.title}
                         fill
                         unoptimized
-                        className="object-cover transition-transform duration-300 ease-in-out group-hover:scale-110"
+                        className="object-cover will-change-transform transition-transform duration-300 ease-in-out group-hover:scale-110"
                         onError={() =>
                           setFailedImages((prev) => {
                             const next = new Set(prev);
