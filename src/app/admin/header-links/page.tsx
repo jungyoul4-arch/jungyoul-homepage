@@ -4,6 +4,7 @@ import { createElement, useEffect, useRef, useState, type ReactNode } from "reac
 import Image from "next/image";
 import { Plus, Trash2, Save, Pencil, X, ArrowUp, ArrowDown, Eye, Upload, ImageIcon } from "lucide-react";
 import { getHeaderLinkIcon } from "@/lib/header-link-icons";
+import { resizeImageFile } from "@/lib/image-resize";
 
 interface HeaderLink {
   id: string;
@@ -358,8 +359,10 @@ function LinkForm({ formState, setFormState, legacyIcon, onSave, onCancel, input
     }
     setUploading(true);
     try {
+      // 헤더 글리프는 작게 표시(권장 40×40) — 긴 변 256 으로 충분.
+      const uploadable = await resizeImageFile(file, { maxEdge: 256 });
       const fd = new FormData();
-      fd.append("file", file);
+      fd.append("file", uploadable);
       const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));

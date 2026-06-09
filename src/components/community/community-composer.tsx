@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ImagePlus, X } from "lucide-react";
 import type { CommunityTag } from "./types";
+import { resizeImageFile } from "@/lib/image-resize";
 
 type Props = { tags: CommunityTag[] };
 
@@ -39,8 +40,9 @@ export function CommunityComposer({ tags }: Props) {
     if (!file) return;
     setUploading(true);
     try {
+      const uploadable = await resizeImageFile(file, { maxEdge: 1600 });
       const fd = new FormData();
-      fd.append("file", file);
+      fd.append("file", uploadable);
       const res = await fetch("/api/community/upload", { method: "POST", body: fd });
       const data = await res.json();
       if (!res.ok) {

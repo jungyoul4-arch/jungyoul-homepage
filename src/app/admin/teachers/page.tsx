@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import Image from "next/image";
 import { Plus, Trash2, Save, Pencil, ImageIcon, X, Upload } from "lucide-react";
 import { isValidThumbnail } from "@/lib/thumbnail";
+import { resizeImageFile } from "@/lib/image-resize";
 
 interface Teacher {
   id: string;
@@ -298,8 +299,9 @@ function PhotoUploader({
     }
     setUploading(true);
     try {
+      const uploadable = await resizeImageFile(file, { maxEdge: 1280 });
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", uploadable);
       const res = await fetch("/api/admin/upload", {
         method: "POST",
         body: formData,

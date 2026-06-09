@@ -3,6 +3,7 @@ import { getDb } from "@/db";
 import { navMenus } from "@/db/schema";
 import { eq, inArray } from "drizzle-orm";
 import { requireAdmin } from "@/lib/admin-auth";
+import { revalidateTag } from "next/cache";
 
 export async function PUT(request: NextRequest) {
   const authError = await requireAdmin(request);
@@ -35,6 +36,7 @@ export async function PUT(request: NextRequest) {
       await db.update(navMenus).set({ sortOrder: i }).where(eq(navMenus.id, ids[i]));
     }
 
+    revalidateTag("header-data", "max");
     return NextResponse.json({ success: true });
   } catch (e) {
     console.error("Nav menu reorder error:", e instanceof Error ? e.message : e);

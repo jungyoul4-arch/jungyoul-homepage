@@ -8,6 +8,7 @@ import {
   type TextOverlay,
   type ThumbnailOverlayMeta,
 } from "./thumbnail-overlay-editor";
+import { resizeImageFile } from "@/lib/image-resize";
 
 interface ThumbnailUploaderProps {
   value: string;
@@ -46,8 +47,9 @@ export function ThumbnailUploader({ value, overlays, onChange }: ThumbnailUpload
 
     setUploading(true);
     try {
+      const uploadable = await resizeImageFile(file);
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", uploadable);
 
       const res = await fetch("/api/admin/upload", {
         method: "POST",

@@ -4,6 +4,7 @@ import { pictureFrameItems } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { requireAdmin } from "@/lib/admin-auth";
 import { updatePictureFrameItemSchema, errorResponse } from "@/lib/validation";
+import { revalidateTag } from "next/cache";
 
 export async function PUT(
   request: NextRequest,
@@ -39,6 +40,8 @@ export async function DELETE(
 
     await db.delete(pictureFrameItems).where(eq(pictureFrameItems.id, id));
 
+    // 마지막 항목 삭제 시 헤더 '액자' 버튼이 사라지므로 헤더 캐시 무효화.
+    revalidateTag("header-data", "max");
     return NextResponse.json({ success: true });
   } catch (e) {
     return errorResponse(e);

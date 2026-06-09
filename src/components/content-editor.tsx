@@ -3,6 +3,7 @@
 import { useRef, useState, useCallback, useEffect, useImperativeHandle, type Ref } from "react";
 import { ImageIcon, Video } from "lucide-react";
 import { normalizePastedHtml } from "@/lib/normalize-paste";
+import { resizeImageFile } from "@/lib/image-resize";
 
 /**
  * 외부에서 에디터 본문에 HTML 을 주입할 때 쓰는 imperative handle.
@@ -169,8 +170,9 @@ export function ContentEditor({ value, onChange, ref }: ContentEditorProps) {
   async function uploadImage(file: File): Promise<string | null> {
     setUploading(true);
     try {
+      const uploadable = await resizeImageFile(file);
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", uploadable);
 
       const res = await fetch("/api/admin/upload", {
         method: "POST",

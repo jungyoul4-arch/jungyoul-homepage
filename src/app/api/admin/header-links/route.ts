@@ -4,6 +4,7 @@ import { headerLinks } from "@/db/schema";
 import { requireAdmin } from "@/lib/admin-auth";
 import { insertHeaderLinkSchema, errorResponse } from "@/lib/validation";
 import { sql } from "drizzle-orm";
+import { revalidateTag } from "next/cache";
 
 export async function POST(request: NextRequest) {
   const authError = await requireAdmin(request);
@@ -25,6 +26,7 @@ export async function POST(request: NextRequest) {
       sortOrder: maxOrder + 1,
     });
 
+    revalidateTag("header-data", "max");
     return NextResponse.json({ id }, { status: 201 });
   } catch (e) {
     return errorResponse(e);

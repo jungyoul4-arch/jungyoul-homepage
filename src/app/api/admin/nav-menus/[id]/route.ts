@@ -4,6 +4,7 @@ import { navMenus } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { requireAdmin } from "@/lib/admin-auth";
 import { updateNavMenuSchema, errorResponse } from "@/lib/validation";
+import { revalidateTag } from "next/cache";
 
 export async function PUT(
   request: NextRequest,
@@ -20,6 +21,7 @@ export async function PUT(
 
     await db.update(navMenus).set(parsed).where(eq(navMenus.id, id));
 
+    revalidateTag("header-data", "max");
     return NextResponse.json({ success: true });
   } catch (e) {
     return errorResponse(e);
@@ -41,6 +43,7 @@ export async function DELETE(
     await db.delete(navMenus).where(eq(navMenus.parentId, id));
     await db.delete(navMenus).where(eq(navMenus.id, id));
 
+    revalidateTag("header-data", "max");
     return NextResponse.json({ success: true });
   } catch (e) {
     return errorResponse(e);

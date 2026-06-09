@@ -16,6 +16,7 @@ import {
   Clock,
 } from "lucide-react";
 import { parseYouTubeId } from "@/lib/youtube";
+import { resizeImageFile } from "@/lib/image-resize";
 
 type MediaType = "image" | "youtube";
 
@@ -384,8 +385,10 @@ function PFForm({ formState, setFormState, onSave, onCancel, inputCls, btnBlueSm
     }
     setUploading(true);
     try {
+      // 액자는 풀스크린 재생 — 화질 위해 긴 변 2560 까지 허용.
+      const uploadable = await resizeImageFile(file, { maxEdge: 2560 });
       const fd = new FormData();
-      fd.append("file", file);
+      fd.append("file", uploadable);
       const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));

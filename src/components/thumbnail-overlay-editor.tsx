@@ -13,6 +13,7 @@ import {
   ArrowDownRight,
   Square,
 } from "lucide-react";
+import { resizeImageFile } from "@/lib/image-resize";
 
 export type OverlayAnchor = "tl" | "tr" | "center" | "bl" | "br";
 
@@ -182,7 +183,8 @@ export function ThumbnailOverlayEditor({
         );
         return;
       }
-      const file = new File([blob], "thumbnail.jpg", { type: "image/jpeg" });
+      const composed = new File([blob], "thumbnail.jpg", { type: "image/jpeg" });
+      const file = await resizeImageFile(composed);
       const fd = new FormData();
       fd.append("file", file);
       const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
