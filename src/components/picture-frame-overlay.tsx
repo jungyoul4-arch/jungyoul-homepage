@@ -63,6 +63,8 @@ export function PictureFrameOverlay({ onClose }: { onClose: () => void }) {
   const [defaultInterval, setDefaultInterval] = useState(7);
   const [index, setIndex] = useState(0);
   const [loaded, setLoaded] = useState(false);
+  // 터치(coarse pointer) 기기는 hover 가 없어 컨트롤을 항상 표시. 마우스는 가장자리 hover 시 등장.
+  const [coarse, setCoarse] = useState(false);
 
   const ytHostRef = useRef<HTMLDivElement>(null);
   const ytPlayerRef = useRef<YTPlayer | null>(null);
@@ -74,6 +76,11 @@ export function PictureFrameOverlay({ onClose }: { onClose: () => void }) {
   const goPrev = useCallback(() => {
     setIndex((i) => (items.length ? (i - 1 + items.length) % items.length : 0));
   }, [items.length]);
+
+  // 포인터 종류 감지 (터치=coarse → 컨트롤 항상 표시)
+  useEffect(() => {
+    setCoarse(window.matchMedia?.("(pointer: coarse)").matches ?? false);
+  }, []);
 
   // 슬라이드 데이터 지연 로드
   useEffect(() => {
@@ -199,19 +206,23 @@ export function PictureFrameOverlay({ onClose }: { onClose: () => void }) {
     };
   }, [current, defaultInterval, items.length, advance]);
 
-  const ctrlBtn =
-    "absolute top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-white/10 hover:bg-white/25 text-white transition-colors";
+  // 컨트롤 표시: 터치는 항상, 마우스는 해당 가장자리 hover/focus 시 등장
+  const reveal = coarse
+    ? "opacity-100"
+    : "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100";
 
   return (
     <div className="fixed inset-0 z-[10000] bg-black">
-      {/* 닫기 */}
-      <button
-        onClick={onClose}
-        aria-label="닫기"
-        className="absolute top-4 right-4 z-10 p-2 rounded-full bg-white/10 hover:bg-white/25 text-white transition-colors"
-      >
-        <X size={24} />
-      </button>
+      {/* 닫기 — 우상단 hover 존 (우측 '다음' 존보다 위에 와야 클릭 가로채임 방지 → z-30) */}
+      <div className="group absolute top-0 right-0 w-40 h-24 z-30 flex items-start justify-end p-4">
+        <button
+          onClick={onClose}
+          aria-label="닫기"
+          className={`p-2 rounded-full bg-white/10 hover:bg-white/25 text-white transition-opacity duration-200 ${reveal}`}
+        >
+          <X size={24} />
+        </button>
+      </div>
 
       {/* 스테이지 */}
       <div className="absolute inset-0 flex items-center justify-center">
@@ -230,14 +241,30 @@ export function PictureFrameOverlay({ onClose }: { onClose: () => void }) {
         ) : null}
       </div>
 
-      {/* 수동 이동 + 인덱스 (2개 이상일 때) */}
+      {/* 수동 이동 — 좌/우 가장자리 hover 존 + 인덱스 (2개 이상일 때) */}
       {items.length > 1 && (
         <>
-          <button onClick={goPrev} aria-label="이전" className={ctrlBtn + " left-4"}>
-            <ChevronLeft size={28} />
+          <button
+            onClick={goPrev}
+            aria-label="이전 콘텐츠"
+            className="group absolute inset-y-0 left-0 w-1/6 min-w-[80px] z-20 flex items-center justify-start pl-4 focus:outline-none"
+          >
+            <span
+              className={`p-2 rounded-full bg-white/10 hover:bg-white/25 text-white transition-opacity duration-200 ${reveal}`}
+            >
+              <ChevronLeft size={28} />
+            </span>
           </button>
-          <button onClick={advance} aria-label="다음" className={ctrlBtn + " right-4"}>
-            <ChevronRight size={28} />
+          <button
+            onClick={advance}
+            aria-label="다음 콘텐츠"
+            className="group absolute inset-y-0 right-0 w-1/6 min-w-[80px] z-20 flex items-center justify-end pr-4 focus:outline-none"
+          >
+            <span
+              className={`p-2 rounded-full bg-white/10 hover:bg-white/25 text-white transition-opacity duration-200 ${reveal}`}
+            >
+              <ChevronRight size={28} />
+            </span>
           </button>
           <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-10 px-3 py-1 rounded-full bg-white/10 text-white text-xs">
             {index + 1} / {items.length}
