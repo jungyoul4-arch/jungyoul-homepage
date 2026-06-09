@@ -99,6 +99,11 @@ export function PictureFrameOverlay({ onClose }: { onClose: () => void }) {
   const ytHostRef = useRef<HTMLDivElement>(null);
   const ytPlayerRef = useRef<YTPlayer | null>(null);
   const imageTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // onClose 는 header 에서 매 렌더 새 인라인 함수로 전달 → 전체화면 useEffect([]) 재실행을 막기 위해 ref 로 안정화
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   const advance = useCallback(() => {
     setIndex((i) => (items.length ? (i + 1) % items.length : 0));
@@ -144,12 +149,18 @@ export function PictureFrameOverlay({ onClose }: { onClose: () => void }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose, advance, goPrev]);
 
-  // body 스크롤 잠금 + best-effort 네이티브 전체화면
+  // body 스크롤 잠금 + best-effort 네이티브 전체화면 + 전체화면 해제 동기화
   useEffect(() => {
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     document.documentElement.requestFullscreen?.().catch(() => {});
+    // ESC 등으로 네이티브 전체화면이 해제되면 오버레이도 함께 닫는다 (ESC 두 번 버그 방지)
+    const onFsChange = () => {
+      if (!document.fullscreenElement) onCloseRef.current();
+    };
+    document.addEventListener("fullscreenchange", onFsChange);
     return () => {
+      document.removeEventListener("fullscreenchange", onFsChange);
       document.body.style.overflow = prevOverflow;
       if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
     };
