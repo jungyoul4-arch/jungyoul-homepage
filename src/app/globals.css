@@ -436,8 +436,38 @@
   line-height: normal;
   letter-spacing: normal;
   font-weight: normal;
+  /* 가로 스크롤 방지 및 강제 줄바꿈 */
+  overflow-wrap: break-word !important;
+  word-wrap: break-word !important;
+  word-break: break-word !important;
+  max-width: 100% !important;
+  overflow-x: hidden;
 }
 .article-content [data-raw-html][data-raw-html] *,
 .article-content-preview [data-raw-html][data-raw-html] * {
   all: revert;
+}
+
+/* HTML 소스 내 미디어 및 표 가로 스크롤 방지 */
+.article-content [data-raw-html][data-raw-html] img,
+.article-content [data-raw-html][data-raw-html] video,
+.article-content [data-raw-html][data-raw-html] iframe,
+.article-content-preview [data-raw-html][data-raw-html] img,
+.article-content-preview [data-raw-html][data-raw-html] video,
+.article-content-preview [data-raw-html][data-raw-html] iframe {
+  max-width: 100% !important;
+  height: auto !important;
+}
+
+.article-content [data-raw-html][data-raw-html] table,
+.article-content-preview [data-raw-html][data-raw-html] table {
+  max-width: 100% !important;
+  width: 100% !important;
+}
+
+.article-content [data-raw-html][data-raw-html] pre,
+.article-content-preview [data-raw-html][data-raw-html] pre {
+  white-space: pre-wrap !important; 
+  max-width: 100% !important;
+  overflow-x: hidden !important;
 }
