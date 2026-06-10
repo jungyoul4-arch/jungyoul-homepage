@@ -107,7 +107,7 @@
 /* ── 컨테이너 ── */
 .article-content {
   max-width: 1080px;
-  padding: 0 40px;
+  padding: 0;
   margin: 0 auto;
 }
 
@@ -273,7 +273,7 @@
 /* ── 반응형 (≤768px) ── */
 @media (max-width: 768px) {
   .article-content {
-    padding: 0 20px;
+    padding: 0;
   }
   .article-content p,
   .article-content > div:not([style]) {

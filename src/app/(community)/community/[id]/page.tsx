@@ -42,7 +42,7 @@ export default async function CommunityPostPage({ params }: Props) {
   if (!row) notFound();
 
   return (
-    <div className="max-w-[720px] mx-auto px-4 lg:px-10 py-8 lg:py-12">
+    <div className="max-w-[720px] mx-auto px-0 sm:px-4 lg:px-10 py-8 lg:py-12">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={renderJsonLd({
