@@ -3,6 +3,7 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { requireAdmin } from "@/lib/admin-auth";
 import { generateThumbVariants } from "@/lib/image-variants-server";
 import { detectImageMime } from "@/lib/image-mime";
+import { THUMB_ASPECTS, type ThumbAspect } from "@/lib/image-crop";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
 const ALLOWED_EXTS = ["jpg", "jpeg", "png", "gif", "webp"];
@@ -64,7 +65,13 @@ export async function POST(request: NextRequest) {
 
     // 카드로 렌더되는(thumbSrc ?w) 업로드만 옵트인으로 변형 생성 → 무료 할당량 절약.
     if (formData.get("thumbVariants") === "1") {
-      const job = generateThumbVariants(env, key, arrayBuffer);
+      // 썸네일 비율 강제(센터 크롭) 옵트인 — 화이트리스트 외 값은 조용히 무시.
+      const rawAspect = formData.get("thumbAspect");
+      const aspect =
+        typeof rawAspect === "string" && rawAspect in THUMB_ASPECTS
+          ? (rawAspect as ThumbAspect)
+          : undefined;
+      const job = generateThumbVariants(env, key, arrayBuffer, { aspect });
       if (ctx?.waitUntil) ctx.waitUntil(job);
       else await job;
     }
