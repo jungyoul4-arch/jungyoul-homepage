@@ -62,6 +62,13 @@
 ### ▲ 마크 삽입
 이미지 캡션 앞에 두는 시각 마커. **어떤 경로에서도 자동 추가되지 않으며**, 툴바 Row 2 의 ▲ 버튼으로만 현재 커서 위치에 "▲ "(▲ + 공백) 가 삽입되고 동시에 해당 블록(figcaption/p/h…)에 `style="text-align: center"` 가 직접 기록되어 가운데 정렬된다. figcaption 은 이미 CSS `text-align: center` 가 기본값이라 캡션 안에서는 시각적 변화 없음, 본문 단락에서 사용하면 그 단락만 가운데 정렬. 다른 정렬을 원하면 툴바 왼쪽/오른쪽 정렬 버튼으로 변경.
 
+### HTML 소스 삽입 (툴바)
+Row 2 의 HTML 버튼(`<Code>` 아이콘) → 모달(`src/components/html-input-modal.tsx`)의 textarea 에 raw HTML 소스를 붙여넣고 "삽입" → **페이스트와 동일한 `normalizePastedHtml` 파이프라인 1회 통과**(화이트리스트 확장 없음 — script/이벤트핸들러 제거, 허용 외 인라인 스타일 정리, data:URL 이미지 R2 업로드) 후 커서 위치에 삽입된다. contentEditable 에 HTML 소스를 직접 붙여넣으면 평문으로 이스케이프되는 한계를 우회하는 입력 경로.
+
+- **커서 복원**: 모달 textarea 가 포커스를 가져가면 에디터 셀렉션이 사라지므로, 버튼 클릭 시점에 Range 를 `cloneRange()` 로 저장해 두고 삽입 직전에 복원한다. 에디터 DOM 은 init 후 React 가 재렌더하지 않아(initializedRef) 모달이 열린 동안 Range 가 유효. 저장 Range 가 없거나 무효면 본문 끝 캐럿 폴백(`insertHtml` 핸들과 동일). 선택 영역이 있었다면 페이스트처럼 선택을 교체한다.
+- **포털**: `createPortal(dialog, document.body)` + `z-[2000]` — InlineEditModal(z-[1000], transform containing block 함정) 내부 호환 (아래 "Portal 렌더링" 섹션과 동일 패턴). 툴바 내장 기능이라 어드민 글 작성/수정·빠른편집 모달 3곳 모두에서 자동 노출.
+- **빈 결과 거부**: 정화 후 빈 콘텐츠(`<script>` 만 입력 등)면 inline 에러("삽입할 내용이 없습니다")로 거부하고 모달 유지. data:URL 업로드 진행 중에는 "삽입 중…" busy 표시, ESC/배경 클릭 닫기 차단.
+
 ### 정렬 (왼쪽/가운데/오른쪽)
 툴바의 정렬 버튼은 **`document.execCommand("justifyLeft/Center/Right")` 에 의존하지 않고** 현재 커서 위치 블록(또는 다중 블록 선택 시 그 범위 안의 모든 최상위 블록)의 `style.textAlign` 을 직접 좌/우/가운데로 설정한다. 이유:
 - Chromium 의 `execCommand("justifyLeft")` 는 좌측을 "기본값" 으로 간주해 인라인 스타일을 기록하지 않고 기존 정렬을 제거만 한다 → center → left 전환 시 `text-align: left` 가 흔적 없이 사라져 사용자에게 "저장이 안 됐다" 로 보임 (Chromium bug #141729 류).
