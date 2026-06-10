@@ -15,12 +15,17 @@ interface SiteLogoProps {
   className?: string;
 }
 
-function JYFallback({ size }: { size: "sm" | "md" | "lg" }) {
+function JYFallback({ size, className }: { size: "sm" | "md" | "lg", className?: string }) {
   const s = sizeMap[size];
   return (
-    <div className={`${s.box} bg-brand-blue rounded-sm flex items-center justify-center`}>
-      <span className={`text-white font-bold ${s.text}`}>JY</span>
-    </div>
+    <Image
+      src="/images/logo_invid.png"
+      alt="정율사관학원"
+      width={s.px}
+      height={s.px}
+      unoptimized
+      className={`${s.box} rounded-sm object-contain ${className ?? ""}`}
+    />
   );
 }
 
@@ -29,7 +34,7 @@ export function SiteLogo({ size, className }: SiteLogoProps) {
   const [imgError, setImgError] = useState(false);
 
   if (!logoUrl || imgError) {
-    return <JYFallback size={size} />;
+    return <JYFallback size={size} className={className} />;
   }
 
   const s = sizeMap[size];

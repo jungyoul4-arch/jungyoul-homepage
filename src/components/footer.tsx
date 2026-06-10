@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { CommunityFooterSocial } from "./community/community-footer-social";
 
 export function Footer() {
@@ -8,9 +9,16 @@ export function Footer() {
       <div className="max-w-[1480px] mx-auto px-4 lg:px-10 pt-10 pb-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           {/* 로고/회사명 */}
-          <span className="text-[1rem] font-bold text-text-primary">
-            정율 교육정보
-          </span>
+          <Link href="/">
+            <Image 
+              src="/images/logo_invid.png" 
+              alt="정율사관학원" 
+              width={160} 
+              height={40} 
+              unoptimized
+              className="h-8 w-auto object-contain" 
+            />
+          </Link>
 
           {/* 법적 링크 — 삼성 뉴스룸 상단 우측 스타일 */}
           <div className="flex flex-wrap items-center gap-5 text-[0.875rem] font-bold text-text-primary">

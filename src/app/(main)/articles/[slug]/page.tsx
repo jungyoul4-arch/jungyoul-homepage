@@ -108,7 +108,7 @@ export default async function ArticlePage({ params }: Props) {
             name: "정율 교육정보",
             logo: {
               "@type": "ImageObject",
-              url: `${SITE_URL}/logo.png`,
+              url: `${SITE_URL}/images/logo_invid.png`,
             },
           },
           mainEntityOfPage: {
