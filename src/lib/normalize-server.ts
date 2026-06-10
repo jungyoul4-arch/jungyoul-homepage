@@ -95,9 +95,17 @@ export function normalizeArticleHtml(html: string): string {
  */
 export function processArticleHtml(html: string): string {
   if (!html) return html;
-  // fast-path: raw 마커가 전혀 없으면 기존 파이프라인 그대로 (바이트 동일 보장)
+
+  // 레거시 로고 이미지의 상대 경로를 절대 경로로 보정
+  const fixLegacyLogoPaths = (str: string) => {
+    return str
+      .replace(/src=(['"])assets\/logo\.png\1/g, 'src=$1/images/logo_invid.png$1')
+      .replace(/src=(['"])assets\/logo-white\.png\1/g, 'src=$1/images/logo_white.png$1');
+  };
+
+  // fast-path: raw 마커가 전혀 없으면 기존 파이프라인 그대로 적용 후 경로 보정
   if (!html.includes(RAW_HTML_ATTR) && !html.includes(RAW_SLOT_ATTR)) {
-    return sanitizeContent(normalizeArticleHtml(html));
+    return fixLegacyLogoPaths(sanitizeContent(normalizeArticleHtml(html)));
   }
 
   ensureGlobalNode();
@@ -158,8 +166,10 @@ export function processArticleHtml(html: string): string {
   });
 
   // ⑤ 재조립 — 표준 파이프라인을 통과한 슬롯 div 를 raw 영역으로 치환
-  return standard.replace(
+  const finalHtml = standard.replace(
     new RegExp(`<div ${RAW_SLOT_ATTR}="(\\d+)"[^>]*>[\\s\\S]*?</div>`, "g"),
     (_, n: string) => processedRegions[Number(n)] ?? "",
   );
+
+  return fixLegacyLogoPaths(finalHtml);
 }
