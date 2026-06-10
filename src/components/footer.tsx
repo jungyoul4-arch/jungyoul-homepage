@@ -11,7 +11,7 @@ export function Footer() {
           {/* 로고/회사명 */}
           <Link href="/">
             <Image 
-              src="/images/logo_invid.png" 
+              src="/images/logo_white.png" 
               alt="정율사관학원" 
               width={160} 
               height={40} 

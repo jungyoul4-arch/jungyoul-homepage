@@ -121,7 +121,7 @@ export default function RootLayout({
             name: "정율 교육정보",
             alternateName: "정율사관학원",
             url: SITE_URL,
-            logo: `${SITE_URL}/images/logo_invid.png`,
+            logo: `${SITE_URL}/images/logo_white.png`,
             description:
               "대입 입시, 수능, 내신, 논술 등 교육 정보를 전문적으로 제공하는 미디어",
             address: {

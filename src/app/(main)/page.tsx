@@ -51,7 +51,7 @@ export default async function Home() {
             name: "정율 교육정보",
             logo: {
               "@type": "ImageObject",
-              url: `${SITE_URL}/images/logo_invid.png`,
+              url: `${SITE_URL}/images/logo_white.png`,
             },
           },
         })}

@@ -19,7 +19,7 @@ function JYFallback({ size, className }: { size: "sm" | "md" | "lg", className?:
   const s = sizeMap[size];
   return (
     <Image
-      src="/images/logo_invid.png"
+      src="/images/logo_white.png"
       alt="정율사관학원"
       width={s.px}
       height={s.px}

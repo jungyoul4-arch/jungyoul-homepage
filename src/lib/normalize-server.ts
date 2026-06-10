@@ -96,11 +96,11 @@ export function normalizeArticleHtml(html: string): string {
 export function processArticleHtml(html: string): string {
   if (!html) return html;
 
-  // 레거시 로고 이미지의 상대 경로를 절대 경로로 보정
+  // 레거시 로고 이미지의 상대 경로를 절대 경로로 보정 (배경색 기준)
   const fixLegacyLogoPaths = (str: string) => {
     return str
-      .replace(/src=(['"])assets\/logo\.png\1/g, 'src=$1/images/logo_invid.png$1')
-      .replace(/src=(['"])assets\/logo-white\.png\1/g, 'src=$1/images/logo_white.png$1');
+      .replace(/src=(['"])assets\/logo\.png\1/g, 'src=$1/images/logo_white.png$1')
+      .replace(/src=(['"])assets\/logo-white\.png\1/g, 'src=$1/images/logo_invid.png$1');
   };
 
   // fast-path: raw 마커가 전혀 없으면 기존 파이프라인 그대로 적용 후 경로 보정
