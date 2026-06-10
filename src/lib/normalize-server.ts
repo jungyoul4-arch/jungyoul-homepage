@@ -20,6 +20,16 @@ import {
   stripNonAllowlistedInlineStyles,
   removeEmptyBlocks,
 } from "@/lib/normalize-paste";
+import { sanitizeContent, sanitizeRawContent } from "@/lib/sanitize";
+import {
+  RAW_HTML_ATTR,
+  RAW_SCOPED_ATTR,
+  RAW_SLOT_ATTR,
+  RAW_ID_RE,
+  generateRawId,
+  ensureScopedCss,
+  remapScopedCssId,
+} from "@/lib/raw-html";
 
 // normalize-paste 의 unwrapInlineWrappingBlocks 는 Node.ELEMENT_NODE / Node.TEXT_NODE 상수를 참조한다.
 // 브라우저·happy-dom 환경에서는 global Node 가 존재하지만 Node.js / Workers 에는 없다.
@@ -67,4 +77,89 @@ export function normalizeArticleHtml(html: string): string {
   removeEmptyBlocks(doc, { keepEmptyParagraphs: true });
 
   return document.body.innerHTML;
+}
+
+/**
+ * 본문 전체 처리의 단일 진입점 — 어드민 저장(POST/PUT)과 공개 렌더 양쪽에서 호출.
+ * `sanitizeContent(normalizeArticleHtml(html))` 를 대체한다.
+ *
+ * raw HTML 블록(`<div data-raw-html="id">`, 에디터 "HTML 소스 삽입" 원본 보존 모드)을
+ * 추출해 두고 나머지 본문에만 기존 뉴스룸 파이프라인을 적용한 뒤, raw 영역은
+ * 관용 프로파일(sanitizeRawContent) + CSS 스코프 강제(ensureScopedCss)만 거쳐 제자리에 복원한다.
+ *
+ * 불변식:
+ *   - 마커 없는 본문은 기존 경로와 바이트 동일 (fast-path) — 기존 기사 회귀 0
+ *   - 멱등: processArticleHtml(processArticleHtml(x)) === processArticleHtml(x) (공개 렌더가 매 뷰 실행)
+ *   - <style> 의 스코프 여부는 data-raw-scoped 마커가 아니라 stylis AST 검증(isFullyScopedCss)으로 판단
+ *     — 직접 API 호출로 마커만 붙인 전역 CSS 누수 차단
+ */
+export function processArticleHtml(html: string): string {
+  if (!html) return html;
+  // fast-path: raw 마커가 전혀 없으면 기존 파이프라인 그대로 (바이트 동일 보장)
+  if (!html.includes(RAW_HTML_ATTR) && !html.includes(RAW_SLOT_ATTR)) {
+    return sanitizeContent(normalizeArticleHtml(html));
+  }
+
+  ensureGlobalNode();
+  const { document } = parseHTML(
+    `<!DOCTYPE html><html><head></head><body>${html}</body></html>`,
+  );
+  const doc = document as unknown as Document;
+
+  // ① 슬롯 주입 가드 — 본문에 미리 박아둔 data-raw-slot 으로 재조립 단계를 교란하지 못하게 전부 제거
+  for (const el of Array.from(doc.querySelectorAll(`[${RAW_SLOT_ATTR}]`))) {
+    el.removeAttribute(RAW_SLOT_ATTR);
+  }
+
+  // ② outermost raw 영역 추출 (중첩 마커는 바깥 영역에 포함된 채로 보존)
+  const all = Array.from(doc.querySelectorAll(`div[${RAW_HTML_ATTR}]`));
+  const outermost = all.filter(
+    (el) => !el.parentElement?.closest(`div[${RAW_HTML_ATTR}]`),
+  );
+  const usedIds = new Set<string>();
+  const regions: string[] = [];
+  for (const el of outermost) {
+    let id = el.getAttribute(RAW_HTML_ATTR) ?? "";
+    if (!RAW_ID_RE.test(id) || usedIds.has(id)) {
+      // 불량/중복 id 는 새로 부여하고, 스코프된 CSS 의 prefix 도 함께 리맵
+      // (에디터에서 블록을 통째 복사해 중복 id 가 생기는 케이스 수리)
+      const newId = generateRawId();
+      for (const styleEl of Array.from(el.querySelectorAll("style"))) {
+        styleEl.textContent = remapScopedCssId(styleEl.textContent ?? "", id, newId);
+      }
+      el.setAttribute(RAW_HTML_ATTR, newId);
+      id = newId;
+    }
+    usedIds.add(id);
+    const slot = doc.createElement("div");
+    slot.setAttribute(RAW_SLOT_ATTR, String(regions.length));
+    regions.push((el as HTMLElement).outerHTML);
+    el.replaceWith(slot);
+  }
+
+  // ③ 표준 영역: 기존 뉴스룸 파이프라인 그대로 (빈 슬롯 div 는 normalize/sanitize 양쪽에서 생존 — 검증됨)
+  const standard = sanitizeContent(normalizeArticleHtml(doc.body.innerHTML));
+
+  // ④ raw 영역: 관용 sanitize → <style> 스코프 강제
+  const processedRegions = regions.map((regionHtml) => {
+    const sanitized = sanitizeRawContent(regionHtml);
+    const { document: regionDocument } = parseHTML(
+      `<!DOCTYPE html><html><head></head><body>${sanitized}</body></html>`,
+    );
+    const regionDoc = regionDocument as unknown as Document;
+    const root = regionDoc.querySelector(`div[${RAW_HTML_ATTR}]`);
+    if (!root) return ""; // sanitize 가 래퍼를 폐기한 비정상 케이스 — 영역 자체를 버림
+    const id = root.getAttribute(RAW_HTML_ATTR) ?? "";
+    for (const styleEl of Array.from(root.querySelectorAll("style"))) {
+      styleEl.textContent = ensureScopedCss(styleEl.textContent ?? "", id);
+      styleEl.setAttribute(RAW_SCOPED_ATTR, "1");
+    }
+    return (root as HTMLElement).outerHTML;
+  });
+
+  // ⑤ 재조립 — 표준 파이프라인을 통과한 슬롯 div 를 raw 영역으로 치환
+  return standard.replace(
+    new RegExp(`<div ${RAW_SLOT_ATTR}="(\\d+)"[^>]*>[\\s\\S]*?</div>`, "g"),
+    (_, n: string) => processedRegions[Number(n)] ?? "",
+  );
 }

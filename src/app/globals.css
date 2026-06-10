@@ -413,3 +413,31 @@
   content-visibility: auto;
   contain-intrinsic-size: auto 480px;
 }
+/* ══════════════════════════════════════════════════════════
+   Raw HTML 블록 격리 (data-raw-html — 에디터 "HTML 소스 삽입" 원본 보존)
+
+   파일 맨 끝에 위치해야 한다(소스 순서가 동작 조건) — 더블 속성
+   [data-raw-html][data-raw-html] = (0,3,0) 으로
+   .article-content > div:not([style]) (0,2,1) 등 모든 뉴스룸 규칙을
+   특이성으로 제압하고, 동점 (0,3,0) 규칙과는 후순서로 이긴다.
+
+   블록 안의 스코프된 raw CSS(트리플 속성 prefix = (0,3,0) 이상,
+   body <style> 이 head CSS 보다 후순서)가 이 격리 규칙을 다시 이기고,
+   원본의 인라인 style 은 항상 최우선 — 결과적으로 raw 블록은
+   "브라우저 기본값 + 원본 CSS" 로 렌더된다 (raw-html.ts 특이성 계약 참조).
+   ══════════════════════════════════════════════════════════ */
+.article-content [data-raw-html][data-raw-html],
+.article-content-preview [data-raw-html][data-raw-html] {
+  all: revert;
+  /* all: revert 는 상속 자체를 차단하지 못한다 — 본문 컨테이너(.article-content > div:not([style])
+     1.25rem/30px/-0.6px 등)에서 흘러드는 타이포그래피를 명시적으로 기본값화 (all 뒤 선언이 우선).
+     font-family 는 의도적으로 페이지 폰트 상속 — raw CSS 가 지정하면 그쪽이 이긴다. */
+  font-size: 1rem;
+  line-height: normal;
+  letter-spacing: normal;
+  font-weight: normal;
+}
+.article-content [data-raw-html][data-raw-html] *,
+.article-content-preview [data-raw-html][data-raw-html] * {
+  all: revert;
+}

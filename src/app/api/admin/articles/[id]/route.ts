@@ -5,8 +5,7 @@ import { eq, inArray, isNull } from "drizzle-orm";
 import { requireAdmin } from "@/lib/admin-auth";
 import { updateArticleSchema, errorResponse, isUniqueConstraintError } from "@/lib/validation";
 import { generateSlug } from "@/lib/utils";
-import { sanitizeContent } from "@/lib/sanitize";
-import { normalizeArticleHtml } from "@/lib/normalize-server";
+import { processArticleHtml } from "@/lib/normalize-server";
 
 export async function PUT(
   request: NextRequest,
@@ -19,7 +18,7 @@ export async function PUT(
     const { id } = await params;
     const body = await request.json();
     const parsed = updateArticleSchema.parse(body);
-    if (parsed.content) parsed.content = sanitizeContent(normalizeArticleHtml(parsed.content));
+    if (parsed.content) parsed.content = processArticleHtml(parsed.content);
     if (parsed.slug === "") {
       parsed.slug = generateSlug(parsed.title || "untitled");
     }

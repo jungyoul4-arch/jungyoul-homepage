@@ -2,7 +2,7 @@
 
 import { useRef, useState, useCallback, useEffect, useImperativeHandle, type Ref } from "react";
 import { ImageIcon, Video, Code } from "lucide-react";
-import { normalizePastedHtml } from "@/lib/normalize-paste";
+import { normalizePastedHtml, normalizeRawHtml } from "@/lib/normalize-paste";
 import { resizeImageFile } from "@/lib/image-resize";
 import { HtmlInputModal } from "@/components/html-input-modal";
 
@@ -161,6 +161,13 @@ export function ContentEditor({ value, onChange, ref }: ContentEditorProps) {
     if (editorRef.current && !initializedRef.current) {
       // 빈 콘텐츠면 <p> 태그로 시작
       editorRef.current.innerHTML = value || "<p><br></p>";
+      // raw HTML 블록(data-raw-html)은 에디터 안에서 원자적(비편집) — sanitize 가 contenteditable
+      // 속성을 보존하지만, 직접 API 로 저장된 본문 등 속성 누락 케이스 대비 방어적 재설정.
+      editorRef.current
+        .querySelectorAll<HTMLElement>("div[data-raw-html]")
+        .forEach((el) => {
+          el.contentEditable = "false";
+        });
       initializedRef.current = true;
     }
   }, [value]);
@@ -223,13 +230,14 @@ export function ContentEditor({ value, onChange, ref }: ContentEditorProps) {
       frag.appendChild(temp.firstChild);
     }
 
-    const blockChildSelector = "table, figure, ul, ol, blockquote, h1, h2, h3, h4";
+    const blockChildSelector = "table, figure, ul, ol, blockquote, h1, h2, h3, h4, [data-raw-html]";
     const fragHasBlock = Array.from(frag.childNodes).some((n) => {
       if (n.nodeType !== Node.ELEMENT_NODE) return false;
       const el = n as HTMLElement;
       const t = el.tagName.toLowerCase();
       return (
         ["table", "figure", "ul", "ol", "blockquote", "h1", "h2", "h3", "h4"].includes(t) ||
+        el.hasAttribute("data-raw-html") ||
         !!el.querySelector(blockChildSelector)
       );
     });
@@ -254,15 +262,28 @@ export function ContentEditor({ value, onChange, ref }: ContentEditorProps) {
       !parentP.querySelector("img, table, figure, iframe");
 
     if (fragHasBlock && parentP && isEmptyP && parentP.parentNode === editor) {
-      // 빈 단락을 통째로 fragment 로 교체. 마지막 노드 뒤에 캐럿 빈 <p> 삽입해 후속 입력 보장.
-      const lastInserted = frag.lastChild;
-      const trailingP = document.createElement("p");
-      trailingP.innerHTML = "<br>";
-      frag.appendChild(trailingP);
+      // 빈 단락을 통째로 fragment 로 교체하고 끝에 캐럿용 빈 <p> 를 보장해 후속 입력 가능하게.
+      // fragment 가 이미 빈 캐럿 <p> 로 끝나면(raw HTML 삽입 경로 등) 중복 추가하지 않는다.
+      const lastEl =
+        frag.lastChild && frag.lastChild.nodeType === Node.ELEMENT_NODE
+          ? (frag.lastChild as HTMLElement)
+          : null;
+      const fragEndsWithCaretP =
+        !!lastEl &&
+        lastEl.tagName.toLowerCase() === "p" &&
+        (lastEl.textContent || "").trim() === "" &&
+        !lastEl.querySelector("img, table, figure, iframe");
+      let caretP: HTMLElement;
+      if (fragEndsWithCaretP && lastEl) {
+        caretP = lastEl;
+      } else {
+        caretP = document.createElement("p");
+        caretP.innerHTML = "<br>";
+        frag.appendChild(caretP);
+      }
       parentP.replaceWith(frag);
       const nextRange = document.createRange();
-      if (lastInserted) nextRange.setStartAfter(lastInserted);
-      else nextRange.setStart(editor, editor.childNodes.length);
+      nextRange.setStart(caretP, 0);
       nextRange.collapse(true);
       selection.removeAllRanges();
       selection.addRange(nextRange);
@@ -473,12 +494,13 @@ export function ContentEditor({ value, onChange, ref }: ContentEditorProps) {
     setHtmlModalOpen(true);
   }
 
-  // HTML 모달 확정: 페이스트 경로와 동일하게 normalizePastedHtml 1회 통과 후 저장해둔 커서 위치에 삽입.
+  // HTML 모달 확정: 원본 보존 변환(normalizeRawHtml — 보안 정화 + <style> 스코프 + data:URL 업로드만,
+  // 뉴스룸 구조·스타일 패스 미적용) 후 저장해둔 커서 위치에 raw 블록으로 삽입.
   // 정화 결과가 비면 throw — 모달이 inline 에러로 표시하고 열린 채 유지.
   async function handleHtmlModalSubmit(raw: string) {
     const editor = editorRef.current;
     if (!editor) return;
-    const processed = await normalizePastedHtml(raw, { uploadDataUrl: uploadImage });
+    const processed = await normalizeRawHtml(raw, { uploadDataUrl: uploadImage });
     if (!processed.trim()) {
       throw new Error("삽입할 내용이 없습니다 — 정리 후 빈 콘텐츠입니다.");
     }
@@ -505,7 +527,32 @@ export function ContentEditor({ value, onChange, ref }: ContentEditorProps) {
         selection.addRange(range);
       }
     }
-    insertHtmlAtCursor(processed);
+    // 래퍼 div 가 <p> 안에 중첩되지 않도록, 커서가 내용 있는 톱레벨 <p> 안이면 그 단락 뒤로 호이스팅.
+    // (빈 <p> 는 insertHtmlAtCursor 의 블록 경로가 통째 교체하므로 그대로 둔다.)
+    if (selection && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      let n: globalThis.Node | null = range.startContainer;
+      let parentP: HTMLElement | null = null;
+      while (n && n !== editor) {
+        if (n.nodeType === Node.ELEMENT_NODE && (n as HTMLElement).tagName.toLowerCase() === "p") {
+          parentP = n as HTMLElement;
+          break;
+        }
+        n = n.parentNode;
+      }
+      const isEmptyP =
+        parentP &&
+        (parentP.textContent || "").trim() === "" &&
+        !parentP.querySelector("img, table, figure, iframe");
+      if (parentP && !isEmptyP && parentP.parentNode === editor) {
+        range.setStartAfter(parentP);
+        range.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+    }
+    // 비편집 블록 뒤에서 이어서 입력할 수 있도록 캐럿 단락 동반 (동영상 임베드 buildEmbedHtml 관례)
+    insertHtmlAtCursor(processed + "<p><br></p>");
     savedHtmlRangeRef.current = null;
   }
 

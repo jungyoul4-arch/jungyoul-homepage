@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { sanitizeContent } from "../sanitize";
+import { sanitizeContent, sanitizeRawContent } from "../sanitize";
 
 describe("sanitizeContent", () => {
   it("strips script tags", () => {
@@ -99,5 +99,77 @@ describe("sanitizeContent", () => {
     expect(result).not.toMatch(/color\s*:/);
     expect(result).not.toMatch(/background-color/);
     expect(result).not.toMatch(/font-weight/);
+  });
+});
+
+describe("sanitizeRawContent", () => {
+  it("인라인 style 속성을 원형 보존한다 (font-size/color 포함)", () => {
+    const result = sanitizeRawContent(
+      '<p style="font-size:11px;color:#ff0000;background-color:#222;margin:40px">x</p>',
+    );
+    expect(result).toContain("font-size:11px");
+    expect(result).toContain("color:#ff0000");
+    expect(result).toContain("background-color:#222");
+    expect(result).toContain("margin:40px");
+  });
+
+  it("class / id / title 을 보존한다", () => {
+    const result = sanitizeRawContent('<section class="hero card" id="intro" title="t">x</section>');
+    expect(result).toContain('class="hero card"');
+    expect(result).toContain('id="intro"');
+    expect(result).toContain("<section");
+  });
+
+  it("<style> 태그와 CSS 텍스트를 원형 보존한다 (엔티티 이스케이프 없음)", () => {
+    const result = sanitizeRawContent("<style>div > p{color:red}</style><p>x</p>");
+    expect(result).toContain("<style>");
+    expect(result).toContain("div > p{color:red}");
+  });
+
+  it("CSS 안 </style><script> 브레이크아웃이 실행 코드로 살아남지 않는다", () => {
+    const result = sanitizeRawContent('<style>p{content:"</style><script>alert(1)</script>"}</style>');
+    expect(result).not.toContain("<script");
+  });
+
+  it("script/form/object/svg 는 여전히 차단", () => {
+    const result = sanitizeRawContent(
+      '<p>x</p><script>alert(1)</script><form><input value="a"><button>b</button></form><object data="x"></object><svg onload="x()"></svg>',
+    );
+    expect(result).not.toContain("<script");
+    expect(result).not.toContain("<form");
+    expect(result).not.toContain("<input");
+    expect(result).not.toContain("<object");
+    expect(result).not.toContain("<svg");
+  });
+
+  it("on* 핸들러와 javascript: 스킴은 제거", () => {
+    const result = sanitizeRawContent('<p onclick="x()">a</p><a href="javascript:alert(1)">b</a>');
+    expect(result).not.toContain("onclick");
+    expect(result).not.toContain("javascript:");
+  });
+
+  it("style 속성의 expression( 류 위험 패턴은 스크럽", () => {
+    const result = sanitizeRawContent('<p style="width:expression(alert(1));color:blue">x</p>');
+    expect(result).not.toMatch(/expression\s*\(/i);
+    expect(result).toContain("color:blue");
+  });
+
+  it("h5/pre/mark 등 defaults 태그 + 래퍼 마커 속성 생존", () => {
+    const result = sanitizeRawContent(
+      '<div data-raw-html="a1b2c3d4" contenteditable="false"><h5>t</h5><pre>c</pre><mark>m</mark></div>',
+    );
+    expect(result).toContain('data-raw-html="a1b2c3d4"');
+    expect(result).toContain('contenteditable="false"');
+    expect(result).toContain("<h5>");
+    expect(result).toContain("<pre>");
+    expect(result).toContain("<mark>");
+  });
+
+  it("iframe 호스트 화이트리스트와 data: 이미지 차단은 표준과 동일", () => {
+    const result = sanitizeRawContent(
+      '<iframe src="https://evil.example.com/x"></iframe><img src="data:image/png;base64,AAAA">',
+    );
+    expect(result).not.toContain("evil.example.com");
+    expect(result).not.toContain("data:image/png");
   });
 });

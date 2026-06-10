@@ -20,6 +20,13 @@
 //
 // Pass 9a–9c, 10, 11, 12 확장 은 2026-05-19 추가분. mistake-log §2026-05-15 교훈(3) 의 "figure 단락 컨테이너 시맨틱 청소는 페이스트 단계에서" 후속.
 
+import {
+  RAW_HTML_ATTR,
+  RAW_SCOPED_ATTR,
+  generateRawId,
+  ensureScopedCss,
+} from "@/lib/raw-html";
+
 export type DataUrlUploader = (file: File) => Promise<string | null>;
 
 export interface NormalizePastedHtmlOptions {
@@ -575,4 +582,63 @@ export async function normalizePastedHtml(
   }
 
   return doc.body.innerHTML;
+}
+
+/**
+ * "HTML 소스 삽입" 모달 전용 — 원본 보존 변환.
+ *
+ * normalizePastedHtml(뉴스룸 정규화)과 달리 구조·스타일 패스를 일절 돌리지 않는다.
+ * 보안 정화(script·on이벤트핸들러·javascript: 제거) + data:URL R2 업로드만 수행하고,
+ * <style> 은 수집해 raw 블록 범위로 스코프(ensureScopedCss)한 뒤
+ * `<div data-raw-html="<id>" contenteditable="false">` 래퍼로 감싸 반환한다.
+ *
+ * - 풀 HTML 문서 입력 OK — DOMParser 가 head 로 보낸 <style> 까지 수집, 본문은 body 만 사용
+ * - 사이트 CSS 격리는 globals.css 의 [data-raw-html][data-raw-html] { all: revert } 규칙이,
+ *   서버측 재검증·스코프 강제는 normalize-server.ts processArticleHtml 이 담당
+ * - 정화 후 본문이 비면 "" 반환 (호출측 모달이 inline 에러 처리)
+ */
+export async function normalizeRawHtml(
+  html: string,
+  options?: NormalizePastedHtmlOptions,
+): Promise<string> {
+  const doc = new DOMParser().parseFromString(html, "text/html");
+
+  // <style> 선추출 (head+body 모두) — removeDangerousNodes 가 style 을 제거하므로 먼저 수집
+  const cssText = Array.from(doc.querySelectorAll("style"))
+    .map((el) => {
+      const text = el.textContent ?? "";
+      el.remove();
+      return text;
+    })
+    .join("\n");
+
+  removeDangerousNodes(doc);
+  removeDangerousAttributes(doc);
+
+  if (options?.uploadDataUrl) {
+    await processDataUrlImages(doc, options.uploadDataUrl);
+  } else {
+    const imgs = Array.from(doc.querySelectorAll('img[src^="data:"]'));
+    for (const img of imgs) {
+      const placeholder = doc.createElement("span");
+      placeholder.setAttribute(
+        "style",
+        "padding:2px 6px;background-color:#fef3c7;color:#92400e;font-size:12px;border-radius:2px;",
+      );
+      placeholder.textContent = "[이미지 업로드 — 업로더 미설정]";
+      img.replaceWith(placeholder);
+    }
+  }
+
+  const body = doc.body.innerHTML;
+  if (!body.trim()) return "";
+
+  const id = generateRawId();
+  const scoped = cssText.trim() ? ensureScopedCss(cssText, id) : "";
+  return (
+    `<div ${RAW_HTML_ATTR}="${id}" contenteditable="false">` +
+    (scoped ? `<style ${RAW_SCOPED_ATTR}="1">${scoped}</style>` : "") +
+    body +
+    `</div>`
+  );
 }

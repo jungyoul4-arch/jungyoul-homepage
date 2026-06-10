@@ -1,4 +1,5 @@
 import sanitizeHtml from "sanitize-html";
+import { sanitizeRawCssText } from "./raw-html";
 
 export function sanitizeContent(html: string): string {
   return sanitizeHtml(html, {
@@ -29,7 +30,8 @@ export function sanitizeContent(html: string): string {
       ...sanitizeHtml.defaults.allowedAttributes,
       img: ["src", "alt", "style", "width", "height"],
       iframe: ["src", "style", "allow", "allowfullscreen"],
-      div: ["style", "contenteditable"],
+      // data-raw-slot: processArticleHtml 의 raw 영역 placeholder 가 표준 파이프라인을 통과할 때 생존해야 함
+      div: ["style", "contenteditable", "data-raw-slot"],
       span: ["style"],
       // 블록 요소에도 style 허용 — text-align 등 정렬 인라인 스타일이 살아남아야
       // 빠른편집/풀편집에서 적용한 정렬이 DB → 공개 렌더까지 보존된다.
@@ -103,6 +105,61 @@ export function sanitizeContent(html: string): string {
         "border": [/^[\d.]+/],
         "width": [/^\d+/],
         "vertical-align": [/^(top|middle|bottom|baseline)$/],
+      },
+    },
+    allowedIframeHostnames: ["www.youtube.com", "player.vimeo.com"],
+    allowedSchemes: ["http", "https", "mailto"],
+  });
+}
+
+/**
+ * raw HTML 블록(data-raw-html 영역) 전용 관용 sanitize 프로파일.
+ *
+ * 목적이 sanitizeContent 와 정반대다 — 뉴스룸 스타일로 깎는 게 아니라 "원본 보존".
+ * 인라인 style 속성·class·id 와 <style> 태그(CSS 텍스트)를 그대로 통과시키되,
+ * 코드 실행/주입 경계만 유지한다:
+ *   - 차단 유지: script/form/input/button/object/embed/link/meta/svg, on* 핸들러,
+ *     javascript: 스킴, data: 스킴(이미지 — 클라이언트가 이미 R2 업로드로 치환), iframe 호스트 화이트리스트
+ *   - <style> 의 CSS 는 여기서 텍스트만 통과시키고, 스코프 강제(전역 누수 차단)는
+ *     normalize-server.ts processArticleHtml 이 raw-html.ts ensureScopedCss 로 수행한다.
+ *
+ * allowVulnerableTags: <style> 을 allowedTags 에 넣기 위한 sanitize-html 플래그.
+ * CSS 텍스트는 raw-html.ts(sanitizeRawCssText + 스코프 검증)가 별도 정화하므로 경고를 의도적으로 수용.
+ *
+ * allowedStyles 키가 없는 것은 의도 — sanitize-html 은 allowedStyles 부재 시 style 속성을
+ * postcss 라운드트립만 거쳐 원형 보존한다. 위험 패턴(expression( 등)은 transformTags 에서 스크럽.
+ */
+export function sanitizeRawContent(html: string): string {
+  return sanitizeHtml(html, {
+    allowVulnerableTags: true,
+    // defaults 에 h1-h6/hr/pre/code/sub/sup/u/s/mark/small/dl/dt/dd/section/header/footer/aside/
+    // figure/figcaption/table 계열이 이미 포함됨 — 미디어와 style 만 추가
+    allowedTags: sanitizeHtml.defaults.allowedTags.concat([
+      "img",
+      "iframe",
+      "video",
+      "style",
+    ]),
+    allowedAttributes: {
+      "*": ["style", "class", "id", "title"],
+      a: ["href", "target", "rel", "name"],
+      img: ["src", "alt", "width", "height"],
+      iframe: ["src", "allow", "allowfullscreen", "width", "height"],
+      div: ["data-raw-html", "contenteditable"],
+      style: ["data-raw-scoped"],
+      table: ["border", "cellpadding", "cellspacing"],
+      td: ["colspan", "rowspan", "align", "valign"],
+      th: ["colspan", "rowspan", "align", "valign", "scope"],
+      col: ["span"],
+      colgroup: ["span"],
+    },
+    transformTags: {
+      "*": (tagName, attribs) => {
+        // style 속성값의 레거시 실행 벡터 스크럽 (at-rule 제거 부분은 속성 문맥에서 자연 no-op)
+        if (attribs.style) {
+          attribs.style = sanitizeRawCssText(attribs.style);
+        }
+        return { tagName, attribs };
       },
     },
     allowedIframeHostnames: ["www.youtube.com", "player.vimeo.com"],

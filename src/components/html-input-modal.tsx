@@ -96,8 +96,9 @@ export function HtmlInputModal({ open, onClose, onSubmit }: Props) {
             className="w-full font-mono text-xs border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:border-blue-600 transition-colors resize-y disabled:opacity-50 disabled:bg-gray-50"
           />
           <p className="text-xs text-text-secondary">
-            삽입 시 붙여넣기와 동일한 정리 규칙이 적용됩니다 — script 등 위험 요소 제거, 허용 외
-            인라인 스타일 정리, data:URL 이미지 자동 업로드.
+            원본 HTML이 그대로 보존됩니다 — 인라인 스타일·&lt;style&gt; 블록 유지(CSS는 이 블록
+            범위로 자동 스코프), 사이트 본문 스타일 미적용. script 등 위험 요소만 제거되며
+            data:URL 이미지는 자동 업로드됩니다.
           </p>
           {error && (
             <div className="px-3 py-2 bg-red-50 border border-red-200 text-sm text-red-700 rounded">

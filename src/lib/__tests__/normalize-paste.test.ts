@@ -14,7 +14,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { normalizePastedHtml } from "../normalize-paste";
+import { normalizePastedHtml, normalizeRawHtml } from "../normalize-paste";
 
 describe("normalizePastedHtml", () => {
   it("1. cleans Notion clipboard paste (font-size, lab(), nested figures, body figcaptions, invalid bp wrap)", async () => {
@@ -226,5 +226,62 @@ describe("normalizePastedHtml", () => {
     expect(out).toContain("토막 1");
     expect(out).toContain("토막 2");
     expect(out).toContain("▣ 섹션 헤더");
+  });
+});
+
+// ── normalizeRawHtml — "HTML 소스 삽입" 원본 보존 변환 ──
+
+describe("normalizeRawHtml", () => {
+  it("인라인 스타일·class 를 보존하고 뉴스룸 구조 패스를 돌리지 않는다", async () => {
+    const out = await normalizeRawHtml(
+      '<p style="font-size:11px;color:#345" class="lead">원본</p><figure><figcaption>본문성 캡션</figcaption></figure>',
+    );
+    expect(out).toContain("font-size:11px");
+    expect(out).toContain('class="lead"');
+    // normalizePastedHtml 이라면 liftBodyFigcaptions 가 figcaption 을 p 로 바꿨을 것 — raw 는 보존
+    expect(out).toContain("<figcaption>본문성 캡션</figcaption>");
+  });
+
+  it("래퍼 형태 — 8hex id + contenteditable=false, 스코프된 <style> 이 첫 자식", async () => {
+    const out = await normalizeRawHtml("<style>p{color:red}</style><p>x</p>");
+    const m = out.match(/^<div data-raw-html="([0-9a-f]{8})" contenteditable="false"><style data-raw-scoped="1">/);
+    expect(m).not.toBeNull();
+    const id = m![1];
+    expect(out).toContain(`[data-raw-html="${id}"][data-raw-html][data-raw-html] p{color:red;}`);
+    expect(out.endsWith("</div>")).toBe(true);
+  });
+
+  it("풀 HTML 문서 입력 — head 의 <style> 도 수집·스코프된다", async () => {
+    const out = await normalizeRawHtml(
+      "<!DOCTYPE html><html><head><title>t</title><style>.hero{padding:80px}</style></head><body><div class=\"hero\">x</div></body></html>",
+    );
+    expect(out).toContain(".hero{padding:80px;}");
+    expect(out).toMatch(/\[data-raw-html="[0-9a-f]{8}"\]\[data-raw-html\]\[data-raw-html\] \.hero/);
+    expect(out).not.toContain("<title>");
+  });
+
+  it("script / on* / javascript: 는 제거된다", async () => {
+    const out = await normalizeRawHtml(
+      '<p onclick="x()">a</p><script>alert(1)</script><a href="javascript:alert(1)">b</a>',
+    );
+    expect(out).not.toContain("<script");
+    expect(out).not.toContain("onclick");
+    expect(out).not.toContain("javascript:");
+    expect(out).toContain(">a</p>");
+  });
+
+  it("업로더 미제공 시 data:URL 이미지는 placeholder 로", async () => {
+    const out = await normalizeRawHtml('<p>x</p><img src="data:image/gif;base64,AAAA">');
+    expect(out).not.toContain("data:image/gif");
+    expect(out).toContain("업로더 미설정");
+  });
+
+  it("정화 후 본문이 비면 빈 문자열", async () => {
+    expect(await normalizeRawHtml("<script>x</script>")).toBe("");
+    expect(await normalizeRawHtml("   ")).toBe("");
+  });
+
+  it("<style> 만 있고 본문이 없으면 빈 문자열 (스타일만 삽입 방지)", async () => {
+    expect(await normalizeRawHtml("<style>p{color:red}</style>")).toBe("");
   });
 });
