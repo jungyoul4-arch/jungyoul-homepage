@@ -132,7 +132,7 @@ export function ThumbnailUploader({ value, overlays, onChange }: ThumbnailUpload
                 src={value}
                 alt="썸네일 미리보기"
                 fill
-                className="object-cover"
+                className="object-contain"
                 unoptimized
               />
             ) : (
