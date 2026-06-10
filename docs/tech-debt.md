@@ -1,6 +1,6 @@
 # 기술부채 보고서 (Technical Debt Report)
 
-- **작성일**: 2026-05-18
+- **최초 작성**: 2026-05-18 · **최종 재진단**: 2026-06-10 (→ 최상단 [§0 2026-06-10 재진단](#0-2026-06-10-재진단))
 - **대상**: 정율 교육정보 홈페이지 (Next.js 16 + Cloudflare Pages/OpenNext + Drizzle/D1)
 - **조사 범위**: graphify 그래프(152파일·316노드) + git 이력 + 코드 grep + 스키마/마이그레이션 점검
 - **전체 등급**: **B — 코드 품질은 양호하나 검증 안전망(테스트·CI)이 부재**
@@ -12,6 +12,116 @@
 
 > **진행 현황 (2026-05-18)**: 아래 **P0·P1 6개 항목**은 브랜치 `chore/tech-debt-p0-p1` 에서 처리됨.
 > 항목별 수정/테스트/디버깅 절차는 [`docs/tech-debt-plan.md`](tech-debt-plan.md) 참조.
+
+---
+
+## 0. 2026-06-10 재진단
+
+> **범위**: graphify 그래프(491노드·669엣지) + 보안/성능/부채 3영역 병렬 탐색 + 핵심 파일 직접 확인.
+> 아래 [§1~§4](#1-종합-진단)(2026-05-18)는 이력으로 보존하며, **본 §0 이 최신 현황**이다.
+> 이 갱신은 **문서 only** — 코드 수정은 별도 승인 후 진행(실행 순서는 §0.5).
+
+### 0.1 한눈에 — 위험도 로드맵
+
+| 위험도 | ID | 항목 | 영역 | 증거 | 공수 |
+|---|---|---|---|---|---|
+| 🔴 P0 | SEC-1 | 어드민 토큰 페이로드 미검증 → 익명 토큰으로 권한 상승 | 보안 | `auth.ts:35-43` | 0.5h |
+| 🔴 P0 | PERF-1 | 기사 상세가 전체 articles 풀스캔(관련기사) | 성능 | `articles/[slug]/page.tsx:73-77` | 0.5h |
+| 🟡 P1 | SEC-2 | CSP 헤더 부재 | 보안 | `next.config.ts:14-30` | 0.5h |
+| 🟡 P1 | SEC-3 | 업로드 MIME 클라이언트 신뢰(매직넘버 미검사) | 보안 | `upload/route.ts` admin:22·community:23 | 1h |
+| 🟡 P1 | PERF-2 | 기사 상세 generateMetadata↔page 이중 조회 | 성능 | `articles/[slug]/page.tsx:26,64` | 0.5h |
+| 🟡 P1 | PERF-3 | 커뮤니티 피드 복합/tag 인덱스 부재 | 성능 | `schema.ts`·`posts/route.ts:42,60` | 0.5h |
+| 🟡 P1 | ERR-1 | 공개 GET 침묵 catch(로깅 부재) | 오류처리 | `api/settings`·`api/picture-frames` | 0.5h |
+| 🟡 P1 | SEO-1 | 도메인 SSOT 불일치 → **news.jung-youl.com** 통일 | SEO | `sitemap.ts:26`·`robots.ts:15-16`·`layout.tsx:52` | 0.5d |
+| 🟢 P2 | DEBT-1~4 | JWT 모듈화·validation 분할·라우트 팩토리·트래킹코드 방어 | 구조 | — | 각 0.5~2d |
+| 🟢 P3 | DEBT-5~7 | 대형 파일 분해·신규기능 통합테스트·soft FK | 유지보수 | — | 점진 |
+
+### 0.2 P0 — 높음 / 즉시
+
+**SEC-1. 어드민 토큰 페이로드 미검증 → 익명 토큰으로 권한 상승 (인증 우회)** 🔴
+- **증거**: `src/lib/auth.ts:35-43` `verifyToken()` 이 서명만 검증하고 `return payload as { username: string }`
+  로 형태 확인 없이 캐스팅. `src/lib/admin-auth.ts:9-13` `requireAdmin()` 은 `if (!payload)` 만 검사 →
+  객체가 truthy 면 통과.
+- **공격 경로**: 익명 커뮤니티 세션(`src/lib/anon-session.ts:28-35`)은 **동일한 `JWT_SECRET`** 으로
+  `{ sid }` 토큰을 발급한다. 방문자가 이 토큰값을 `admin_token` 쿠키에 넣으면 `jwtVerify` 통과 →
+  `{ sid, iat, exp }` 가 truthy → `requireAdmin()` 성공 → 전체 `/api/admin/*` 접근. 특별 지식 불필요.
+- **수정 방향**: `verifyToken` 에 `if (typeof payload.username !== "string") return null;` 가드 추가
+  (이미 `verifyAnonToken`(`anon-session.ts:41`)이 `sid` 에 적용 중인 **대칭 패턴**). 단독 보안 커밋 +
+  신규 `src/lib/__tests__/auth.test.ts`(정상 통과 / `{sid}` 거부 / 변조서명 거부).
+
+**PERF-1. 기사 상세 페이지가 전체 articles 테이블을 메모리 로드** 🔴
+- **증거**: `src/app/(main)/articles/[slug]/page.tsx:73-77` — 관련기사 4건을 위해
+  `const allRaw = await db.select().from(articlesTable)` 로 **모든 기사**를 가져와 메모리에서 필터.
+  기사 수 증가 시 매 조회 O(n) — Cloudflare Workers CPU ms / D1 왕복 압박.
+- **수정 방향**: WHERE 위임 — `where(and(eq(category, …), ne(id, …))).orderBy(desc(date)).limit(4)`.
+  인덱스 `articles_category_idx`(마이그 `0009`)가 기존재해 추가 마이그레이션 불필요.
+
+### 0.3 P1 — 중간 / 단기
+
+- **SEC-2 CSP 부재**: `next.config.ts:14-30` 에 보안헤더 5종(nosniff·X-Frame·HSTS·Referrer·Permissions)은
+  있으나 `Content-Security-Policy` 없음. baseline(`frame-ancestors 'none'`·`object-src 'none'`·
+  `base-uri 'self'`·`frame-src https://www.youtube.com`) 추가. 인라인 스크립트(JSON-LD·트래킹코드)
+  때문에 `script-src 'unsafe-inline'` 유지, **CSP-Report-Only 선배포**로 위반 수집 권장.
+- **SEC-3 업로드 MIME 위조**: `api/admin/upload/route.ts:22`·`api/community/upload/route.ts:23` 이
+  클라이언트 `file.type` 만 신뢰(확장자 화이트리스트는 있으나 매직넘버 미검사), 저장 `contentType` 도
+  그대로 사용. 전역 `nosniff` 로 폴리글랏 위험은 일부 완화되나 **익명 업로드 경로**가 노출면.
+  → 매직넘버 검사 공용 헬퍼 도입, 저장 contentType 도 감지값 사용. (admin·community 공유)
+- **PERF-2 기사 상세 이중조회**: `articles/[slug]/page.tsx` 의 `generateMetadata`(:26-30)와
+  page 컴포넌트(:64-68)가 같은 slug 를 각각 D1 조회(`force-dynamic` 이라 요청 캐시 밖). `React.cache()`
+  래퍼로 단일 조회 공유. PERF-1 과 같은 파일이라 동반 처리.
+- **PERF-3 커뮤니티 피드 인덱스**: `community_posts` 에 `created_at` 단일 인덱스만(`schema.ts`).
+  커서 쿼리는 `(createdAt DESC, id DESC)` 정렬(`posts/route.ts:60`), `tag` 필터(:42)는 무인덱스.
+  → drizzle `0012` 로 `community_posts_created_id_idx(createdAt,id)` + `…_tag_created_idx(tag,createdAt)`.
+- **ERR-1 침묵 catch**: 공개 GET(`api/settings/route.ts`·`api/picture-frames/route.ts`)의 catch 가
+  `console.error` 없이 폴백 반환 → 운영 장애 추적 불가. (어드민 POST/PUT 은 `errorResponse()` 가 이미
+  로깅하므로 대상 아님.) → 각 공개 GET catch 에 로깅 1줄 추가, 폴백 응답 유지.
+- **SEO-1 도메인 SSOT → news.jung-youl.com**: `src/app/layout.tsx:52` `metadataBase` 는
+  `news.jung-youl.com`(라이브)인데 `src/app/sitemap.ts:26`·`src/app/robots.ts:15-16`·
+  `articles/[slug]/page.tsx`(JSON-LD 8곳)·`(main)/page.tsx:45`·`community/page.tsx:90`·
+  about/exam/story/teachers/contact·`README.md:3` 등 **13개 파일**은 `www.jungyoul.net`(별개 레거시).
+  현재 집계 **www.jungyoul.net 28건 vs news.jung-youl.com 9건** — 검색엔진에 잘못된 canonical/
+  sitemap/구조화데이터 송출. → 공용 상수 `SITE_URL`(`src/lib/site.ts` 신설)로 전 출력처를
+  **news.jung-youl.com** 단일 소스 치환. 단 `terms/page.tsx:32`(약관 본문)·
+  `api/admin/upload/route.ts:64`(주석 예시)·테스트 픽스처는 성격이 달라 개별 판단(자동 치환 제외).
+  검증: `grep -rn "www.jungyoul.net" src/ README.md` 잔여 0.
+
+### 0.4 P2·P3 — 구조 개선 / 이연
+
+> 원칙: 커밋 `c583e7a`(대규모 일괄 정리 → CI 깨짐 → 통째 롤백) 교훈에 따라 **작은 PR 단위**로.
+
+**P2 (구조)**
+- **DEBT-1** JWT 공용화: `auth.ts`(59) ↔ `anon-session.ts`(128) 가 `getSecret`·sign/verify·쿠키헤더를
+  ~35% 중복. 공용 `jwt-core.ts` 로 추출(페이로드 타입만 제네릭). **SEC-1 과 결합** — 공용 verify 에
+  페이로드 가드를 한 번만 두면 양쪽 대칭 보장.
+- **DEBT-2** `validation.ts` 분할: 257줄(2026-05-18 225 → picture-frame +32). 도메인별
+  (`validation/{articles,community,picture-frames,helpers}.ts`) + 배럴 `index.ts` 로 import 호환.
+- **DEBT-3** 어드민 라우트 팩토리: 36개 라우트의 `requireAdmin→json→zod→getDb→insert/update→
+  errorResponse`(~360줄 보일러플레이트)를 `createAdminRoute()` 고차함수로. 대표 3개부터 점진.
+- **DEBT-4** 트래킹코드 방어심화: `tracking-code-injector.tsx:33,48,61` 이
+  `dangerouslySetInnerHTML` 로 admin 입력을 주입(설계상 의도, `requireAdmin` 보호). 어드민 계정 탈취
+  대비 `<iframe>` 차단·벤더 도메인 화이트리스트를 `validation` refine 으로 추가(저위험·방어심화).
+
+**P3 (이연/문서)**
+- **DEBT-5** 대형 파일: `content-editor.tsx`(906, 페이스트 분리 후 재증가), 신규
+  `pdf-extractor-modal.tsx`(667), `slides/page.tsx`(681), `thumbnail-overlay-editor.tsx`(682),
+  `hero-carousel.tsx`(611). pdf-extractor·content-editor 우선 분해, 신규 컴포넌트 400줄 상한 가이드.
+- **DEBT-6** 신규 기능 통합테스트 공백: picture-frame 라우트/오버레이, HTML 소스 모달, pdf-extractor.
+  (단위 테스트는 `youtube`·`raw-html` 신규 커버됨 — 좋은 신호.)
+- **DEBT-7** soft FK 잔존: `communityPosts↔communitySessions` 등 모두 soft FK — 세션 삭제 시
+  고아 레코드 가능. D1 + soft-delete 패턴이라 저위험, 문서화만.
+
+### 0.5 재측정 요약 & 실행 순서
+
+**이전 보고서 대비 변화**
+- ✅ **해소 유지**: vitest 14파일·1609줄, CI `verify` job, DB 인덱스(마이그 `0009`/`0010`/`0011`).
+- ⚠️ **악화**: 대형 파일 전반 증가(`hero-carousel` +4, `thumbnail-overlay` +3) + 신규
+  `pdf-extractor-modal`(667). `validation.ts` 225→257.
+- 🆕 **신규 위험**: SEC-1(인증 우회), PERF-1·PERF-2(기사 상세).
+
+**코드 실행 순서 (별도 승인 후)**
+1. SEC-1 단독 + `auth.test.ts` → 2. PERF-1·PERF-2 동반(같은 파일) → 3. PERF-3(drizzle `0012`) →
+4. SEC-2·SEC-3·ERR-1 각 소PR → 5. SEO-1 `SITE_URL`(news.jung-youl.com) 상수화 → 6. P2·P3 점진.
+각 변경 후 `npm run lint && npm run typecheck && npm test` 통과, `graphify update .` 실행.
 
 ---
 
