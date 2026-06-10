@@ -139,21 +139,32 @@ Row 2 의 HTML 버튼(`<Code>` 아이콘) → 모달(`src/components/html-input-
 - 이미지 없을 때 업로드 영역 아래에 "텍스트만으로 썸네일 만들기" 보조 버튼 노출 → `ThumbnailOverlayEditor` 를 placeholder 모드로 호출
 - 업로드 엔드포인트: `POST /api/admin/upload` (`image/jpeg|png|gif|webp`, 30MB 한도, R2 저장, `/api/admin/upload/{key}` 프록시 URL 반환)
 
+### 16:9 자동 리사이즈 (센터 크롭) — `aspect` prop
+카드(16:9)와 비율이 다른 이미지가 `object-contain` 레터박스 여백을 만들던 문제의 근본 해결 (2026-06-10).
+
+- **opt-in**: `<ThumbnailUploader aspect="16:9">` 지정 시에만 동작. 기사 새글/수정 페이지 + 빠른편집 모달의 기사·하이라이트 폼 4곳에 적용. **로고(설정)·강사 사진은 prop 없음 = 비율 자유 업로드 유지**
+- 화이트리스트·크롭 수학 SSOT: `src/lib/image-crop.ts` (`THUMB_ASPECTS`, `aspectMatches`, `coverCropRect`) — 순수 함수라 vitest 로 검증 (`image-crop.test.ts`)
+- **클라이언트 크롭**: `resizeImageFile(file, { aspect })` 가 9-인자 drawImage 센터 크롭으로 비율을 굽는다(16:9 → 최대 1920×1080, 업스케일 없음). 원본 비율이 ±1% 이내면 크롭 생략(fast-path 유지). 업로드 직후 미리보기가 곧 최종 크롭 결과(WYSIWYG)
+- **서버 보강선**: 업로더가 FormData `thumbAspect="16:9"` 를 동반 전송 → `/api/admin/upload` 가 화이트리스트 검증 후 `generateThumbVariants(env, key, buf, { aspect })` 호출, Cloudflare Images `fit:"cover"` 로 640×360/1280×720 변형 생성. gif(클라이언트 재인코딩 제외 포맷)·`createImageBitmap` 실패(fail-open 원본 업로드)에서도 카드 변형은 16:9 보장. 커뮤니티 업로드 라우트는 옵션 파라미터라 무수정·무영향
+- **레거시 백필**: `scripts/recrop-thumb-variants-16x9.mjs` — D1 에서 기사/하이라이트 썸네일 키를 추출(`--keys` 필수, 전체 버킷 모드 없음)해 기존 `@640/@1280.webp` 변형만 16:9 로 덮어쓰기(sharp 로컬 실행, R2 원본 불변). dry-run 기본, `--apply` 적용, 적용 후 캐시 퍼지 권장 — 절차는 스크립트 헤더 참조
+- 표시측: 16:9 카드 컴포넌트는 `object-contain` 유지(16:9 자산이면 cover 와 동일 렌더 + 재크롭 방지 보증). 히어로 캐러셀(2.68:1 등 비-16:9 영역)만 `object-cover` (배너 특성상 잘림 허용)
+
 ### `ThumbnailOverlayEditor` (Canvas 2D)
 - `imageUrl: string | null` — 이미지가 없으면 그라디언트(135deg, 220/40/70 → 240/50/50) 배경 위에 텍스트만 합성하여 새 썸네일 이미지 생성
-- 이미지 있을 때 자연 크기, 없을 때 1280x720 (16:9) 캔버스
+- 캔버스 크기: `aspect` 지정 시 베이스 이미지를 `coverCropRect` 로 센터 크롭한 출력 크기(비-16:9 베이스도 결과 JPEG 가 16:9), 미지정 시 자연 크기, 이미지 없을 때 1280x720 (16:9)
 - 텍스트 오버레이 추가/삭제, 폰트크기·색상·굵기·정렬·그림자 컨트롤
 - **위치는 5단계 프리셋 (좌상/우상/중앙/좌하/우하)** — 우측 패널의 3×3 그리드 버튼으로 선택. 가장자리 8/92% 패딩으로 잘림 방지. 드래그 이동은 지원하지 않음 (모바일·터치 환경에서 정밀 조작 어려움 대응).
-- 미리보기는 DOM/CSS, 저장 시점에만 Canvas 합성 → JPEG(0.92) → R2 업로드
+- 미리보기는 DOM/CSS, 저장 시점에만 Canvas 합성(9-인자 drawImage 센터 크롭) → JPEG(0.92) → R2 업로드 (`thumbAspect` 플래그 동반)
 - 폰트: `"Pretendard","Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif`
 - 외부 origin 이미지가 CORS 헤더 없이 캔버스 오염을 일으키면 저장 실패 → 사용자에게 안내 표시. R2 프록시(`/api/admin/upload/[...key]`) 는 동일 origin 이라 정상 동작.
+- 재편집은 항상 원본 `baseImageUrl` 에서 재합성 → 크롭이 누적되지 않고 결정적
 
 #### 미리보기 ↔ 저장 결과 일치 (cqw 비율 + max-width 84%)
 DOM 미리보기와 캔버스 합성을 동일한 좌표·크기 비율로 맞추기 위해:
-- 미리보기 박스(`width: min(100%, 720px)`)에 `containerType: inline-size` 지정. 자식 텍스트 박스는 cqw 단위로 캔버스 자연 너비 기준 비율 표시.
-- `fontSize: max(8px, ${o.fontSize / refW * 100}cqw)` (`refW = naturalSize?.w ?? 1280`). 56px → 720px 박스에서 ≈31.5px 로 정확히 비례.
+- 미리보기 박스(`width: min(100%, 720px)`)에 `containerType: inline-size` 지정. 자식 텍스트 박스는 cqw 단위로 캔버스 출력 너비 기준 비율 표시. 컨테이너 비율은 `renderSize`(크롭 출력 크기) — `<img>` 의 `object-cover` 가 캔버스의 센터 크롭과 동일하게 잘라 보여줌
+- `fontSize: max(8px, ${o.fontSize / refW * 100}cqw)` (`refW = renderSize?.w ?? 1280`). 56px → 720px 박스에서 ≈31.5px 로 정확히 비례.
 - `maxWidth: 84cqw` + `whiteSpace: pre-wrap` + `wordBreak: break-word` 로 어떤 앵커·길이에서도 8/92% 패딩 안쪽에 머무름.
-- 캔버스 합성도 `wrapByMaxWidth(ctx, line, size.w * 0.84)` 헬퍼로 동일 84% 기준 wrap. 저장된 JPEG 의 줄바꿈/위치가 미리보기와 일치.
+- 캔버스 합성도 `wrapByMaxWidth(ctx, line, outW * 0.84)` 헬퍼로 동일 84% 기준 wrap. 저장된 JPEG 의 줄바꿈/위치가 미리보기와 일치.
 
 ### 오버레이 메타 영구 저장 (재편집 흐름)
 `articles/highlights/teachers/videos` 4개 테이블에 `thumbnail_overlays text` 컬럼이 있으며, 다음 JSON 직렬화 문자열을 저장:
