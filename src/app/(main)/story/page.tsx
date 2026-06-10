@@ -7,6 +7,7 @@ import { articles as articlesTable } from "@/db/schema";
 import { desc, eq } from "drizzle-orm";
 import { toArticle } from "@/lib/mappers";
 import { renderJsonLd } from "@/lib/json-ld";
+import { SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "성장스토리",
@@ -42,13 +43,13 @@ export default async function StoryPage() {
             name: "성장스토리",
             description:
               "정율 교육정보 성장스토리 — 학생들의 학습 여정·성취·합격 사례를 정리한 콘텐츠 모음.",
-            url: "https://www.jungyoul.net/story",
+            url: `${SITE_URL}/story`,
             mainEntity: {
               "@type": "ItemList",
               itemListElement: articles.slice(0, 10).map((a, i) => ({
                 "@type": "ListItem",
                 position: i + 1,
-                url: `https://www.jungyoul.net/articles/${a.slug}`,
+                url: `${SITE_URL}/articles/${a.slug}`,
               })),
             },
           })}

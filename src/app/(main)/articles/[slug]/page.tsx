@@ -1,11 +1,12 @@
 export const dynamic = "force-dynamic";
 
+import { cache } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { getDb } from "@/db";
 import { articles as articlesTable } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and, ne, desc } from "drizzle-orm";
 import { toArticle } from "@/lib/mappers";
 import Image from "next/image";
 import { ChevronRight } from "lucide-react";
@@ -14,6 +15,18 @@ import { isValidThumbnail } from "@/lib/thumbnail";
 import { processArticleHtml } from "@/lib/normalize-server";
 import { placeholderGradient } from "@/lib/utils";
 import { renderJsonLd } from "@/lib/json-ld";
+import { SITE_URL } from "@/lib/site";
+
+// generateMetadata 와 페이지 컴포넌트가 같은 slug 를 중복 조회하지 않도록 요청 단위 캐시(PERF-2).
+const getArticleBySlug = cache(async (decodedSlug: string) => {
+  const db = await getDb();
+  const [raw] = await db
+    .select()
+    .from(articlesTable)
+    .where(eq(articlesTable.slug, decodedSlug))
+    .limit(1);
+  return raw ?? null;
+});
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -22,12 +35,7 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const decodedSlug = decodeURIComponent(slug);
-  const db = await getDb();
-  const [raw] = await db
-    .select()
-    .from(articlesTable)
-    .where(eq(articlesTable.slug, decodedSlug))
-    .limit(1);
+  const raw = await getArticleBySlug(decodedSlug);
 
   if (!raw) return {};
   const article = toArticle(raw);
@@ -40,7 +48,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       type: "article",
       title: article.title,
       description: article.excerpt,
-      url: `https://www.jungyoul.net/articles/${article.slug}`,
+      url: `${SITE_URL}/articles/${article.slug}`,
       siteName: "정율 교육정보",
       images: [{ url: article.thumbnail || "/og-image.png", width: 1200, height: 630 }],
       publishedTime: article.date.replace(/\//g, "-"),
@@ -59,22 +67,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function ArticlePage({ params }: Props) {
   const { slug } = await params;
   const decodedSlug = decodeURIComponent(slug);
-  const db = await getDb();
 
-  const [raw] = await db
-    .select()
-    .from(articlesTable)
-    .where(eq(articlesTable.slug, decodedSlug))
-    .limit(1);
-
+  const raw = await getArticleBySlug(decodedSlug);
   if (!raw) notFound();
   const article = toArticle(raw);
 
-  const allRaw = await db.select().from(articlesTable);
-  const relatedArticles = allRaw
-    .map(toArticle)
-    .filter((a) => a.category === article.category && a.id !== article.id)
-    .slice(0, 4);
+  // 관련 교육정보 — 전체 풀스캔 대신 같은 카테고리 최신 4건만 조회(PERF-1).
+  const db = await getDb();
+  const relatedRaw = await db
+    .select()
+    .from(articlesTable)
+    .where(and(eq(articlesTable.category, raw.category), ne(articlesTable.id, raw.id)))
+    .orderBy(desc(articlesTable.date))
+    .limit(4);
+  const relatedArticles = relatedRaw.map(toArticle);
 
   return (
     <>
@@ -86,8 +92,8 @@ export default async function ArticlePage({ params }: Props) {
           headline: article.title,
           description: article.excerpt,
           image: article.thumbnail
-            ? [`https://www.jungyoul.net${article.thumbnail}`]
-            : ["https://www.jungyoul.net/og-image.png"],
+            ? [`${SITE_URL}${article.thumbnail}`]
+            : [`${SITE_URL}/og-image.png`],
           datePublished: article.date.replace(/\//g, "-"),
           dateModified: raw.updatedAt
             ? raw.updatedAt.split("T")[0]
@@ -95,19 +101,19 @@ export default async function ArticlePage({ params }: Props) {
           author: {
             "@type": "Organization",
             name: "정율 교육정보",
-            url: "https://www.jungyoul.net",
+            url: SITE_URL,
           },
           publisher: {
             "@type": "Organization",
             name: "정율 교육정보",
             logo: {
               "@type": "ImageObject",
-              url: "https://www.jungyoul.net/logo.png",
+              url: `${SITE_URL}/logo.png`,
             },
           },
           mainEntityOfPage: {
             "@type": "WebPage",
-            "@id": `https://www.jungyoul.net/articles/${article.slug}`,
+            "@id": `${SITE_URL}/articles/${article.slug}`,
           },
           articleSection: article.categoryLabel,
           ...(article.content ? {
@@ -130,13 +136,13 @@ export default async function ArticlePage({ params }: Props) {
               "@type": "ListItem",
               position: 1,
               name: "홈",
-              item: "https://www.jungyoul.net",
+              item: SITE_URL,
             },
             {
               "@type": "ListItem",
               position: 2,
               name: "교육정보",
-              item: "https://www.jungyoul.net/articles",
+              item: `${SITE_URL}/articles`,
             },
             {
               "@type": "ListItem",

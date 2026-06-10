@@ -1,6 +1,6 @@
 # 정율 교육정보 홈페이지
 
-정율 교육정보 (운영: <https://www.jungyoul.net>) 미디어 사이트의 Next.js App Router 코드베이스. 포지셔닝은 "교육 정보 미디어" — 학원 홍보 사이트가 아닙니다. 레이아웃 기준은 <https://news.samsung.com/kr/> 의 구조/계층을 따릅니다.
+정율 교육정보 (운영: <https://news.jung-youl.com>) 미디어 사이트의 Next.js App Router 코드베이스. 포지셔닝은 "교육 정보 미디어" — 학원 홍보 사이트가 아닙니다. 레이아웃 기준은 <https://news.samsung.com/kr/> 의 구조/계층을 따릅니다.
 
 ## 기술 스택
 - Next.js 16 (App Router, Turbopack dev) + React 19

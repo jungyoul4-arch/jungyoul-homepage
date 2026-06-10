@@ -22,8 +22,9 @@ export async function GET() {
       .get();
     const parsed = Number(row?.value);
     if (Number.isFinite(parsed) && parsed >= 1) defaultIntervalSec = parsed;
-  } catch {
-    // 설정 미존재 시 기본 7초
+  } catch (e) {
+    // 설정 미존재 시 기본 7초 — 단, 예외는 추적 가능하도록 로깅.
+    console.error("[picture-frames] settings lookup failed:", e);
   }
 
   return NextResponse.json({ items, defaultIntervalSec });

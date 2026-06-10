@@ -7,6 +7,7 @@ import { articles as articlesTable, navMenus } from "@/db/schema";
 import { and, asc, desc, eq, inArray, isNull } from "drizzle-orm";
 import { toArticle } from "@/lib/mappers";
 import { renderJsonLd } from "@/lib/json-ld";
+import { SITE_URL } from "@/lib/site";
 import {
   extractCategorySlugsFromHrefs,
   getDefaultParentBySlug,
@@ -77,13 +78,13 @@ export default async function ArticlesPage() {
           name: "교육정보",
           description:
             "입시 전략, 교육 칼럼, 합격 스토리 등 정율 교육정보의 모든 콘텐츠",
-          url: "https://www.jungyoul.net/articles",
+          url: `${SITE_URL}/articles`,
           mainEntity: {
             "@type": "ItemList",
             itemListElement: articles.slice(0, 10).map((a, i) => ({
               "@type": "ListItem",
               position: i + 1,
-              url: `https://www.jungyoul.net/articles/${a.slug}`,
+              url: `${SITE_URL}/articles/${a.slug}`,
             })),
           },
         })}

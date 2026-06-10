@@ -16,6 +16,7 @@ import {
 import { desc, asc } from "drizzle-orm";
 import { toArticle, toHighlight, toVideo, resolveSlides } from "@/lib/mappers";
 import { renderJsonLd } from "@/lib/json-ld";
+import { SITE_URL } from "@/lib/site";
 
 export default async function Home() {
   const db = await getDb();
@@ -42,7 +43,7 @@ export default async function Home() {
           "@context": "https://schema.org",
           "@type": "WebSite",
           name: "정율 교육정보",
-          url: "https://www.jungyoul.net",
+          url: SITE_URL,
           description:
             "대입 입시, 수능, 내신, 논술 등 교육 정보를 전문적으로 제공하는 미디어",
           publisher: {
@@ -50,7 +51,7 @@ export default async function Home() {
             name: "정율 교육정보",
             logo: {
               "@type": "ImageObject",
-              url: "https://www.jungyoul.net/logo.png",
+              url: `${SITE_URL}/logo.png`,
             },
           },
         })}

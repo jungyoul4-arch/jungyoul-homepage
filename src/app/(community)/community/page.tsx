@@ -5,6 +5,7 @@ import { and, asc, desc, eq } from "drizzle-orm";
 import { getDb } from "@/db";
 import { communityPosts, communityTags } from "@/db/schema";
 import { renderJsonLd } from "@/lib/json-ld";
+import { SITE_URL } from "@/lib/site";
 import { encodeCursor } from "@/lib/community-cursor";
 import { CommunityFeed } from "@/components/community/community-feed";
 import { CommunityTagFilter } from "@/components/community/community-tag-filter";
@@ -87,13 +88,13 @@ export default async function CommunityIndexPage({
           "@type": "CollectionPage",
           name: "커뮤니티",
           description: "고등학생 익명 커뮤니티",
-          url: "https://www.jungyoul.net/community",
+          url: `${SITE_URL}/community`,
           mainEntity: {
             "@type": "ItemList",
             itemListElement: items.slice(0, 10).map((it, i) => ({
               "@type": "ListItem",
               position: i + 1,
-              url: `https://www.jungyoul.net/community/${it.id}`,
+              url: `${SITE_URL}/community/${it.id}`,
             })),
           },
         })}

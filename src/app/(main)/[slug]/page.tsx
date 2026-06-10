@@ -7,6 +7,7 @@ import { getDb } from "@/db";
 import { navMenus } from "@/db/schema";
 import { and, asc, eq, isNull } from "drizzle-orm";
 import { renderJsonLd } from "@/lib/json-ld";
+import { SITE_URL } from "@/lib/site";
 import { getDefaultParentBySlug } from "@/lib/default-nav";
 
 interface RouteParams {
@@ -101,7 +102,7 @@ export default async function MenuIndexPage({ params }: RouteParams) {
             "@type": "CollectionPage",
             name: label,
             description,
-            url: `https://www.jungyoul.net/${slug}`,
+            url: `${SITE_URL}/${slug}`,
             mainEntity: {
               "@type": "ItemList",
               itemListElement: children.map((c, i) => ({
@@ -110,7 +111,7 @@ export default async function MenuIndexPage({ params }: RouteParams) {
                 name: c.label,
                 url: c.href.startsWith("http")
                   ? c.href
-                  : `https://www.jungyoul.net${c.href}`,
+                  : `${SITE_URL}${c.href}`,
               })),
             },
           })}

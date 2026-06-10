@@ -6,6 +6,7 @@ import { articles as articlesTable, navMenus } from "@/db/schema";
 import { isNull } from "drizzle-orm";
 import { toArticle } from "@/lib/mappers";
 import { DEFAULT_NAV } from "@/lib/default-nav";
+import { SITE_URL } from "@/lib/site";
 
 // nav_menus 부모와 별개로 sitemap 에 항상 포함되는 정적 페이지.
 // 정책·고정 콘텐츠 라우트로, 어드민 nav_menus 와 의미가 다르다.
@@ -23,7 +24,7 @@ const STATIC_ROUTES: { path: string; changeFrequency: "daily" | "weekly" | "mont
 ];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = "https://www.jungyoul.net";
+  const baseUrl = SITE_URL;
 
   const db = await getDb();
   const [rawArticles, parentRows] = await Promise.all([

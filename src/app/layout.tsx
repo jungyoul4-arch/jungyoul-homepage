@@ -6,6 +6,7 @@ import { InlineEditModal } from "@/components/inline-edit-modal";
 import { TrackingCodeHead, TrackingCodeBodyStart, TrackingCodeBodyEnd } from "@/components/tracking-code-injector";
 import { ScrollTopButton } from "@/components/scroll-top-button";
 import { renderJsonLd } from "@/lib/json-ld";
+import { SITE_URL } from "@/lib/site";
 
 const notoSansKR = Noto_Sans_KR({
   variable: "--font-noto-sans-kr",
@@ -49,12 +50,12 @@ export const metadata: Metadata = {
   formatDetection: {
     telephone: false,
   },
-  metadataBase: new URL("https://news.jung-youl.com"),
+  metadataBase: new URL(SITE_URL),
   alternates: {
     canonical: "/",
     languages: {
-      ko: "https://news.jung-youl.com",
-      "x-default": "https://news.jung-youl.com",
+      ko: SITE_URL,
+      "x-default": SITE_URL,
     },
   },
   icons: {
@@ -63,7 +64,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "ko_KR",
-    url: "https://news.jung-youl.com",
+    url: SITE_URL,
     siteName: "정율 교육정보",
     title: "정율 교육정보 — 입시·교육 전문 미디어",
     description:
@@ -119,8 +120,8 @@ export default function RootLayout({
             "@type": "EducationalOrganization",
             name: "정율 교육정보",
             alternateName: "정율사관학원",
-            url: "https://news.jung-youl.com",
-            logo: "https://news.jung-youl.com/logo.png",
+            url: SITE_URL,
+            logo: `${SITE_URL}/logo.png`,
             description:
               "대입 입시, 수능, 내신, 논술 등 교육 정보를 전문적으로 제공하는 미디어",
             address: {

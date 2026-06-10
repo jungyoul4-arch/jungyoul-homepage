@@ -186,6 +186,10 @@ export const communityPosts = sqliteTable("community_posts", {
   // 작성자별 글 조회 / 피드 cursor 정렬(createdAt|id) 경로
   index("community_posts_session_id_idx").on(t.sessionId),
   index("community_posts_created_at_idx").on(t.createdAt),
+  // 피드 cursor 정렬(createdAt DESC, id DESC) — 복합 인덱스로 seek 최적화
+  index("community_posts_created_id_idx").on(t.createdAt, t.id),
+  // 태그 필터 + 최신순 — tag 무인덱스 풀스캔 방지
+  index("community_posts_tag_created_idx").on(t.tag, t.createdAt),
 ]);
 
 // 좋아요. (post, session) 유니크 — 토글 가능.

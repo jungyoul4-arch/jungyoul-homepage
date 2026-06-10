@@ -27,6 +27,24 @@ const nextConfig: NextConfig = {
             key: "Permissions-Policy",
             value: "camera=(), microphone=(), geolocation=()",
           },
+          {
+            // baseline CSP — 인라인 스크립트(JSON-LD·어드민 트래킹코드)와 외부 임베드를
+            // 깨지 않도록 script/style 은 완화 유지하되, clickjacking·object·base-uri 를 하드닝.
+            key: "Content-Security-Policy",
+            value: [
+              "default-src 'self'",
+              "base-uri 'self'",
+              "object-src 'none'",
+              "frame-ancestors 'none'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https:",
+              "style-src 'self' 'unsafe-inline' https:",
+              "img-src 'self' https: data: blob:",
+              "font-src 'self' https: data:",
+              "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com",
+              "connect-src 'self' https:",
+              "media-src 'self' https:",
+            ].join("; "),
+          },
         ],
       },
       {

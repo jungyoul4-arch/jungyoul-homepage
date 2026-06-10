@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { renderJsonLd } from "@/lib/json-ld";
+import { SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "회사소개",
@@ -27,7 +28,7 @@ export default function AboutPage() {
           name: "회사소개 - 정율 교육정보",
           description:
             "주식회사정율은 학생 개개인에 맞는 맞춤형 교육을 제공하는 교육 전문 기업입니다.",
-          url: "https://www.jungyoul.net/about",
+          url: `${SITE_URL}/about`,
           mainEntity: {
             "@type": "EducationalOrganization",
             name: "주식회사정율",

@@ -36,7 +36,10 @@ export async function verifyToken(token: string): Promise<{ username: string } |
   try {
     const secret = await getSecret();
     const { payload } = await jwtVerify(token, secret);
-    return payload as { username: string };
+    // 페이로드 형태 검증 — 같은 JWT_SECRET 으로 서명된 익명 세션 토큰({ sid })이
+    // admin_token 자리에 들어와도 통과하지 않도록 username 필드를 명시 확인.
+    if (typeof payload.username !== "string") return null;
+    return { username: payload.username };
   } catch {
     return null;
   }

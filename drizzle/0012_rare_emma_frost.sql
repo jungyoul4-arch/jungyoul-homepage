@@ -1,0 +1,2 @@
+CREATE INDEX `community_posts_created_id_idx` ON `community_posts` (`created_at`,`id`);--> statement-breakpoint
+CREATE INDEX `community_posts_tag_created_idx` ON `community_posts` (`tag`,`created_at`);

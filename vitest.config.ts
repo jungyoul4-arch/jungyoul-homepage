@@ -19,7 +19,7 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       include: ["src/lib/**/*.ts"],
-      exclude: ["src/lib/validation.ts", "src/lib/auth.ts", "src/lib/admin-auth.ts", "src/lib/anon-session.ts"],
+      exclude: ["src/lib/validation.ts", "src/lib/auth.ts", "src/lib/admin-auth.ts", "src/lib/anon-session.ts", "src/lib/site.ts"],
       thresholds: {
         lines: 60,
         functions: 60,

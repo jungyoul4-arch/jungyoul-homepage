@@ -9,6 +9,7 @@ import { toTeacher } from "@/lib/mappers";
 import { AdminEditButton } from "@/components/admin-edit-button";
 import { isValidThumbnail } from "@/lib/thumbnail";
 import { renderJsonLd } from "@/lib/json-ld";
+import { SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "선생님 소개",
@@ -41,7 +42,7 @@ export default async function TeachersPage() {
           "@context": "https://schema.org",
           "@type": "EducationalOrganization",
           name: "정율사관학원",
-          url: "https://www.jungyoul.net",
+          url: SITE_URL,
           employee: teachers.map((t) => ({
             "@type": "Person",
             name: t.name,

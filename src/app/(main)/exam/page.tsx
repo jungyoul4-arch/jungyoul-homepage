@@ -7,6 +7,7 @@ import { articles as articlesTable, examTagOptions as examTagOptionsTable } from
 import { asc, desc, eq } from "drizzle-orm";
 import { toArticle } from "@/lib/mappers";
 import { renderJsonLd } from "@/lib/json-ld";
+import { SITE_URL } from "@/lib/site";
 import type { ExamTagOption } from "@/lib/data";
 
 export const metadata: Metadata = {
@@ -70,13 +71,13 @@ export default async function ExamPage() {
             name: "시험지 분석",
             description:
               "정율사관 시험지 분석 — 모의고사·내신 기출 분석과 풀이 전략을 정리한 콘텐츠 모음.",
-            url: "https://www.jungyoul.net/exam",
+            url: `${SITE_URL}/exam`,
             mainEntity: {
               "@type": "ItemList",
               itemListElement: articles.slice(0, 10).map((a, i) => ({
                 "@type": "ListItem",
                 position: i + 1,
-                url: `https://www.jungyoul.net/articles/${a.slug}`,
+                url: `${SITE_URL}/articles/${a.slug}`,
               })),
             },
           })}

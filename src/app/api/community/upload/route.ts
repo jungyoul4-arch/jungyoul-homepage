@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { requireAnonSession } from "@/lib/anon-session";
 import { generateThumbVariants } from "@/lib/image-variants-server";
+import { detectImageMime } from "@/lib/image-mime";
 
 // 익명 세션 사용자의 이미지 업로드 (글당 1장).
 // src/app/api/admin/upload/route.ts 와 동일한 검증 규약 — requireAdmin 만 requireAnonSession 으로 교체.
@@ -47,8 +48,18 @@ export async function POST(request: NextRequest) {
 
     const { env, ctx } = await getCloudflareContext({ async: true });
     const arrayBuffer = await file.arrayBuffer();
+
+    // 매직넘버로 실제 이미지 형식 교차검증 — 클라이언트 file.type 위조 방어.
+    const detected = detectImageMime(arrayBuffer);
+    if (!detected || !ALLOWED_TYPES.includes(detected)) {
+      return NextResponse.json(
+        { error: "파일 내용이 이미지 형식과 일치하지 않습니다." },
+        { status: 400 }
+      );
+    }
+
     await env.IMAGES_BUCKET.put(key, arrayBuffer, {
-      httpMetadata: { contentType: file.type },
+      httpMetadata: { contentType: detected },
     });
 
     // 카드로 렌더되는(thumbSrc ?w) 업로드만 옵트인으로 변형 생성 → 무료 할당량 절약.

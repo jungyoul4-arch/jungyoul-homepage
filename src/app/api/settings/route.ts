@@ -16,7 +16,8 @@ export async function GET() {
       { logoUrl: row?.value ?? null },
       { headers: { "Cache-Control": "public, max-age=60, s-maxage=60" } }
     );
-  } catch {
+  } catch (e) {
+    console.error("[settings] GET failed:", e);
     return NextResponse.json({ logoUrl: null });
   }
 }

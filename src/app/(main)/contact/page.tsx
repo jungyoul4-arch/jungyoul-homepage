@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Phone, Mail, MapPin, MessageCircle } from "lucide-react";
 import { renderJsonLd } from "@/lib/json-ld";
+import { SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "상담신청",
@@ -61,7 +62,7 @@ export default function ContactPage() {
               closes: "18:00",
             },
           ],
-          url: "https://www.jungyoul.net",
+          url: SITE_URL,
           sameAs: [
             "https://www.instagram.com/jysk_official/",
             "https://blog.naver.com/jungyoul_edu",
