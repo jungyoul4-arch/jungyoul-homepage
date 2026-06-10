@@ -410,7 +410,7 @@ function SubCard({ article, tall }: { article: { id: string; title: string; exce
             src={thumbSrc(article.thumbnail, 1280)}
             alt={article.title}
             fill
-            className="object-cover group-hover:will-change-transform transition-transform duration-300 ease-out group-hover:scale-110"
+            className="object-contain group-hover:will-change-transform transition-transform duration-300 ease-out group-hover:scale-110"
             unoptimized
           />
         ) : (
@@ -511,7 +511,7 @@ function ImageBg({
           src={thumbSrc(src, 1280)}
           alt={alt}
           fill
-          className="object-cover group-hover:will-change-transform transition-transform duration-300 ease-out group-hover:scale-110"
+          className="object-contain group-hover:will-change-transform transition-transform duration-300 ease-out group-hover:scale-110"
           priority={priority}
           unoptimized
         />
