@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   X,
@@ -14,6 +14,12 @@ import {
   Square,
 } from "lucide-react";
 import { resizeImageFile } from "@/lib/image-resize";
+import {
+  THUMB_ASPECTS,
+  coverCropRect,
+  type CoverCrop,
+  type ThumbAspect,
+} from "@/lib/image-crop";
 
 export type OverlayAnchor = "tl" | "tr" | "center" | "bl" | "br";
 
@@ -42,6 +48,9 @@ interface Props {
   // onSave 시 합성된 새 썸네일 URL + 메타 JSON 직렬화 문자열을 함께 돌려준다.
   onSave: (newUrl: string, overlaysJson: string) => void;
   onCancel: () => void;
+  // 지정 시 합성 캔버스를 해당 비율로 센터 크롭 정규화(16:9 카드용).
+  // 비-16:9 베이스 이미지로 합성해도 결과 JPEG 가 카드 비율을 갖는다.
+  aspect?: ThumbAspect;
 }
 
 const FALLBACK_SIZE = { w: 1280, h: 720 };
@@ -117,6 +126,7 @@ export function ThumbnailOverlayEditor({
   existingOverlays,
   onSave,
   onCancel,
+  aspect,
 }: Props) {
   const imgRef = useRef<HTMLImageElement>(null);
   const [overlays, setOverlays] = useState<TextOverlay[]>(() =>
@@ -135,6 +145,17 @@ export function ThumbnailOverlayEditor({
   const [mounted, setMounted] = useState(false);
 
   const selected = overlays.find((o) => o.id === selectedId) ?? null;
+
+  // 합성 출력 크기 — aspect 지정 시 베이스 이미지를 센터 크롭한 결과 크기(비율 강제).
+  // 미리보기 컨테이너 비율·cqw 환산 기준(refW)·캔버스 크기 3곳이 모두 이 값을 공유해야
+  // 미리보기 ↔ 저장 결과가 일치한다.
+  const targetAspect = aspect ? THUMB_ASPECTS[aspect] : null;
+  const renderSize = useMemo(() => {
+    if (!naturalSize) return null;
+    if (!targetAspect) return naturalSize;
+    const r = coverCropRect(naturalSize.w, naturalSize.h, targetAspect);
+    return { w: r.outW, h: r.outH };
+  }, [naturalSize, targetAspect]);
 
   function update(id: string, patch: Partial<TextOverlay>) {
     setOverlays((prev) =>
@@ -176,7 +197,7 @@ export function ThumbnailOverlayEditor({
     if (!naturalSize) return;
     setSaving(true);
     try {
-      const blob = await renderToBlob(imageUrl, overlays, naturalSize);
+      const blob = await renderToBlob(imageUrl, overlays, naturalSize, targetAspect);
       if (!blob) {
         alert(
           "이미지 합성에 실패했습니다. 외부 URL 이미지일 경우 먼저 업로드 영역에 첨부한 후 다시 시도해 주세요.",
@@ -184,10 +205,16 @@ export function ThumbnailOverlayEditor({
         return;
       }
       const composed = new File([blob], "thumbnail.jpg", { type: "image/jpeg" });
-      const file = await resizeImageFile(composed);
+      // 합성 결과는 이미 목표 비율 — aspect 옵션은 epsilon 일치로 크롭 생략, 축소만 수행.
+      const file = await resizeImageFile(
+        composed,
+        targetAspect ? { aspect: targetAspect } : undefined,
+      );
       const fd = new FormData();
       fd.append("file", file);
       fd.append("thumbVariants", "1"); // 카드 서빙용 640/1280 webp 변형 생성
+      // 서버 변형도 비율 강제(fit:cover) — 업로더와 동일한 보강선.
+      if (aspect) fd.append("thumbAspect", aspect);
       const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
       if (!res.ok) {
         const data = await res.json().catch(() => null);
@@ -235,8 +262,10 @@ export function ThumbnailOverlayEditor({
               className="relative bg-white shadow"
               style={{
                 width: "min(100%, 720px)",
-                aspectRatio: naturalSize
-                  ? `${naturalSize.w} / ${naturalSize.h}`
+                // aspect 지정 시 크롭 후 출력 비율로 미리보기 — <img> 의 object-cover 가
+                // 캔버스의 센터 크롭과 동일하게 잘라 보여주므로 미리보기=저장 결과.
+                aspectRatio: renderSize
+                  ? `${renderSize.w} / ${renderSize.h}`
                   : "16 / 9",
                 // 자식 텍스트 박스의 cqw 단위가 이 미리보기 박스의 inline-size 를 기준으로
                 // 환산되도록. 캔버스 자연 너비 ↔ 미리보기 너비 비율을 따라가며 fontSize·max-width
@@ -276,10 +305,11 @@ export function ThumbnailOverlayEditor({
               )}
               {overlays.map((o) => {
                 const pos = ANCHOR_POSITIONS[o.anchor];
-                // 캔버스 자연 너비를 기준으로 fontSize 와 max-width 를 cqw 비율로 환산.
+                // 캔버스 출력 너비를 기준으로 fontSize 와 max-width 를 cqw 비율로 환산.
                 // refW = 1280 일 때 56px → (56/1280*100)cqw = 4.375cqw → 미리보기 박스가 720px 이면 ≈31.5px,
                 // 360px 이면 ≈15.75px 로 정확히 비례 축소됨. 저장 결과(JPEG) 와 시각적으로 일치.
-                const refW = naturalSize?.w ?? FALLBACK_SIZE.w;
+                // (aspect 지정 시 캔버스가 크롭 출력 크기로 그려지므로 refW 도 같은 값을 사용)
+                const refW = renderSize?.w ?? FALLBACK_SIZE.w;
                 const fontSizeCqw = (o.fontSize / refW) * 100;
                 return (
                   <div
@@ -538,10 +568,17 @@ async function renderToBlob(
   imageUrl: string | null,
   overlays: TextOverlay[],
   size: { w: number; h: number },
+  targetAspect?: number | null,
 ): Promise<Blob | null> {
+  // targetAspect 지정 시 베이스 이미지를 센터 크롭해 출력 비율을 강제한다.
+  // 미지정 시 항등 사각형(기존 동작 — 원본 비율 그대로).
+  const rect: CoverCrop = targetAspect
+    ? coverCropRect(size.w, size.h, targetAspect)
+    : { sx: 0, sy: 0, sw: size.w, sh: size.h, outW: size.w, outH: size.h };
+
   const canvas = document.createElement("canvas");
-  canvas.width = size.w;
-  canvas.height = size.h;
+  canvas.width = rect.outW;
+  canvas.height = rect.outH;
   const ctx = canvas.getContext("2d");
   if (!ctx) return null;
 
@@ -549,16 +586,17 @@ async function renderToBlob(
     const img = await loadImage(imageUrl);
     if (!img) return null;
     try {
-      ctx.drawImage(img, 0, 0, size.w, size.h);
+      // 9-인자 drawImage — 크롭 영역만 출력 크기로 그린다(5-인자는 비율 불일치 시 스트레치).
+      ctx.drawImage(img, rect.sx, rect.sy, rect.sw, rect.sh, 0, 0, rect.outW, rect.outH);
     } catch {
       return null;
     }
   } else {
-    const grad = ctx.createLinearGradient(0, 0, size.w, size.h);
+    const grad = ctx.createLinearGradient(0, 0, rect.outW, rect.outH);
     grad.addColorStop(0, "hsl(220,40%,70%)");
     grad.addColorStop(1, "hsl(240,50%,50%)");
     ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, size.w, size.h);
+    ctx.fillRect(0, 0, rect.outW, rect.outH);
   }
 
   if (document.fonts && typeof document.fonts.ready?.then === "function") {
@@ -571,8 +609,8 @@ async function renderToBlob(
 
   for (const o of overlays) {
     const pos = ANCHOR_POSITIONS[o.anchor];
-    const px = (pos.xPct / 100) * size.w;
-    const py = (pos.yPct / 100) * size.h;
+    const px = (pos.xPct / 100) * rect.outW;
+    const py = (pos.yPct / 100) * rect.outH;
     ctx.save();
     ctx.font = `${o.fontWeight} ${o.fontSize}px ${FONT_FAMILY}`;
     ctx.fillStyle = o.color;
@@ -598,7 +636,7 @@ async function renderToBlob(
     }
     // DOM 미리보기의 max-width: 84cqw 와 동일한 비율로 캔버스에서도 줄바꿈.
     // → 미리보기 ↔ 저장 결과 시각적 일치 + 텍스트가 가장자리 패딩 안쪽에 머무름.
-    const maxWidth = size.w * 0.84;
+    const maxWidth = rect.outW * 0.84;
     const rawLines = o.text.split(/\r?\n/);
     const lines: string[] = [];
     for (const raw of rawLines) {

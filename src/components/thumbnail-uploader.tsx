@@ -9,6 +9,7 @@ import {
   type ThumbnailOverlayMeta,
 } from "./thumbnail-overlay-editor";
 import { resizeImageFile } from "@/lib/image-resize";
+import { THUMB_ASPECTS, type ThumbAspect } from "@/lib/image-crop";
 
 interface ThumbnailUploaderProps {
   value: string;
@@ -18,6 +19,9 @@ interface ThumbnailUploaderProps {
   // 일반 이미지 변경 시 url 만 변경 (overlays 인자는 빈 문자열로 메타 무효화).
   // 텍스트 오버레이 합성 저장 시 url 과 함께 새 메타 JSON 문자열 전달.
   onChange: (url: string, overlays?: string) => void;
+  // 지정 시 업로드 시점에 센터 크롭으로 비율 강제(현재 "16:9" 만 — 기사/하이라이트 카드용).
+  // 미지정 = 기존 동작(로고·강사 사진 등 비율 자유 업로드).
+  aspect?: ThumbAspect;
 }
 
 // 메타 JSON 파싱. 손상되거나 빈 문자열이면 null.
@@ -33,7 +37,7 @@ function parseMeta(json: string | undefined): ThumbnailOverlayMeta | null {
   }
 }
 
-export function ThumbnailUploader({ value, overlays, onChange }: ThumbnailUploaderProps) {
+export function ThumbnailUploader({ value, overlays, onChange, aspect }: ThumbnailUploaderProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -47,10 +51,16 @@ export function ThumbnailUploader({ value, overlays, onChange }: ThumbnailUpload
 
     setUploading(true);
     try {
-      const uploadable = await resizeImageFile(file);
+      // aspect 지정 시 클라이언트에서 센터 크롭으로 비율을 굽는다(미리보기=최종 결과).
+      const uploadable = await resizeImageFile(
+        file,
+        aspect ? { aspect: THUMB_ASPECTS[aspect] } : undefined,
+      );
       const formData = new FormData();
       formData.append("file", uploadable);
       formData.append("thumbVariants", "1"); // 카드 서빙용 640/1280 webp 변형 생성
+      // 서버 변형도 비율 강제(fit:cover) — gif·클라이언트 크롭 실패(fail-open) 보강선.
+      if (aspect) formData.append("thumbAspect", aspect);
 
       const res = await fetch("/api/admin/upload", {
         method: "POST",
@@ -226,6 +236,7 @@ export function ThumbnailUploader({ value, overlays, onChange }: ThumbnailUpload
         <ThumbnailOverlayEditor
           imageUrl={editorImageUrl}
           existingOverlays={editorSeedOverlays}
+          aspect={aspect}
           onSave={(newUrl, newOverlaysJson) => {
             onChange(newUrl, newOverlaysJson);
             setEditingOverlay(false);

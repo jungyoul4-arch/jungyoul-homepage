@@ -314,6 +314,7 @@ function ArticleForm({
             update("thumbnail", url);
             update("thumbnailOverlays", overlaysJson ?? "");
           }}
+          aspect="16:9"
         />
       </Field>
     </>
@@ -354,6 +355,7 @@ function HighlightForm({
             update("thumbnail", url);
             update("thumbnailOverlays", overlaysJson ?? "");
           }}
+          aspect="16:9"
         />
       </Field>
     </>

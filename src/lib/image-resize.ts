@@ -12,11 +12,19 @@
 //  - 어떤 단계든 실패하면 원본 File 을 반환(업로드 자체는 항상 진행).
 //  - 축소가 불필요(이미 작은 이미지)하거나 재인코딩 결과가 더 커지면 원본 유지.
 
+import { aspectMatches, coverCropRect, type CoverCrop } from "@/lib/image-crop";
+
 export interface ResizeOptions {
   /** 긴 변 최대 픽셀. 이보다 크면 비율 유지 축소. 기본 1920. */
   maxEdge?: number;
   /** 손실 포맷(jpeg/webp) 품질 0~1. 기본 0.82. png 는 무시(무손실). */
   quality?: number;
+  /**
+   * 목표 종횡비(w/h). 지정 시 센터 크롭으로 비율을 강제한다(16:9 카드용).
+   * 원본 비율이 이미 ~1% 이내면 크롭 생략. gif/svg 통과·실패 시 원본 반환
+   * 원칙은 유지 — 그 경우 서버 변형(thumbAspect fit:cover)이 비율을 보강한다.
+   */
+  aspect?: number;
 }
 
 const REENCODABLE = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -40,21 +48,34 @@ export async function resizeImageFile(
 
   try {
     const { width, height } = bitmap;
+    // 비율 강제가 필요한가 — 이미 목표 비율(~1% 이내)이면 일반 축소 경로로 처리.
+    const needsCrop =
+      opts.aspect != null && !aspectMatches(width, height, opts.aspect);
     const longest = Math.max(width, height);
     const scale = longest > maxEdge ? maxEdge / longest : 1;
 
     // 축소 불필요 + 이미 충분히 작으면(≤400KB) 재인코딩 없이 원본 사용.
-    if (scale === 1 && file.size <= 400 * 1024) return file;
+    // 단, 크롭이 필요한 경우에는 fast-path 금지(반드시 재인코딩).
+    if (!needsCrop && scale === 1 && file.size <= 400 * 1024) return file;
 
-    const targetW = Math.max(1, Math.round(width * scale));
-    const targetH = Math.max(1, Math.round(height * scale));
+    const rect: CoverCrop = needsCrop
+      ? coverCropRect(width, height, opts.aspect as number, maxEdge)
+      : {
+          sx: 0,
+          sy: 0,
+          sw: width,
+          sh: height,
+          outW: Math.max(1, Math.round(width * scale)),
+          outH: Math.max(1, Math.round(height * scale)),
+        };
 
     const canvas = document.createElement("canvas");
-    canvas.width = targetW;
-    canvas.height = targetH;
+    canvas.width = rect.outW;
+    canvas.height = rect.outH;
     const ctx = canvas.getContext("2d");
     if (!ctx) return file;
-    ctx.drawImage(bitmap, 0, 0, targetW, targetH);
+    // 9-인자 drawImage — 센터 크롭 영역(sx,sy,sw,sh)을 출력 크기로 그린다.
+    ctx.drawImage(bitmap, rect.sx, rect.sy, rect.sw, rect.sh, 0, 0, rect.outW, rect.outH);
 
     const outType = file.type; // 포맷 보존
     const blob = await new Promise<Blob | null>((resolve) =>
@@ -67,7 +88,8 @@ export async function resizeImageFile(
     if (!blob) return file;
 
     // 재인코딩이 오히려 커졌고 축소도 없었다면 원본 유지(주로 png 무손실 재인코딩).
-    if (blob.size >= file.size && scale === 1) return file;
+    // 크롭 결과는 더 커져도 반드시 채택(비율 강제가 목적).
+    if (blob.size >= file.size && scale === 1 && !needsCrop) return file;
 
     const base = file.name.replace(/\.[^.]+$/, "") || "image";
     const ext =
