@@ -232,17 +232,18 @@ function ArticleCard({ article }: { article: Article }) {
       <Link href={href} className="group block">
         {/* Thumbnail — 16:9, rounded-lg */}
         <div className="relative aspect-[16/9] bg-gray-100 rounded-lg overflow-hidden mb-5">
-          <div
-            className="absolute inset-0 transition-transform duration-300 ease-in-out group-hover:scale-110"
-            style={{ background: placeholderGradient(article.id, "article") }}
-          />
-          {isValidThumbnail(article.thumbnail) && (
+          {isValidThumbnail(article.thumbnail) ? (
             <Image
               src={thumbSrc(article.thumbnail, 640)}
               alt={article.title}
               fill
               unoptimized
-              className="object-contain group-hover:will-change-transform transition-transform duration-300 ease-in-out group-hover:scale-110"
+              className="object-fill transition-transform duration-300 ease-in-out group-hover:scale-105 will-change-transform"
+            />
+          ) : (
+            <div
+              className="absolute inset-0 transition-transform duration-300 ease-in-out group-hover:scale-110"
+              style={{ background: placeholderGradient(article.id, "article") }}
             />
           )}
         </div>
