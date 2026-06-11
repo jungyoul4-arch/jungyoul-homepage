@@ -3,6 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ThumbnailUploader } from "@/components/thumbnail-uploader";
+import { categories } from "@/lib/data";
+
+const categoryOptions = categories.filter((c) => c.value !== "all");
 
 export default function NewHtmlPage() {
   const router = useRouter();
@@ -10,7 +13,7 @@ export default function NewHtmlPage() {
   const [form, setForm] = useState({
     title: "",
     slug: "",
-    categoryLabel: "페이지",
+    category: "strategy",
     excerpt: "",
     content: "",
     thumbnail: "",
@@ -33,10 +36,13 @@ export default function NewHtmlPage() {
     }
     setSaving(true);
 
+    // 선택한 카테고리로 카드 라벨을 자동 도출(기사 폼과 동일 패턴).
+    const categoryLabel = categoryOptions.find((c) => c.value === form.category)?.label || "페이지";
+
     const res = await fetch("/api/admin/html-pages", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
+      body: JSON.stringify({ ...form, categoryLabel }),
     });
 
     if (res.ok) {
@@ -89,14 +95,17 @@ export default function NewHtmlPage() {
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">카드 라벨</label>
-            <input
-              type="text"
-              value={form.categoryLabel}
-              onChange={(e) => update("categoryLabel", e.target.value)}
-              placeholder="페이지"
+            <label className="block text-sm font-medium text-gray-700 mb-1">카테고리</label>
+            <select
+              value={form.category}
+              onChange={(e) => update("category", e.target.value)}
               className="w-full h-10 px-3 border border-gray-300 rounded-sm text-sm focus:outline-none focus:border-blue-600"
-            />
+            >
+              {categoryOptions.map((c) => (
+                <option key={c.value} value={c.value}>{c.label}</option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-gray-500">메인 &quot;최신 교육정보&quot; 피드에서 이 카테고리 탭에 노출됩니다.</p>
           </div>
         </div>
 
@@ -133,7 +142,6 @@ export default function NewHtmlPage() {
             value={form.thumbnail}
             overlays={form.thumbnailOverlays}
             onChange={updateThumbnail}
-            aspect="16:9"
           />
         </div>
 

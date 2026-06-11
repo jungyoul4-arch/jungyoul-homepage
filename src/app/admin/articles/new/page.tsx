@@ -167,7 +167,6 @@ export default function NewArticlePage() {
             value={form.thumbnail}
             overlays={form.thumbnailOverlays}
             onChange={updateThumbnail}
-            aspect="16:9"
           />
         </div>
 

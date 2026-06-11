@@ -62,6 +62,9 @@ export const htmlPages = sqliteTable(
     title: text("title").notNull(),
     slug: text("slug").unique().notNull(),
     excerpt: text("excerpt").default(""),
+    // 기존 사이트 카테고리(strategy/column/... — src/lib/data.ts) 중 하나. 빈 값이면
+    // 매퍼가 "html" 로 폴백 → 특정 탭에 매칭되지 않고 "전체" 탭에만 노출(레거시 행 호환).
+    category: text("category").default(""),
     categoryLabel: text("category_label").default("페이지"),
     content: text("content").notNull(),                 // 원본 HTML 전체 (verbatim)
     thumbnail: text("thumbnail").default(""),            // 카드 썸네일 (16:9)

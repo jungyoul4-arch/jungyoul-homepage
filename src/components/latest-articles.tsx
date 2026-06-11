@@ -105,21 +105,22 @@ function ArticleCard({ article, headlineMode = false }: { article: Article; head
       <Link href={href} className="group block">
         {/* Desktop/Tablet: vertical layout */}
         <div className="hidden sm:block">
-          {/* Thumbnail — 삼성 뉴스룸 기사 썸네일 비율 */}
+          {/* Thumbnail — 균일 16:9 박스. 이미지는 object-fill 로 박스에 정확히 맞춰 늘림(무잘림·무여백, 비-16:9 는 약간 왜곡) */}
           <div className="relative aspect-[16/9] bg-gray-100 rounded-lg overflow-hidden mb-4">
-            <div
-              className="absolute inset-0 transition-transform duration-300 ease-in-out group-hover:scale-110"
-              style={{
-                background: placeholderGradient(article.id, "article"),
-              }}
-            />
-            {isValidThumbnail(article.thumbnail) && (
+            {isValidThumbnail(article.thumbnail) ? (
               <Image
                 src={thumbSrc(article.thumbnail, 640)}
                 alt={article.title}
                 fill
                 unoptimized
-                className="object-cover group-hover:will-change-transform transition-transform duration-300 ease-in-out group-hover:scale-110"
+                className="object-fill transition-transform duration-300 ease-in-out group-hover:scale-105 will-change-transform"
+              />
+            ) : (
+              <div
+                className="absolute inset-0 transition-transform duration-300 ease-in-out group-hover:scale-110"
+                style={{
+                  background: placeholderGradient(article.id, "article"),
+                }}
               />
             )}
           </div>
@@ -148,20 +149,21 @@ function ArticleCard({ article, headlineMode = false }: { article: Article; head
           </div>
         ) : (
           <div className="flex gap-3 sm:hidden py-5 border-b border-border-light">
-            <div className="w-1/2 aspect-[16/9] shrink-0 rounded-lg overflow-hidden relative">
-              <div
-                className="absolute inset-0"
-                style={{
-                  background: placeholderGradient(article.id, "article"),
-                }}
-              />
-              {isValidThumbnail(article.thumbnail) && (
+            <div className="w-1/2 aspect-[16/9] shrink-0 rounded-lg overflow-hidden relative bg-gray-100">
+              {isValidThumbnail(article.thumbnail) ? (
                 <Image
                   src={thumbSrc(article.thumbnail, 640)}
                   alt={article.title}
                   fill
                   unoptimized
-                  className="object-cover"
+                  className="object-fill"
+                />
+              ) : (
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    background: placeholderGradient(article.id, "article"),
+                  }}
                 />
               )}
             </div>

@@ -70,6 +70,8 @@ export const insertHtmlPageSchema = createInsertSchema(htmlPages, {
   title: (schema) => schema.min(1).max(500),
   slug: (schema) => schema.max(200),
   excerpt: (schema) => schema.max(1000),
+  // 기사와 동일하게 허용 카테고리만 통과. 빈 문자열(레거시·미지정)도 허용.
+  category: (schema) => schema.max(50).refine((v) => v === "" || categoryRefine(v), categoryRefineMsg),
   categoryLabel: (schema) => schema.max(50),
   content: (schema) => schema.min(1).max(2_000_000),
   thumbnail: (schema) => schema.max(500),
@@ -80,6 +82,7 @@ export const updateHtmlPageSchema = createUpdateSchema(htmlPages, {
   title: (schema) => schema.max(500),
   slug: (schema) => schema.max(200),
   excerpt: (schema) => schema.max(1000),
+  category: (schema) => schema.max(50).refine((v) => v === undefined || v === "" || categoryRefine(v), categoryRefineMsg),
   categoryLabel: (schema) => schema.max(50),
   content: (schema) => schema.max(2_000_000),
   thumbnail: (schema) => schema.max(500),

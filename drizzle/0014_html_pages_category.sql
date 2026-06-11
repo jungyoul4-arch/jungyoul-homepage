@@ -1,0 +1,1 @@
+ALTER TABLE `html_pages` ADD `category` text DEFAULT '';

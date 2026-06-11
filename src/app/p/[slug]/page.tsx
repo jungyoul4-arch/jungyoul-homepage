@@ -62,10 +62,11 @@ export default async function HtmlPagePage({ params }: Props) {
   return (
     <iframe
       // 등록된 원본 HTML 을 그대로 표시 (sandbox 격리로 메인 사이트와 분리).
+      // h-[100dvh]: 모바일 동적 툴바 환경에서 정적 100vh 가 하단을 가리는 문제 방지(dynamic viewport).
       srcDoc={page.content}
       sandbox="allow-scripts allow-popups allow-forms allow-popups-to-escape-sandbox"
       title={page.title}
-      className="fixed inset-0 w-screen h-screen border-0 z-[100]"
+      className="fixed inset-0 w-full h-[100dvh] border-0 z-[100]"
     />
   );
 }
