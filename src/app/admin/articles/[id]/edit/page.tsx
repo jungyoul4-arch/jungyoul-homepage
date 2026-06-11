@@ -7,13 +7,12 @@ import { ContentEditor, type ContentEditorHandle } from "@/components/content-ed
 import { ThumbnailUploader } from "@/components/thumbnail-uploader";
 import { ExamTagSelects } from "@/components/exam-tag-selects";
 import { PdfExtractorModal } from "@/components/pdf-extractor-modal";
-import { categories } from "@/lib/data";
-
-const categoryOptions = categories.filter((c) => c.value !== "all");
+import { useCategoryOptions } from "@/hooks/use-category-options";
 
 export default function EditArticlePage() {
   const router = useRouter();
   const { id } = useParams<{ id: string }>();
+  const categoryOptions = useCategoryOptions();
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [pdfOpen, setPdfOpen] = useState(false);

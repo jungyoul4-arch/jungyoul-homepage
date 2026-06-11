@@ -3,12 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ThumbnailUploader } from "@/components/thumbnail-uploader";
-import { categories } from "@/lib/data";
-
-const categoryOptions = categories.filter((c) => c.value !== "all");
+import { useCategoryOptions } from "@/hooks/use-category-options";
 
 export default function NewHtmlPage() {
   const router = useRouter();
+  const categoryOptions = useCategoryOptions();
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     title: "",

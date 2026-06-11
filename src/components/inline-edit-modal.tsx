@@ -8,7 +8,7 @@ import { useAuth, type EditModalType } from "./auth-provider";
 import { ContentEditor } from "./content-editor";
 import { ThumbnailUploader } from "./thumbnail-uploader";
 import { ExamTagSelects } from "./exam-tag-selects";
-import { categories } from "@/lib/data";
+import { useCategoryOptions, type CategoryOption } from "@/hooks/use-category-options";
 
 function extractYoutubeId(input: string): string {
   const trimmed = input.trim();
@@ -24,8 +24,6 @@ function youtubeThumbnail(youtubeId: string): string {
 }
 
 const subjectOptions = ["국어", "수학", "영어", "탐구", "컨설팅"] as const;
-
-const categoryOptions = categories.filter((c) => c.value !== "all");
 
 const apiMap: Record<EditModalType, string> = {
   article: "/api/admin/articles",
@@ -51,6 +49,7 @@ const fetchMap: Record<EditModalType, string> = {
 export function InlineEditModal() {
   const { editModal, closeEdit } = useAuth();
   const router = useRouter();
+  const categoryOptions = useCategoryOptions();
   const [form, setForm] = useState<Record<string, unknown>>({});
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -184,7 +183,7 @@ export function InlineEditModal() {
             <p className="text-sm text-gray-500 py-4">불러오는 중...</p>
           ) : (
             <>
-              {type === "article" && <ArticleForm form={form} update={update} />}
+              {type === "article" && <ArticleForm form={form} update={update} categoryOptions={categoryOptions} />}
               {type === "highlight" && <HighlightForm form={form} update={update} />}
               {type === "teacher" && <TeacherForm form={form} update={update} />}
               {type === "video" && <VideoForm form={form} update={update} />}
@@ -231,9 +230,11 @@ export function InlineEditModal() {
 function ArticleForm({
   form,
   update,
+  categoryOptions,
 }: {
   form: Record<string, unknown>;
   update: (field: string, value: unknown) => void;
+  categoryOptions: CategoryOption[];
 }) {
   return (
     <>

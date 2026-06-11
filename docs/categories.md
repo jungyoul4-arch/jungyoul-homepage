@@ -5,10 +5,11 @@
 ## 데이터 구조
 
 ### 카테고리 (`articles.category`)
-- 단일 소스: `src/lib/data.ts` 의 `Category` 유니온 + `categories` 배열
-- DB 스키마: `articles.category` text 컬럼 (Drizzle migration 에는 CHECK 제약 없음)
-- `seed.sql` 에는 fresh-seed 보호용 CHECK 제약이 있으므로 새 값 추가 시 동시 갱신
-- 운영 D1 DB 는 drizzle migration 으로 생성되어 CHECK 가 없음 → 카테고리 enum 확장은 마이그레이션 불필요
+- **SSOT 는 `nav_menus`(DB)** — `/articles` 부모의 자식 행 중 href 가 `/articles?category=<slug>` 인 것. 어드민 `/admin/nav-menus` 에 행만 추가하면 탭·필터·글 작성 옵션·저장 검증이 모두 따라온다(코드 변경 0줄). 이전엔 `data.ts` 와 분열돼 "탭엔 보이나 목록엔 안 뜸" 버그가 있었음 — 일원화로 해소.
+- `src/lib/data.ts` 의 `categories` 배열/`Category` 유니온 = **빌트인 시드 + 폴백**. nav_menus 가 비어 있을 때(fresh-seed·로컬 dev)만 쓰인다. 빌트인 6종(strategy/column/success/news/exam/growth) 정의.
+- 변환·조회 책임: `src/lib/default-nav.ts`(순수 헬퍼 `extractCategoryTabsFromNavItems`·`mergeCategoryOptions`·`mergeWritableCategorySlugs`) + `src/lib/category-rules.ts`(서버 DB 조회 `getArticleCategoryTabs`·`getCategoryOptions`·`getWritableCategorySlugs`). 공개 API `GET /api/categories` 가 폼 옵션(빌트인 ∪ nav)을 제공.
+- DB 스키마: `articles.category` text 컬럼 (CHECK 없음). 저장 검증은 정적 enum 이 아니라 `validation.ts` 의 슬러그 포맷검사(`/^[a-z0-9-]+$/`) + 각 글/HTML API 핸들러의 `getWritableCategorySlugs(db)` 멤버십(빌트인 ∪ nav).
+- `seed.sql` CHECK 제약은 fresh-seed 보호용 — 운영의 새 카테고리는 nav_menus 로 추가되므로 갱신 불필요. **빌트인 자체를 늘릴 때만** data.ts + seed CHECK 동시 갱신.
 
 ### 네비게이션 (`nav_menus` 테이블)
 - DB-driven, parent_id 로 부모-자식 트리 구성
@@ -30,14 +31,15 @@
 
 ## 새 카테고리 추가 절차
 
-### A. "교육정보" 게시판에 단순 추가하는 경우
-1. `src/lib/data.ts` — `Category` 유니온 + `categories` 배열에 `{ value, label }` 추가
-2. `seed.sql` CHECK 제약에 새 값 추가 (fresh-seed 보호)
-3. 끝. 자동 노출:
-   - `/articles` 카테고리 탭
+### A. "교육정보" 게시판에 카테고리 추가 — 어드민만으로 끝 (코드 0줄)
+1. 어드민 `/admin/nav-menus` → "교육정보"(`/articles`) 부모 아래 **자식 행 추가**: label(예: "설명회"), href=`/articles?category=session`
+2. 끝. 즉시 자동 노출·동작:
+   - `/articles` 카테고리 탭 + `?category=session` 클라이언트 필터
    - 홈 "최신 교육정보" 탭
-   - 어드민 글 작성/수정 카테고리 드롭다운 (단일 소스 import)
-   - 어드민 슬라이드 카테고리 드롭다운 (단일 소스 import)
+   - 어드민 글/HTML/슬라이드 작성·수정 카테고리 드롭다운(`/api/categories` fetch — `useCategoryOptions()`)
+   - 해당 카테고리로 글 저장 시 검증 통과(`getWritableCategorySlugs` 멤버십)
+
+> 빌트인 6종 외 새 카테고리는 `src/lib/data.ts` 수정 **불필요**. 다만 nav_menus 가 비는 fresh-seed/로컬 폴백 환경에서도 노출하려면 data.ts `categories` 에도 추가(선택).
 
 ### B. 새 부모 메뉴(또는 별도 게시판) 추가 — catch-all 자동 라우팅 사용
 
@@ -52,10 +54,8 @@
 → 새 라우트 page.tsx 생성, sitemap 등록, Category enum 변경 모두 **불필요**. 운영 D1 의 `nav_menus` 데이터만 변경.
 
 #### 고급 시나리오 — 별도 hero 이미지/콘텐츠/카테고리 필터가 필요할 때 (예: `/exam`)
-1. A 단계 모두 수행 (새 카테고리 enum 등록)
-2. `/articles` 와 홈 탭에는 노출하지 않으려면:
-   - `src/components/article-list.tsx` 의 탭 렌더에서 `categories.filter((c) => c.value !== "<new>")`
-   - `src/components/latest-articles.tsx` 동일 처리
+1. A 단계 수행 (nav_menus 카테고리 등록; 빌트인 폴백이 필요하면 data.ts 도)
+2. `/articles`·홈 탭에서 숨기려면 `src/lib/default-nav.ts` 의 `EDUCATION_HIDDEN_CATEGORIES` set 에 slug 추가(현재 `exam`·`growth`). 탭 렌더(`article-list.tsx`·`latest-articles.tsx`)가 이 set 으로 필터하므로 두 컴포넌트 개별 수정 불필요
 3. **신규 라우트 페이지 생성** — `src/app/(main)/<slug>/page.tsx` (catch-all 보다 우선 매칭됨)
    - `src/app/(main)/articles/page.tsx` 또는 `src/app/(main)/exam/page.tsx` 패턴 모방
    - 쿼리: `eq(articlesTable.category, "<new>")`
@@ -85,14 +85,14 @@
 
 ## 카테고리 vs. 시험 태그 — 구분
 
-`articles.category` 는 `src/lib/data.ts` 에 코드로 정의된 enum 이고 고정적이다. 반면 `/exam` 페이지의 연도/학년/과목 태그는 `exam_tag_options` DB 테이블로 관리되는 별도 메타데이터 레이어다:
+`articles.category` 는 `nav_menus`(DB)가 SSOT 이며 어드민이 추가할 수 있다(빌트인 6종은 `src/lib/data.ts` 시드). `/exam` 페이지의 연도/학년/과목 태그는 `exam_tag_options` DB 테이블로 관리되는 또 다른 메타데이터 레이어다:
 
-- **카테고리**(strategy/column/success/news/exam/…): 코드에 정의, 새 값 추가 시 `src/lib/data.ts` 수정 필요 → 본 문서 절차 따름
+- **카테고리**(strategy/column/success/news/exam/…): nav_menus DB 주도. 새 값은 어드민 `/admin/nav-menus` 행 추가로 끝(코드 0줄) → 본 문서 절차 A
 - **시험 태그**(exam_year/exam_grade/exam_subject): DB-driven, 어드민 `/admin/exam-tag-options` 에서 코드 변경 없이 옵션 관리. `category = "exam"` 기사에만 적용
 
 다른 카테고리에서 유사한 다차원 필터가 필요해지면 `exam_tag_options` 패턴(`tag_type` 컬럼으로 차원 구분, 공유 컴포넌트 `<ExamTagSelects>`)을 참조해 확장할 것.
 
-### 카테고리 라벨 단일 소스
-`InlineEditModal`, `/admin/articles/new`, `/admin/articles/[id]/edit`, `/admin/slides` 의 `categoryOptions` 는 모두 `src/lib/data.ts` 의 `categories` 배열을 import 한 뒤 `filter` 로 통합되어 있다. 라벨/value 변경은 `src/lib/data.ts` 한 곳만 수정.
+### 카테고리 옵션 출처 (어드민 폼)
+`InlineEditModal`, `/admin/articles/new`·`/[id]/edit`, `/admin/html-pages/new`·`/[id]/edit`, `/admin/slides` 는 모두 `useCategoryOptions()`(`src/hooks/use-category-options.ts`)로 `GET /api/categories`(빌트인 ∪ nav_menus) 옵션을 받는다. data.ts 빌트인으로 초기 시드 후 마운트 시 갱신 → 빈 깜빡임 없음. 옵션/라벨은 어드민 nav_menus 가 SSOT.
 
-`/admin/slides` 는 슬라이드용 빠른 글 생성에서 `exam` 카테고리를 제외한다 (별도 게시판이므로 슬라이드 메인 영역에 노출되지 않음): `categories.filter((c) => c.value !== "all" && c.value !== "exam")`.
+`/admin/slides` 는 슬라이드용 빠른 글 생성에서 `exam` 을 제외한다(슬라이드 메인 영역 비노출): `useCategoryOptions({ excludeExam: true })`.

@@ -18,11 +18,12 @@ import { desc, asc } from "drizzle-orm";
 import { toArticle, toHtmlPageCard, toHighlight, toVideo, resolveSlides } from "@/lib/mappers";
 import { renderJsonLd } from "@/lib/json-ld";
 import { SITE_URL } from "@/lib/site";
+import { getArticleCategoryTabs } from "@/lib/category-rules";
 
 export default async function Home() {
   const db = await getDb();
 
-  const [rawArticles, rawHtmlPages, rawHighlights, rawVideos, rawSlides, rawSlideItems, rawPinned] = await Promise.all([
+  const [rawArticles, rawHtmlPages, rawHighlights, rawVideos, rawSlides, rawSlideItems, rawPinned, categoryTabs] = await Promise.all([
     db.select().from(articlesTable).orderBy(desc(articlesTable.date)),
     db.select().from(htmlPagesTable).orderBy(desc(htmlPagesTable.date)).catch(() => [] as never[]),
     db.select().from(highlightsTable),
@@ -30,6 +31,7 @@ export default async function Home() {
     db.select().from(heroSlidesTable).orderBy(asc(heroSlidesTable.sortOrder)),
     db.select().from(heroSlideItemsTable).orderBy(asc(heroSlideItemsTable.sortOrder)),
     db.select().from(pinnedArticlesTable).orderBy(asc(pinnedArticlesTable.slot)).catch(() => [] as { slot: number; articleId: string }[]),
+    getArticleCategoryTabs(db),
   ]);
 
   const allArticles = rawArticles.map(toArticle);
@@ -123,7 +125,7 @@ export default async function Home() {
 
       {/* Hero Carousel — 삼성 뉴스룸 메인 슬라이더 */}
       <HeroCarousel slides={heroSlides} />
-      <LatestArticles articles={latestFeed} pinnedArticleIds={pinnedArticleIds} />
+      <LatestArticles articles={latestFeed} pinnedArticleIds={pinnedArticleIds} categories={categoryTabs} />
       <HighlightsCarousel highlights={rawHighlights.map(toHighlight)} />
       <MediaLibrary videos={rawVideos.map(toVideo)} />
     </>

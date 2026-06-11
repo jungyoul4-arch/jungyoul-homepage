@@ -3,13 +3,12 @@
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { ThumbnailUploader } from "@/components/thumbnail-uploader";
-import { categories } from "@/lib/data";
-
-const categoryOptions = categories.filter((c) => c.value !== "all");
+import { useCategoryOptions } from "@/hooks/use-category-options";
 
 export default function EditHtmlPage() {
   const router = useRouter();
   const { id } = useParams<{ id: string }>();
+  const categoryOptions = useCategoryOptions();
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({

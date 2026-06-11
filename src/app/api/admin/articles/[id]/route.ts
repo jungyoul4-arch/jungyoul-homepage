@@ -4,6 +4,7 @@ import { articles, heroSlides, heroSlideItems } from "@/db/schema";
 import { eq, inArray, isNull } from "drizzle-orm";
 import { requireAdmin } from "@/lib/admin-auth";
 import { updateArticleSchema, errorResponse, isUniqueConstraintError } from "@/lib/validation";
+import { getWritableCategorySlugs } from "@/lib/category-rules";
 import { generateSlug } from "@/lib/utils";
 import { processArticleHtml } from "@/lib/normalize-server";
 
@@ -23,6 +24,13 @@ export async function PUT(
       parsed.slug = generateSlug(parsed.title || "untitled");
     }
     const db = await getDb();
+    // 카테고리를 수정하는 경우에만 nav_menus 기반 허용목록 멤버십 검증.
+    if (parsed.category !== undefined) {
+      const allowed = await getWritableCategorySlugs(db);
+      if (!allowed.includes(parsed.category)) {
+        return NextResponse.json({ error: "허용되지 않은 카테고리입니다." }, { status: 400 });
+      }
+    }
 
     await db
       .update(articles)

@@ -4,6 +4,7 @@ import { htmlPages } from "@/db/schema";
 import { desc } from "drizzle-orm";
 import { requireAdmin } from "@/lib/admin-auth";
 import { insertHtmlPageSchema, errorResponse, isUniqueConstraintError } from "@/lib/validation";
+import { getWritableCategorySlugs } from "@/lib/category-rules";
 import { generateSlug } from "@/lib/utils";
 
 export async function GET(request: NextRequest) {
@@ -29,6 +30,13 @@ export async function POST(request: NextRequest) {
     // content 는 정화하지 않고 verbatim 저장 — /p/{slug} 의 sandbox iframe 이 격리 렌더.
     if (!parsed.slug) parsed.slug = generateSlug(parsed.title);
     const db = await getDb();
+    // 카테고리 지정 시 nav_menus 기반 허용목록 멤버십 검증("" 미지정은 통과).
+    if (parsed.category) {
+      const allowed = await getWritableCategorySlugs(db);
+      if (!allowed.includes(parsed.category)) {
+        return NextResponse.json({ error: "허용되지 않은 카테고리입니다." }, { status: 400 });
+      }
+    }
     const id = crypto.randomUUID();
     const now = new Date().toISOString();
 

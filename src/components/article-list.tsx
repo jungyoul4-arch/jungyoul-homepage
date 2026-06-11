@@ -4,8 +4,8 @@ import { useMemo } from "react";
 import { useSearchParams, usePathname } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { categories, type Article, type Category } from "@/lib/data";
-import { EDUCATION_HIDDEN_CATEGORIES } from "@/lib/default-nav";
+import { categories as builtinCategories, type Article } from "@/lib/data";
+import { EDUCATION_HIDDEN_CATEGORIES, type CategoryTab } from "@/lib/default-nav";
 import { AdminEditButton } from "./admin-edit-button";
 import { isValidThumbnail, thumbSrc } from "@/lib/thumbnail";
 import { placeholderGradient } from "@/lib/utils";
@@ -16,17 +16,20 @@ const ITEMS_PER_PAGE = 12;
 interface ArticleListProps {
   articles: Article[];
   hideTabs?: boolean;
+  // 카테고리 탭(label+value). 미전달 시 data.ts 빌트인으로 폴백(기존 호출부 안전).
+  categories?: CategoryTab[];
 }
 
-export function ArticleList({ articles, hideTabs = false }: ArticleListProps) {
+export function ArticleList({ articles, hideTabs = false, categories }: ArticleListProps) {
+  const cats = categories ?? builtinCategories;
   const searchParams = useSearchParams();
   const pathname = usePathname();
-  const param = searchParams.get("category") as Category | null;
+  const param = searchParams.get("category");
   const pageParam = searchParams.get("page");
 
-  const activeTab = useMemo<Category>(
-    () => (param && categories.some((c) => c.value === param) ? param : "all"),
-    [param]
+  const activeTab = useMemo<string>(
+    () => (param && cats.some((c) => c.value === param) ? param : "all"),
+    [param, cats]
   );
 
   const currentPage = useMemo(() => {
@@ -43,7 +46,7 @@ export function ArticleList({ articles, hideTabs = false }: ArticleListProps) {
   const safePage = Math.min(currentPage, totalPages);
   const paged = filtered.slice((safePage - 1) * ITEMS_PER_PAGE, safePage * ITEMS_PER_PAGE);
 
-  function handleTab(value: Category) {
+  function handleTab(value: string) {
     // shallow routing — URL(category)만 갱신하고 서버 라운드트립 없이 클라이언트에서 필터.
     const url = value === "all" ? "/articles" : `/articles?category=${value}`;
     window.history.replaceState(null, "", url);
@@ -63,7 +66,7 @@ export function ArticleList({ articles, hideTabs = false }: ArticleListProps) {
       {/* Tab Filter */}
       {!hideTabs && (
         <div className="flex border-b border-[#d9d9d9] overflow-x-auto" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
-          {categories.filter((cat) => !EDUCATION_HIDDEN_CATEGORIES.has(cat.value)).map((cat) => (
+          {cats.filter((cat) => !EDUCATION_HIDDEN_CATEGORIES.has(cat.value)).map((cat) => (
             <button
               key={cat.value}
               onClick={() => handleTab(cat.value)}

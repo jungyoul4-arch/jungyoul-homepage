@@ -70,3 +70,59 @@ export function extractCategorySlugsFromHrefs(hrefs: string[]): string[] {
   }
   return Array.from(set);
 }
+
+// 카테고리 탭 1개(목록 페이지·홈 최신 탭·어드민 폼 옵션 공통 형태).
+export interface CategoryTab {
+  value: string;
+  label: string;
+}
+
+// nav 항목(label+href)을 카테고리 탭 리스트로 변환(라벨·순서 보존, value 중복 제거).
+// href 에 `?category=slug` 가 있으면 value=slug, 없으면(=bare /articles) value="all"(전체 탭).
+export function extractCategoryTabsFromNavItems(
+  items: { href: string; label: string }[],
+): CategoryTab[] {
+  const out: CategoryTab[] = [];
+  const seen = new Set<string>();
+  for (const it of items) {
+    let value = "all";
+    const idx = it.href.indexOf("?");
+    if (idx !== -1) {
+      const cat = new URLSearchParams(it.href.slice(idx)).get("category");
+      if (cat) value = cat;
+    }
+    if (seen.has(value)) continue;
+    seen.add(value);
+    out.push({ value, label: it.label });
+  }
+  return out;
+}
+
+// 어드민 글/HTML 폼의 카테고리 옵션(label+value, "all" 제외).
+// = data.ts 빌트인 ∪ nav_menus 의 `?category=` 항목(같은 slug 면 nav 라벨 우선).
+export function mergeCategoryOptions(
+  navItems: { href: string; label: string }[],
+): CategoryTab[] {
+  const map = new Map<string, string>();
+  for (const c of categories) {
+    if (c.value !== "all") map.set(c.value, c.label);
+  }
+  for (const it of navItems) {
+    const idx = it.href.indexOf("?");
+    if (idx === -1) continue;
+    const cat = new URLSearchParams(it.href.slice(idx)).get("category");
+    if (cat) map.set(cat, it.label);
+  }
+  return Array.from(map, ([value, label]) => ({ value, label }));
+}
+
+// 글/HTML 저장이 허용되는 카테고리 slug 집합.
+// = data.ts 빌트인(=all 제외) ∪ nav_menus 전(全) 부모의 `?category=` slug.
+export function mergeWritableCategorySlugs(navHrefs: string[]): string[] {
+  const set = new Set<string>();
+  for (const c of categories) {
+    if (c.value !== "all") set.add(c.value);
+  }
+  for (const slug of extractCategorySlugsFromHrefs(navHrefs)) set.add(slug);
+  return Array.from(set);
+}

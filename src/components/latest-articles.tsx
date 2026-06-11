@@ -3,8 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { categories, type Article, type Category } from "@/lib/data";
-import { EDUCATION_HIDDEN_CATEGORIES } from "@/lib/default-nav";
+import { categories as builtinCategories, type Article } from "@/lib/data";
+import { EDUCATION_HIDDEN_CATEGORIES, type CategoryTab } from "@/lib/default-nav";
 import { AdminEditButton } from "./admin-edit-button";
 import { isValidThumbnail, thumbSrc } from "@/lib/thumbnail";
 import { placeholderGradient } from "@/lib/utils";
@@ -12,10 +12,13 @@ import { placeholderGradient } from "@/lib/utils";
 interface LatestArticlesProps {
   articles: Article[];
   pinnedArticleIds?: string[];
+  // 카테고리 탭(label+value). 미전달 시 data.ts 빌트인으로 폴백.
+  categories?: CategoryTab[];
 }
 
-export function LatestArticles({ articles, pinnedArticleIds = [] }: LatestArticlesProps) {
-  const [activeTab, setActiveTab] = useState<Category>("all");
+export function LatestArticles({ articles, pinnedArticleIds = [], categories }: LatestArticlesProps) {
+  const cats = categories ?? builtinCategories;
+  const [activeTab, setActiveTab] = useState<string>("all");
 
   const filtered = (() => {
     if (activeTab !== "all") {
@@ -41,7 +44,7 @@ export function LatestArticles({ articles, pinnedArticleIds = [] }: LatestArticl
 
           {/* Tab Filter — 삼성 뉴스룸 탭 스타일 (16px, pb-2, border 4px) */}
           <div className="flex border-b border-[#d9d9d9] overflow-x-auto" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
-            {categories.filter((cat) => !EDUCATION_HIDDEN_CATEGORIES.has(cat.value)).map((cat) => (
+            {cats.filter((cat) => !EDUCATION_HIDDEN_CATEGORIES.has(cat.value)).map((cat) => (
               <button
                 key={cat.value}
                 onClick={() => setActiveTab(cat.value)}

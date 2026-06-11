@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { Plus, Trash2, Save, GripVertical, X, ChevronDown, FileText, Eye, EyeOff } from "lucide-react";
 import Image from "next/image";
-import { categories } from "@/lib/data";
+import { useCategoryOptions } from "@/hooks/use-category-options";
 
 interface RawArticle {
   id: string;
@@ -26,8 +26,6 @@ interface Slide {
   sortOrder: number;
 }
 
-const categoryOptions = categories.filter((c) => c.value !== "all" && c.value !== "exam");
-
 const roleLabels: Record<string, string> = {
   main: "메인",
   "sub-image": "서브이미지",
@@ -42,6 +40,8 @@ const layoutLabel: Record<number, string> = {
 };
 
 export default function AdminSlidesPage() {
+  // 히어로 슬라이드는 exam 카테고리 기사를 노출하지 않음.
+  const categoryOptions = useCategoryOptions({ excludeExam: true });
   const [slides, setSlides] = useState<Slide[]>([]);
   const [items, setItems] = useState<SlideItem[]>([]);
   const [articles, setArticles] = useState<RawArticle[]>([]);

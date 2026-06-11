@@ -4,6 +4,7 @@ import { htmlPages } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { requireAdmin } from "@/lib/admin-auth";
 import { updateHtmlPageSchema, errorResponse, isUniqueConstraintError } from "@/lib/validation";
+import { getWritableCategorySlugs } from "@/lib/category-rules";
 import { generateSlug } from "@/lib/utils";
 
 export async function PUT(
@@ -21,6 +22,13 @@ export async function PUT(
       parsed.slug = generateSlug(parsed.title || "untitled");
     }
     const db = await getDb();
+    // 카테고리 지정 시 nav_menus 기반 허용목록 멤버십 검증("" 미지정은 통과).
+    if (parsed.category) {
+      const allowed = await getWritableCategorySlugs(db);
+      if (!allowed.includes(parsed.category)) {
+        return NextResponse.json({ error: "허용되지 않은 카테고리입니다." }, { status: 400 });
+      }
+    }
 
     await db
       .update(htmlPages)

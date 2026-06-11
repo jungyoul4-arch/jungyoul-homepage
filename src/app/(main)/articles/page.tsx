@@ -3,40 +3,12 @@ export const dynamic = "force-dynamic";
 import type { Metadata } from "next";
 import { ArticleList } from "@/components/article-list";
 import { getDb } from "@/db";
-import { articles as articlesTable, htmlPages as htmlPagesTable, navMenus } from "@/db/schema";
-import { and, asc, desc, eq, inArray, isNull } from "drizzle-orm";
+import { articles as articlesTable, htmlPages as htmlPagesTable } from "@/db/schema";
+import { desc, inArray } from "drizzle-orm";
 import { toArticle, toHtmlPageCard } from "@/lib/mappers";
 import { renderJsonLd } from "@/lib/json-ld";
 import { SITE_URL } from "@/lib/site";
-import {
-  extractCategorySlugsFromHrefs,
-  getDefaultParentBySlug,
-} from "@/lib/default-nav";
-
-async function getAllowedCategoriesForArticlesPage(
-  db: Awaited<ReturnType<typeof getDb>>,
-): Promise<string[]> {
-  const parents = await db
-    .select()
-    .from(navMenus)
-    .where(and(isNull(navMenus.parentId), eq(navMenus.href, "/articles")))
-    .limit(1);
-
-  let hrefs: string[] = [];
-  if (parents.length > 0) {
-    const rows = await db
-      .select()
-      .from(navMenus)
-      .where(eq(navMenus.parentId, parents[0].id))
-      .orderBy(asc(navMenus.sortOrder));
-    hrefs = rows.map((r) => r.href);
-  }
-  if (hrefs.length === 0) {
-    const fb = getDefaultParentBySlug("articles");
-    hrefs = fb?.children.map((c) => c.href) ?? [];
-  }
-  return extractCategorySlugsFromHrefs(hrefs);
-}
+import { getArticleCategoryTabs } from "@/lib/category-rules";
 
 export const metadata: Metadata = {
   title: "교육정보",
@@ -54,7 +26,9 @@ export const metadata: Metadata = {
 
 export default async function ArticlesPage() {
   const db = await getDb();
-  const allowed = await getAllowedCategoriesForArticlesPage(db);
+  // 카테고리 탭(label+value)은 nav_menus(DB) 주도. allowed 는 "전체"를 뺀 slug 집합(쿼리 필터용).
+  const tabs = await getArticleCategoryTabs(db);
+  const allowed = tabs.filter((t) => t.value !== "all").map((t) => t.value);
 
   let query = db
     .select()
@@ -114,7 +88,7 @@ export default async function ArticlesPage() {
       <h1 className="text-[1.5rem] md:text-[1.875rem] font-bold text-text-primary mt-10 md:mt-20 pb-5 border-b border-border-light mb-10">
         교육정보
       </h1>
-      <ArticleList articles={articles} />
+      <ArticleList articles={articles} categories={tabs} />
       </div>
     </>
   );

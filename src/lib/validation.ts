@@ -15,14 +15,13 @@ import {
   communityTags,
   pictureFrameItems,
 } from "@/db/schema";
-import { categories } from "@/lib/data";
 import { isYouTubeId } from "@/lib/youtube";
 import { NextResponse } from "next/server";
 
-const allowedCategoryValues = categories
-  .filter((c) => c.value !== "all")
-  .map((c) => c.value);
-const categoryRefine = (v: string) => allowedCategoryValues.includes(v as (typeof allowedCategoryValues)[number]);
+// 카테고리는 nav_menus(DB) 주도 SSOT — 정적 enum 대신 slug 포맷만 검사한다.
+// 실제 허용 여부(멤버십)는 각 API 핸들러가 getWritableCategorySlugs(db) 로 DB 기준 검증.
+const categorySlugFormat = /^[a-z0-9-]+$/;
+const categoryRefine = (v: string) => categorySlugFormat.test(v);
 const categoryRefineMsg = { message: "허용되지 않은 카테고리입니다." };
 
 // 썸네일 텍스트 오버레이 메타 JSON 길이 한도. {version, baseImageUrl, overlays[]} 의 직렬화 길이.
