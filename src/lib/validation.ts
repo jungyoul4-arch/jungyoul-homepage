@@ -2,6 +2,7 @@ import { z } from "zod";
 import { createInsertSchema, createUpdateSchema } from "drizzle-zod";
 import {
   articles,
+  htmlPages,
   highlights,
   teachers,
   videos,
@@ -63,6 +64,28 @@ export const updateArticleSchema = createUpdateSchema(articles, {
   id: true,
   createdAt: true,
 });
+
+// HTML Pages — 독립 HTML 페이지(/p/{slug} sandbox iframe). content 는 verbatim 저장.
+export const insertHtmlPageSchema = createInsertSchema(htmlPages, {
+  title: (schema) => schema.min(1).max(500),
+  slug: (schema) => schema.max(200),
+  excerpt: (schema) => schema.max(1000),
+  categoryLabel: (schema) => schema.max(50),
+  content: (schema) => schema.min(1).max(2_000_000),
+  thumbnail: (schema) => schema.max(500),
+  thumbnailOverlays: (schema) => schema.max(OVERLAY_JSON_MAX),
+  date: (schema) => schema.max(50),
+}).omit({ id: true, createdAt: true, updatedAt: true });
+export const updateHtmlPageSchema = createUpdateSchema(htmlPages, {
+  title: (schema) => schema.max(500),
+  slug: (schema) => schema.max(200),
+  excerpt: (schema) => schema.max(1000),
+  categoryLabel: (schema) => schema.max(50),
+  content: (schema) => schema.max(2_000_000),
+  thumbnail: (schema) => schema.max(500),
+  thumbnailOverlays: (schema) => schema.max(OVERLAY_JSON_MAX),
+  date: (schema) => schema.max(50),
+}).omit({ id: true, createdAt: true });
 
 // Highlights
 export const insertHighlightSchema = createInsertSchema(highlights, {

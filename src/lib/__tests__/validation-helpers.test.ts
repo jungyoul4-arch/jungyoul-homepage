@@ -15,6 +15,7 @@ vi.mock("drizzle-zod", () => {
 });
 vi.mock("@/db/schema", () => ({
   articles: {},
+  htmlPages: {},
   highlights: {},
   teachers: {},
   videos: {},

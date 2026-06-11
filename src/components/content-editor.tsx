@@ -1,10 +1,9 @@
 "use client";
 
 import { useRef, useState, useCallback, useEffect, useImperativeHandle, type Ref } from "react";
-import { ImageIcon, Video, Code } from "lucide-react";
-import { normalizePastedHtml, normalizeRawHtml } from "@/lib/normalize-paste";
+import { ImageIcon, Video } from "lucide-react";
+import { normalizePastedHtml } from "@/lib/normalize-paste";
 import { resizeImageFile } from "@/lib/image-resize";
-import { HtmlInputModal } from "@/components/html-input-modal";
 
 /**
  * 외부에서 에디터 본문에 HTML 을 주입할 때 쓰는 imperative handle.
@@ -80,11 +79,6 @@ export function ContentEditor({ value, onChange, ref }: ContentEditorProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [htmlModalOpen, setHtmlModalOpen] = useState(false);
-  // HTML 모달이 열리며 textarea 가 포커스를 가져가면 에디터 셀렉션이 사라진다.
-  // 버튼 클릭 시점의 Range 를 clone 해 두었다가 삽입 직전에 복원한다.
-  // 에디터 DOM 은 init 후 React 가 다시 그리지 않으므로(initializedRef) 모달이 열린 동안 Range 는 유효.
-  const savedHtmlRangeRef = useRef<Range | null>(null);
   const [toolbar, setToolbar] = useState({
     activeBlock: "p",
     isBold: false,
@@ -479,83 +473,6 @@ export function ContentEditor({ value, onChange, ref }: ContentEditorProps) {
     }
   }
 
-  // 툴바: HTML 소스 입력 모달 열기.
-  // 버튼이 onMouseDown={preventEditorBlur} 를 쓰므로 onClick 시점엔 에디터 셀렉션이 살아있다 — 그때 캡처.
-  function handleHtmlButton() {
-    const editor = editorRef.current;
-    const selection = window.getSelection();
-    savedHtmlRangeRef.current =
-      editor &&
-      selection &&
-      selection.rangeCount > 0 &&
-      editor.contains(selection.getRangeAt(0).startContainer)
-        ? selection.getRangeAt(0).cloneRange()
-        : null;
-    setHtmlModalOpen(true);
-  }
-
-  // HTML 모달 확정: 원본 보존 변환(normalizeRawHtml — 보안 정화 + <style> 스코프 + data:URL 업로드만,
-  // 뉴스룸 구조·스타일 패스 미적용) 후 저장해둔 커서 위치에 raw 블록으로 삽입.
-  // 정화 결과가 비면 throw — 모달이 inline 에러로 표시하고 열린 채 유지.
-  async function handleHtmlModalSubmit(raw: string) {
-    const editor = editorRef.current;
-    if (!editor) return;
-    const processed = await normalizeRawHtml(raw, { uploadDataUrl: uploadImage });
-    if (!processed.trim()) {
-      throw new Error("삽입할 내용이 없습니다 — 정리 후 빈 콘텐츠입니다.");
-    }
-    // addRange 전에 focus — 포커스 이동이 셀렉션을 리셋하는 브라우저가 있어 순서가 중요하다.
-    editor.focus();
-    const selection = window.getSelection();
-    const saved = savedHtmlRangeRef.current;
-    if (selection) {
-      if (
-        saved &&
-        editor.contains(saved.startContainer) &&
-        editor.contains(saved.endContainer)
-      ) {
-        selection.removeAllRanges();
-        selection.addRange(saved);
-      } else if (
-        !(selection.rangeCount > 0 && editor.contains(selection.getRangeAt(0).startContainer))
-      ) {
-        // 저장된 Range 가 없거나 무효 → 본문 끝 캐럿 (insertHtml 핸들과 동일한 폴백)
-        const range = document.createRange();
-        range.setStart(editor, editor.childNodes.length);
-        range.collapse(true);
-        selection.removeAllRanges();
-        selection.addRange(range);
-      }
-    }
-    // 래퍼 div 가 <p> 안에 중첩되지 않도록, 커서가 내용 있는 톱레벨 <p> 안이면 그 단락 뒤로 호이스팅.
-    // (빈 <p> 는 insertHtmlAtCursor 의 블록 경로가 통째 교체하므로 그대로 둔다.)
-    if (selection && selection.rangeCount > 0) {
-      const range = selection.getRangeAt(0);
-      let n: globalThis.Node | null = range.startContainer;
-      let parentP: HTMLElement | null = null;
-      while (n && n !== editor) {
-        if (n.nodeType === Node.ELEMENT_NODE && (n as HTMLElement).tagName.toLowerCase() === "p") {
-          parentP = n as HTMLElement;
-          break;
-        }
-        n = n.parentNode;
-      }
-      const isEmptyP =
-        parentP &&
-        (parentP.textContent || "").trim() === "" &&
-        !parentP.querySelector("img, table, figure, iframe");
-      if (parentP && !isEmptyP && parentP.parentNode === editor) {
-        range.setStartAfter(parentP);
-        range.collapse(true);
-        selection.removeAllRanges();
-        selection.addRange(range);
-      }
-    }
-    // 비편집 블록 뒤에서 이어서 입력할 수 있도록 캐럿 단락 동반 (동영상 임베드 buildEmbedHtml 관례)
-    insertHtmlAtCursor(processed + "<p><br></p>");
-    savedHtmlRangeRef.current = null;
-  }
-
   // 툴바 명령
   function execCommand(command: string) {
     document.execCommand(command, false);
@@ -842,10 +759,6 @@ export function ContentEditor({ value, onChange, ref }: ContentEditorProps) {
           <Video size={14} />
           동영상
         </button>
-        <button type="button" onMouseDown={preventEditorBlur} onClick={handleHtmlButton} className={`${tbtnOff} flex items-center gap-1`} title="HTML 소스 삽입 (커서 위치)">
-          <Code size={14} />
-          HTML
-        </button>
         <button type="button" onMouseDown={preventEditorBlur} onClick={insertTriangleMark} className={`${tbtnOff} flex items-center gap-1`} title="▲ 마크 삽입 (커서 위치, 해당 블록 가운데 정렬)">
           ▲
         </button>
@@ -890,16 +803,6 @@ export function ContentEditor({ value, onChange, ref }: ContentEditorProps) {
         multiple
         className="hidden"
         onChange={handleFileSelect}
-      />
-
-      {/* HTML 소스 입력 모달 (body portal — InlineEditModal 내부에서도 풀스크린 표시) */}
-      <HtmlInputModal
-        open={htmlModalOpen}
-        onClose={() => {
-          setHtmlModalOpen(false);
-          savedHtmlRangeRef.current = null;
-        }}
-        onSubmit={handleHtmlModalSubmit}
       />
     </div>
   );

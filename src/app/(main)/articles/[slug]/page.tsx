@@ -11,7 +11,7 @@ import { toArticle } from "@/lib/mappers";
 import Image from "next/image";
 import { ChevronRight } from "lucide-react";
 import { AdminEditButton } from "@/components/admin-edit-button";
-import { isValidThumbnail } from "@/lib/thumbnail";
+import { isValidThumbnail, thumbSrc } from "@/lib/thumbnail";
 import { processArticleHtml } from "@/lib/normalize-server";
 import { placeholderGradient } from "@/lib/utils";
 import { renderJsonLd } from "@/lib/json-ld";
@@ -241,7 +241,7 @@ export default async function ArticlePage({ params }: Props) {
                   >
                     {isValidThumbnail(related.thumbnail) && (
                       <Image
-                        src={related.thumbnail}
+                        src={thumbSrc(related.thumbnail, 640)}
                         alt={related.title}
                         fill
                         unoptimized

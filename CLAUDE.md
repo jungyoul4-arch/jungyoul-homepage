@@ -67,6 +67,13 @@
 - 공개 API: `GET /api/exam-tag-options` (인증 없음, 선택적 `?type=` 필터)
 - strategy/news 등 다른 카테고리 기사는 `exam_*` 컬럼이 NULL — UI 노출 없음
 
+## 독립 HTML 페이지 (`/p/[slug]`)
+- 기사와 **별개 엔티티** `html_pages` (drizzle 마이그 `0013_happy_jack_power.sql`). 어드민이 원본 HTML 을 통째로 등록 → `content` 컬럼에 **verbatim 저장**(정화·스코프 안 함)
+- 공개 라우트 `src/app/p/[slug]/page.tsx` 는 **`(main)` 그룹 밖**(루트 `app/layout.tsx` 만 적용 → 사이트 헤더/푸터 없음). 등록 HTML 을 **sandbox iframe**(`srcDoc`)으로 전체화면 렌더. `sandbox` 에 **`allow-same-origin` 미부여** → iframe 이 opaque origin 으로 실행되어 부모(메인 사이트) 쿠키·DOM 접근 불가 = 임의 `<script>` 를 안전하게 허용(어드민 전용 작성 + 격리). SEO 트레이드오프: iframe 내부는 본문 색인 안 됨(title/excerpt 메타만)
+- 어드민: `/admin/html-pages` (목록 + "새 HTML 추가"), 사이드바 "콘텐츠 관리" 그룹. 폼 = title/slug(자동생성)/date/카드라벨/excerpt/`ThumbnailUploader aspect="16:9"`/원본 HTML textarea. API `/api/admin/html-pages`(+`[id]`) `requireAdmin` 게이트, 유니크 slug 409, `content` 는 `processArticleHtml` **미적용**(iframe verbatim 렌더이므로)
+- 메인 노출: `(main)/page.tsx` 가 `html_pages` 를 조회해 `toHtmlPageCard`(`mappers.ts`, `kind:"html"`, `category:"html"`)로 매핑 → **"최신 교육정보" 피드에 기사와 date 순 병합**. `latest-articles.tsx` 카드가 `kind==="html"` 이면 `/p/{slug}` 로 링크(아니면 `/articles/{slug}`), HTML 카드는 빠른편집(기사 전용) 버튼 숨김. `category="html"` 은 `categories` 탭 배열에 없어 탭 미생성 — "전체" 탭에서만 노출
+- 본문 에디터 툴바의 (구) HTML 소스 삽입 버튼은 제거되고 이 엔티티로 이전됨 — 레거시 in-article raw 블록 호환은 서버 측 유지 → [`docs/editor.md`](docs/editor.md)
+
 ## 디자인 토큰 (색상)
 - 색상은 모두 `src/app/globals.css` `@theme inline` 블록의 `--color-*` 토큰으로만 표기. **신규 코드에서 hex 값(`#1A1A1A`, `#1E64FA` 등) 임의 입력 금지**
 - 브랜드/텍스트 토큰: `brand-blue`(#1E64FA), `brand-blue-dark`(#0E41AD), `text-primary`(#1A1A1A), `text-secondary`(#666666), `border-light`(#E0E0E0), `article-line`(#E0E9FE), `media-bg`(#f4f7ff)

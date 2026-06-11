@@ -7,6 +7,7 @@ import { MediaLibrary } from "@/components/media-library";
 import { getDb } from "@/db";
 import {
   articles as articlesTable,
+  htmlPages as htmlPagesTable,
   highlights as highlightsTable,
   videos as videosTable,
   heroSlides as heroSlidesTable,
@@ -14,15 +15,16 @@ import {
   pinnedArticles as pinnedArticlesTable,
 } from "@/db/schema";
 import { desc, asc } from "drizzle-orm";
-import { toArticle, toHighlight, toVideo, resolveSlides } from "@/lib/mappers";
+import { toArticle, toHtmlPageCard, toHighlight, toVideo, resolveSlides } from "@/lib/mappers";
 import { renderJsonLd } from "@/lib/json-ld";
 import { SITE_URL } from "@/lib/site";
 
 export default async function Home() {
   const db = await getDb();
 
-  const [rawArticles, rawHighlights, rawVideos, rawSlides, rawSlideItems, rawPinned] = await Promise.all([
+  const [rawArticles, rawHtmlPages, rawHighlights, rawVideos, rawSlides, rawSlideItems, rawPinned] = await Promise.all([
     db.select().from(articlesTable).orderBy(desc(articlesTable.date)),
+    db.select().from(htmlPagesTable).orderBy(desc(htmlPagesTable.date)).catch(() => [] as never[]),
     db.select().from(highlightsTable),
     db.select().from(videosTable).orderBy(asc(videosTable.sortOrder)),
     db.select().from(heroSlidesTable).orderBy(asc(heroSlidesTable.sortOrder)),
@@ -33,6 +35,12 @@ export default async function Home() {
   const allArticles = rawArticles.map(toArticle);
   const pinnedArticleIds = rawPinned.map((p) => p.articleId);
   const heroSlides = resolveSlides(rawSlides, rawSlideItems, allArticles);
+
+  // "최신 교육정보" 피드 = 기사 + 독립 HTML 페이지를 date 내림차순으로 병합.
+  // (히어로/관련기사/resolveSlides 는 기사만 사용 — HTML 페이지는 히어로 비포함.)
+  const latestFeed = [...allArticles, ...rawHtmlPages.map(toHtmlPageCard)].sort((a, b) =>
+    b.date.localeCompare(a.date),
+  );
 
   return (
     <>
@@ -115,7 +123,7 @@ export default async function Home() {
 
       {/* Hero Carousel — 삼성 뉴스룸 메인 슬라이더 */}
       <HeroCarousel slides={heroSlides} />
-      <LatestArticles articles={allArticles} pinnedArticleIds={pinnedArticleIds} />
+      <LatestArticles articles={latestFeed} pinnedArticleIds={pinnedArticleIds} />
       <HighlightsCarousel highlights={rawHighlights.map(toHighlight)} />
       <MediaLibrary videos={rawVideos.map(toVideo)} />
     </>

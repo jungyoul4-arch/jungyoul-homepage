@@ -20,6 +20,16 @@ type DbArticle = {
   updatedAt: string | null;
 };
 
+type DbHtmlPage = {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt?: string | null;
+  categoryLabel?: string | null;
+  thumbnail?: string | null;
+  date: string;
+};
+
 type DbHighlight = {
   id: string;
   title: string;
@@ -61,6 +71,23 @@ export function toArticle(row: DbArticle): Article {
     examYear: row.examYear ?? "",
     examGrade: row.examGrade ?? "",
     examSubject: row.examSubject ?? "",
+  };
+}
+
+// 독립 HTML 페이지를 "최신 교육정보" 피드 카드(Article 형태)로 매핑.
+// kind="html" 로 표시해 카드가 /p/{slug} 로 링크하도록 한다. category="html" 은 어떤 탭에도
+// 매칭되지 않아 "전체" 탭에서만 노출된다.
+export function toHtmlPageCard(row: DbHtmlPage): Article {
+  return {
+    id: row.id,
+    title: row.title,
+    excerpt: row.excerpt ?? "",
+    category: "html",
+    categoryLabel: row.categoryLabel || "페이지",
+    thumbnail: row.thumbnail ?? "",
+    date: row.date,
+    slug: row.slug,
+    kind: "html",
   };
 }
 

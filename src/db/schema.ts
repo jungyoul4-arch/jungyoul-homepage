@@ -52,6 +52,27 @@ export const videos = sqliteTable("videos", {
   sortOrder: integer("sort_order").default(0),
 });
 
+// 독립 HTML 페이지 — 어드민이 원본 HTML 을 통째로 등록하면 /p/{slug} 에서
+// sandbox iframe 으로 풀스크린 렌더(사이트 헤더/푸터 없음). 본문 에디터의 raw 블록과 별개 엔티티.
+// content 는 정화 없이 verbatim 저장(iframe sandbox 가 격리). 메인 "최신 교육정보" 피드에 date 순으로 섞임.
+export const htmlPages = sqliteTable(
+  "html_pages",
+  {
+    id: text("id").primaryKey(),
+    title: text("title").notNull(),
+    slug: text("slug").unique().notNull(),
+    excerpt: text("excerpt").default(""),
+    categoryLabel: text("category_label").default("페이지"),
+    content: text("content").notNull(),                 // 원본 HTML 전체 (verbatim)
+    thumbnail: text("thumbnail").default(""),            // 카드 썸네일 (16:9)
+    thumbnailOverlays: text("thumbnail_overlays").default(""),
+    date: text("date").notNull(),                       // 피드 정렬/표시 (YYYY/MM/DD)
+    createdAt: text("created_at").$defaultFn(() => new Date().toISOString()),
+    updatedAt: text("updated_at").$defaultFn(() => new Date().toISOString()),
+  },
+  (t) => [index("html_pages_date_idx").on(t.date)]
+);
+
 export const trackingCodes = sqliteTable("tracking_codes", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),

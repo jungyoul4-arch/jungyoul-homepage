@@ -62,23 +62,12 @@
 ### ▲ 마크 삽입
 이미지 캡션 앞에 두는 시각 마커. **어떤 경로에서도 자동 추가되지 않으며**, 툴바 Row 2 의 ▲ 버튼으로만 현재 커서 위치에 "▲ "(▲ + 공백) 가 삽입되고 동시에 해당 블록(figcaption/p/h…)에 `style="text-align: center"` 가 직접 기록되어 가운데 정렬된다. figcaption 은 이미 CSS `text-align: center` 가 기본값이라 캡션 안에서는 시각적 변화 없음, 본문 단락에서 사용하면 그 단락만 가운데 정렬. 다른 정렬을 원하면 툴바 왼쪽/오른쪽 정렬 버튼으로 변경.
 
-### HTML 소스 삽입 (툴바) — 원본 보존 모드
-Row 2 의 HTML 버튼(`<Code>` 아이콘) → 모달(`src/components/html-input-modal.tsx`)의 textarea 에 raw HTML 소스를 붙여넣고 "삽입" → **원본 HTML 이 그대로 보존**되어 커서 위치에 raw 블록으로 삽입된다. 일반 타이핑·클립보드 페이스트는 기존 뉴스룸 파이프라인 그대로이고, **이 모달 경로만** 원본 보존이다 (2026-06-10 전환 — 이전에는 페이스트와 동일 정화였음).
+### HTML 소스 입력 — 에디터 툴바에서 제거 → "HTML 페이지" 엔티티로 이전 (2026-06-11)
+본문 에디터 툴바의 HTML 버튼(모달 `html-input-modal.tsx` → `normalizeRawHtml` → 본문 raw 블록 삽입)은 **제거**되었다. 원본 HTML 게시 기능은 독립 **"HTML 페이지"** 엔티티로 이전됨: 어드민 `/admin/html-pages` 에서 원본 HTML 을 등록하면 `/p/{slug}` 에서 **sandbox iframe** 으로 전체화면 렌더(사이트 헤더/푸터 없음, JS·CSS 풀 피델리티, `allow-same-origin` 미부여로 메인 사이트와 격리)되고, 메인 "최신 교육정보" 카드 목록에 날짜순으로 섞여 노출된다. 데이터는 `html_pages` 테이블(`content` verbatim 저장, drizzle `0013_happy_jack_power.sql`), 카드 매핑은 `toHtmlPageCard`(`src/lib/mappers.ts`, `kind:"html"`). 절차·보안 모델 → 계획서 참조.
 
-**아키텍처 — 마커 기반 영역 분기**: 삽입 콘텐츠를 `<div data-raw-html="<8hex id>" contenteditable="false">` 래퍼로 감싸고 3개 층이 마커를 인식한다. 마커 없는 본문은 기존 경로와 바이트 동일(fast-path).
+**레거시 호환 — 서버 raw 처리는 유지**: 2026-06-10~06-11 사이 에디터 HTML 버튼으로 저장된 기존 기사 본문에는 `<div data-raw-html>` 블록이 남아 있을 수 있다. 이를 계속 정상 렌더하기 위해 서버 측 기계 일체는 **그대로 유지**한다 — `processArticleHtml()`(`normalize-server.ts`, POST/PUT 저장 + 공개 렌더 단일 진입점, outermost raw 영역을 `sanitizeRawContent()` 관용 프로파일 + CSS 스코프로 처리, 멱등), `<style>` 스코프 재작성(`raw-html.ts`, stylis, 트리플 속성 prefix + `isFullyScopedCss` 검증), `globals.css` 의 `.article-content [data-raw-html][data-raw-html] { all: revert }` 격리 규칙. 마커 없는 본문은 기존 뉴스룸 파이프라인과 바이트 동일(fast-path). 단 **신규 작성 진입점만** 에디터 툴바 → HTML 페이지 엔티티로 이동했다(에디터 안에서 새 raw 블록을 만드는 UI 는 더 이상 없음).
 
-- **클라이언트** `normalizeRawHtml()` (`src/lib/normalize-paste.ts`): 보안 정화만(script·on핸들러·javascript: 제거 — 구조/스타일 패스 미적용) + `<style>` 수집(head 포함, 풀 문서 입력 OK)·스코프 + data:URL → R2 업로드 → 래퍼로 감쌈. 정화 후 빈 콘텐츠는 inline 에러로 거부.
-- **서버** `processArticleHtml()` (`src/lib/normalize-server.ts`): `sanitizeContent(normalizeArticleHtml())` 를 대체하는 단일 진입점 (POST/PUT 저장 + 공개 렌더 3곳). outermost raw 영역을 슬롯으로 추출 → 바깥은 기존 뉴스룸 파이프라인 → 안쪽은 `sanitizeRawContent()`(관용 프로파일 — style 속성/class/id/`<style>` 태그 보존, script·form·object·svg·on*·javascript:·data:스킴·iframe 비허용 호스트는 계속 차단) + CSS 스코프 강제 → 재조립. **멱등** (공개 렌더가 매 뷰 실행).
-- **CSS 격리** (`globals.css` 맨 끝, 소스 순서가 동작 조건): `.article-content [data-raw-html][data-raw-html] { all: revert }` (+preview, +`*`). 더블 속성 = (0,3,0) 으로 `.article-content > div:not([style])` (0,2,1) 등 모든 뉴스룸 규칙 제압. `all: revert` 는 상속을 차단하지 못하므로 래퍼에 `font-size:1rem` 등 타이포 4종 명시(font-family 는 의도적 페이지 상속). 결과: raw 블록 = 브라우저 기본값 + 원본 CSS.
-
-**`<style>` 스코프 재작성** (`src/lib/raw-html.ts`, stylis 의존): 셀렉터마다 트리플 속성 prefix `[data-raw-html="<id>"][data-raw-html][data-raw-html]`(≥(0,3,0) — 격리 규칙을 동점 후순서로 이김)를 붙여 페이지 누수 차단. `html/body/:root` 는 `&`(래퍼)로 best-effort 리맵, `@media` 내부까지 prefix, `@import/@charset/@namespace`·`expression(` 류는 제거. **`data-raw-scoped` 마커는 신뢰하지 않는다** — 직접 API 로 마커만 붙인 전역 CSS 주입을 막기 위해 stylis AST 로 전 셀렉터 prefix 를 검증(`isFullyScopedCss`)하고 미달이면 재스코프. 중복/불량 id 는 서버가 재부여 + CSS prefix 리맵.
-
-- **커서 복원**: 모달 textarea 가 포커스를 가져가면 에디터 셀렉션이 사라지므로, 버튼 클릭 시점에 Range 를 `cloneRange()` 로 저장해 두고 삽입 직전에 복원한다. 저장 Range 가 없거나 무효면 본문 끝 캐럿 폴백. 커서가 내용 있는 톱레벨 `<p>` 안이면 그 단락 뒤로 호이스팅(래퍼 div 가 p 안에 중첩되는 invalid 방지). 삽입 후 캐럿 단락(`<p><br></p>`) 동반 — 비편집 블록 뒤 이어쓰기 보장.
-- **원자 블록**: 래퍼는 `contenteditable="false"` — 에디터에서 내부 수정 불가, 통째 선택·삭제만 가능. 수정하려면 삭제 후 모달로 재삽입 (재편집 모달은 v2). 에디터 init 시 `div[data-raw-html]` 에 방어적으로 재설정.
-- **포털**: `createPortal(dialog, document.body)` + `z-[2000]` — InlineEditModal(z-[1000], transform containing block 함정) 내부 호환 (아래 "Portal 렌더링" 섹션과 동일 패턴). 툴바 내장이라 글 작성/수정·빠른편집 3곳 자동 노출.
-- **한계 (문서화된 v1 수용 리스크)**: ① `@keyframes`/`@font-face` 이름은 전역 — 사이트의 `card-fade-up` 과 충돌 주의 ② raw 블록을 에디터 안에서 복사→붙여넣기하면 페이스트 파이프라인을 타서 뉴스룸화됨(모달로 재삽입할 것) ③ iframe 은 YouTube/Vimeo 만 ④ `html/body/:root` 셀렉터 리맵은 best-effort ⑤ `srcset`·`data:` 이미지 src 미보존(클라이언트가 R2 업로드로 치환).
-
-**테스트**: 단위 — `src/lib/__tests__/raw-html.test.ts`(스코프/검증/멱등), `sanitize.test.ts`(sanitizeRawContent), `normalize-server.test.ts`(processArticleHtml — fast-path 동일성·멱등·마커 위조 방어), `normalize-paste.test.ts`(normalizeRawHtml). 스모크 — `scripts/smoke-raw-html.mjs` (POST→GET→공개페이지→재PUT 멱등→DELETE; 바깥 정화/안쪽 보존/스코프 어설션).
+**테스트(유지)**: 단위 — `raw-html.test.ts`(스코프/검증/멱등), `sanitize.test.ts`(sanitizeRawContent), `normalize-server.test.ts`(processArticleHtml — fast-path·멱등·마커 위조 방어), `normalize-paste.test.ts`(normalizeRawHtml — 함수 자체는 normalize-paste.ts 에 유지). 스모크 — `scripts/smoke-raw-html.mjs`(기사 본문 raw 블록 라운드트립). 모두 손대지 않음.
 
 ### 정렬 (왼쪽/가운데/오른쪽)
 툴바의 정렬 버튼은 **`document.execCommand("justifyLeft/Center/Right")` 에 의존하지 않고** 현재 커서 위치 블록(또는 다중 블록 선택 시 그 범위 안의 모든 최상위 블록)의 `style.textAlign` 을 직접 좌/우/가운데로 설정한다. 이유:

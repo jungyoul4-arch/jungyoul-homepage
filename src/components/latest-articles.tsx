@@ -91,12 +91,18 @@ export function LatestArticles({ articles, pinnedArticleIds = [] }: LatestArticl
 }
 
 function ArticleCard({ article, headlineMode = false }: { article: Article; headlineMode?: boolean }) {
+  // 독립 HTML 페이지는 /p/{slug} 로, 일반 기사는 /articles/{slug} 로 링크.
+  const isHtml = article.kind === "html";
+  const href = isHtml ? `/p/${article.slug}` : `/articles/${article.slug}`;
   return (
     <article className="relative">
-      <div className="absolute top-2 right-2 z-10">
-        <AdminEditButton type="article" data={article} />
-      </div>
-      <Link href={`/articles/${article.slug}`} className="group block">
+      {/* HTML 페이지 카드는 빠른편집(기사 전용) 미지원 — 어드민 → HTML 페이지에서 수정 */}
+      {!isHtml && (
+        <div className="absolute top-2 right-2 z-10">
+          <AdminEditButton type="article" data={article} />
+        </div>
+      )}
+      <Link href={href} className="group block">
         {/* Desktop/Tablet: vertical layout */}
         <div className="hidden sm:block">
           {/* Thumbnail — 삼성 뉴스룸 기사 썸네일 비율 */}
@@ -113,7 +119,7 @@ function ArticleCard({ article, headlineMode = false }: { article: Article; head
                 alt={article.title}
                 fill
                 unoptimized
-                className="object-contain group-hover:will-change-transform transition-transform duration-300 ease-in-out group-hover:scale-110"
+                className="object-cover group-hover:will-change-transform transition-transform duration-300 ease-in-out group-hover:scale-110"
               />
             )}
           </div>
@@ -155,7 +161,7 @@ function ArticleCard({ article, headlineMode = false }: { article: Article; head
                   alt={article.title}
                   fill
                   unoptimized
-                  className="object-contain"
+                  className="object-cover"
                 />
               )}
             </div>

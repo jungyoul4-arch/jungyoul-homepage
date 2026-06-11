@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   FileText,
+  FileCode,
   Star,
   Users,
   Video,
@@ -33,6 +34,7 @@ const sidebarGroups = [
     label: "콘텐츠 관리",
     items: [
       { label: "기사 관리", href: "/admin/articles", icon: FileText },
+      { label: "HTML 페이지", href: "/admin/html-pages", icon: FileCode },
       { label: "슬라이드 관리", href: "/admin/slides", icon: Layers },
       { label: "메인 고정 기사", href: "/admin/pinned-articles", icon: Pin },
       { label: "하이라이트", href: "/admin/highlights", icon: Star },
