@@ -3,9 +3,9 @@ export const dynamic = "force-dynamic";
 import type { Metadata } from "next";
 import { ExamArticleFilter } from "@/components/exam-article-filter";
 import { getDb } from "@/db";
-import { articles as articlesTable, examTagOptions as examTagOptionsTable } from "@/db/schema";
+import { articles as articlesTable, examTagOptions as examTagOptionsTable, htmlPages as htmlPagesTable } from "@/db/schema";
 import { asc, desc, eq } from "drizzle-orm";
-import { toArticle } from "@/lib/mappers";
+import { toArticle, toHtmlPageCard } from "@/lib/mappers";
 import { renderJsonLd } from "@/lib/json-ld";
 import { SITE_URL } from "@/lib/site";
 import type { ExamTagOption } from "@/lib/data";
@@ -44,15 +44,27 @@ async function safeExamTagOptions(db: Awaited<ReturnType<typeof getDb>>) {
 
 export default async function ExamPage() {
   const db = await getDb();
-  const [raw, rawTagOptions] = await Promise.all([
+  const [raw, rawTagOptions, rawHtml] = await Promise.all([
     db
       .select()
       .from(articlesTable)
       .where(eq(articlesTable.category, "exam"))
       .orderBy(desc(articlesTable.date)),
     safeExamTagOptions(db),
+    db
+      .select()
+      .from(htmlPagesTable)
+      .orderBy(desc(htmlPagesTable.date))
+      .catch(() => [] as never[]),
   ]);
-  const articles = raw.map(toArticle);
+  // HTML 페이지도 "시험지 분석(exam)" 로 설정한 것만 함께 노출
+  // (HTML 은 exam_* 태그가 없어 연도·학년·과목 필터 선택 시 제외 → 태그 미선택 상태에서 노출).
+  const htmlCards = rawHtml
+    .map(toHtmlPageCard)
+    .filter((c) => c.category === "exam");
+  const articles = [...raw.map(toArticle), ...htmlCards].sort((a, b) =>
+    b.date.localeCompare(a.date),
+  );
   const tagOptions: ExamTagOption[] = rawTagOptions.map((row) => ({
     id: row.id,
     tagType: row.tagType as ExamTagOption["tagType"],
@@ -77,7 +89,10 @@ export default async function ExamPage() {
               itemListElement: articles.slice(0, 10).map((a, i) => ({
                 "@type": "ListItem",
                 position: i + 1,
-                url: `${SITE_URL}/articles/${a.slug}`,
+                url:
+                  a.kind === "html"
+                    ? `${SITE_URL}/p/${a.slug}`
+                    : `${SITE_URL}/articles/${a.slug}`,
               })),
             },
           })}

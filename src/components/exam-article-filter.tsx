@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { ArticleList } from "@/components/article-list";
 import type { Article, ExamTagOption } from "@/lib/data";
 
@@ -25,7 +25,6 @@ const selectClass =
   "h-10 px-3 border border-gray-300 rounded-sm text-sm focus:outline-none focus:border-blue-600 bg-white min-w-[120px]";
 
 export function ExamArticleFilter({ articles, tagOptions }: Props) {
-  const router = useRouter();
   const searchParams = useSearchParams();
 
   const selected = {
@@ -53,7 +52,8 @@ export function ExamArticleFilter({ articles, tagOptions }: Props) {
     // 필터 변경 시 페이지 1로 리셋
     next.delete("page");
     const qs = next.toString();
-    router.replace(qs ? `/exam?${qs}` : "/exam", { scroll: false });
+    // shallow routing — 서버 라운드트립 없이 URL(year·grade·subject)만 갱신.
+    window.history.replaceState(null, "", qs ? `/exam?${qs}` : "/exam");
   }
 
   const visible = SECTIONS.filter(
@@ -91,7 +91,7 @@ export function ExamArticleFilter({ articles, tagOptions }: Props) {
           {(selected.year || selected.grade || selected.subject) && (
             <button
               type="button"
-              onClick={() => router.replace("/exam", { scroll: false })}
+              onClick={() => window.history.replaceState(null, "", "/exam")}
               className="ml-auto text-xs text-brand-blue hover:underline"
             >
               초기화

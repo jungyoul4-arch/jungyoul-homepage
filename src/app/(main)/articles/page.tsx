@@ -3,9 +3,9 @@ export const dynamic = "force-dynamic";
 import type { Metadata } from "next";
 import { ArticleList } from "@/components/article-list";
 import { getDb } from "@/db";
-import { articles as articlesTable, navMenus } from "@/db/schema";
+import { articles as articlesTable, htmlPages as htmlPagesTable, navMenus } from "@/db/schema";
 import { and, asc, desc, eq, inArray, isNull } from "drizzle-orm";
-import { toArticle } from "@/lib/mappers";
+import { toArticle, toHtmlPageCard } from "@/lib/mappers";
 import { renderJsonLd } from "@/lib/json-ld";
 import { SITE_URL } from "@/lib/site";
 import {
@@ -63,8 +63,25 @@ export default async function ArticlesPage() {
   if (allowed.length > 0) {
     query = query.where(inArray(articlesTable.category, allowed)) as typeof query;
   }
-  const raw = await query;
-  const articles = raw.map(toArticle);
+  const [raw, rawHtml] = await Promise.all([
+    query,
+    db
+      .select()
+      .from(htmlPagesTable)
+      .orderBy(desc(htmlPagesTable.date))
+      .catch(() => [] as never[]),
+  ]);
+
+  // HTML 페이지도 기사와 동일하게 "설정한 카테고리"로 노출. /articles 는 allowed 카테고리만 보여주므로
+  // (홈과 달리) 같은 범위로 스코프하고, 레거시 빈 카테고리("html" 폴백)는 "전체" 탭에서만 노출되도록 함께 통과.
+  const allowedSet = new Set([...allowed, "html"]);
+  const htmlCards = rawHtml
+    .map(toHtmlPageCard)
+    .filter((c) => allowed.length === 0 || allowedSet.has(c.category));
+
+  const articles = [...raw.map(toArticle), ...htmlCards].sort((a, b) =>
+    b.date.localeCompare(a.date),
+  );
 
   return (
     <>
@@ -84,7 +101,10 @@ export default async function ArticlesPage() {
             itemListElement: articles.slice(0, 10).map((a, i) => ({
               "@type": "ListItem",
               position: i + 1,
-              url: `${SITE_URL}/articles/${a.slug}`,
+              url:
+                a.kind === "html"
+                  ? `${SITE_URL}/p/${a.slug}`
+                  : `${SITE_URL}/articles/${a.slug}`,
             })),
           },
         })}

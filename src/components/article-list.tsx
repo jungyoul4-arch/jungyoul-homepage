@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams, usePathname } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { categories, type Article, type Category } from "@/lib/data";
@@ -20,7 +20,7 @@ interface ArticleListProps {
 
 export function ArticleList({ articles, hideTabs = false }: ArticleListProps) {
   const searchParams = useSearchParams();
-  const router = useRouter();
+  const pathname = usePathname();
   const param = searchParams.get("category") as Category | null;
   const pageParam = searchParams.get("page");
 
@@ -44,18 +44,18 @@ export function ArticleList({ articles, hideTabs = false }: ArticleListProps) {
   const paged = filtered.slice((safePage - 1) * ITEMS_PER_PAGE, safePage * ITEMS_PER_PAGE);
 
   function handleTab(value: Category) {
-    router.replace(
-      value === "all" ? "/articles" : `/articles?category=${value}`,
-      { scroll: false }
-    );
+    // shallow routing — URL(category)만 갱신하고 서버 라운드트립 없이 클라이언트에서 필터.
+    const url = value === "all" ? "/articles" : `/articles?category=${value}`;
+    window.history.replaceState(null, "", url);
   }
 
   function buildPageUrl(page: number) {
-    const params = new URLSearchParams();
-    if (activeTab !== "all") params.set("category", activeTab);
+    // 현재 경로(/articles·/exam·/story)와 기존 쿼리(category·year·grade·subject)를 보존하고 page 만 변경.
+    const params = new URLSearchParams(searchParams.toString());
     if (page > 1) params.set("page", String(page));
+    else params.delete("page");
     const qs = params.toString();
-    return `/articles${qs ? `?${qs}` : ""}`;
+    return `${pathname}${qs ? `?${qs}` : ""}`;
   }
 
   return (
@@ -128,39 +128,50 @@ function Pagination({
   const pages: number[] = [];
   for (let i = start; i <= end; i++) pages.push(i);
 
+  // 페이지네이션도 shallow routing — 서버 라운드트립 없이 URL(page)만 갱신하고 클라이언트에서 슬라이스.
+  function go(page: number) {
+    window.history.pushState(null, "", buildUrl(page));
+    window.scrollTo({ top: 0 });
+  }
+
   return (
     <nav className="flex justify-center pt-20 pb-20" aria-label="페이지네이션">
       <ul className="flex items-center gap-2">
         {/* First */}
         <li>
-          <Link
-            href={buildUrl(1)}
+          <button
+            type="button"
+            onClick={() => go(1)}
+            disabled={currentPage === 1}
             className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors ${
               currentPage === 1 ? "text-[#d9d9d9] pointer-events-none" : "text-text-secondary hover:bg-[#F5F5F5]"
             }`}
             aria-label="첫 페이지"
           >
             <ChevronsLeft size={18} />
-          </Link>
+          </button>
         </li>
         {/* Prev */}
         <li>
-          <Link
-            href={buildUrl(Math.max(1, currentPage - 1))}
+          <button
+            type="button"
+            onClick={() => go(Math.max(1, currentPage - 1))}
+            disabled={currentPage === 1}
             className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors ${
               currentPage === 1 ? "text-[#d9d9d9] pointer-events-none" : "text-text-secondary hover:bg-[#F5F5F5]"
             }`}
             aria-label="이전 페이지"
           >
             <ChevronLeft size={18} />
-          </Link>
+          </button>
         </li>
 
         {/* Page numbers */}
         {pages.map((page) => (
           <li key={page}>
-            <Link
-              href={buildUrl(page)}
+            <button
+              type="button"
+              onClick={() => go(page)}
               className={`w-10 h-10 flex items-center justify-center rounded-full text-[1.125rem] transition-colors ${
                 page === currentPage
                   ? "font-bold text-text-primary underline underline-offset-4"
@@ -169,33 +180,37 @@ function Pagination({
               aria-current={page === currentPage ? "page" : undefined}
             >
               {page}
-            </Link>
+            </button>
           </li>
         ))}
 
         {/* Next */}
         <li>
-          <Link
-            href={buildUrl(Math.min(totalPages, currentPage + 1))}
+          <button
+            type="button"
+            onClick={() => go(Math.min(totalPages, currentPage + 1))}
+            disabled={currentPage === totalPages}
             className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors ${
               currentPage === totalPages ? "text-[#d9d9d9] pointer-events-none" : "text-text-secondary hover:bg-[#F5F5F5]"
             }`}
             aria-label="다음 페이지"
           >
             <ChevronRight size={18} />
-          </Link>
+          </button>
         </li>
         {/* Last */}
         <li>
-          <Link
-            href={buildUrl(totalPages)}
+          <button
+            type="button"
+            onClick={() => go(totalPages)}
+            disabled={currentPage === totalPages}
             className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors ${
               currentPage === totalPages ? "text-[#d9d9d9] pointer-events-none" : "text-text-secondary hover:bg-[#F5F5F5]"
             }`}
             aria-label="마지막 페이지"
           >
             <ChevronsRight size={18} />
-          </Link>
+          </button>
         </li>
       </ul>
     </nav>
@@ -204,12 +219,17 @@ function Pagination({
 
 /* ── Article Card ── */
 function ArticleCard({ article }: { article: Article }) {
+  // 독립 HTML 페이지는 /p/{slug} 로 링크하고 빠른편집(기사 전용) 버튼을 숨긴다. (latest-articles.tsx 와 동일)
+  const isHtml = article.kind === "html";
+  const href = isHtml ? `/p/${article.slug}` : `/articles/${article.slug}`;
   return (
     <article className="relative cv-card">
-      <div className="absolute top-2 right-2 z-10">
-        <AdminEditButton type="article" data={article} />
-      </div>
-      <Link href={`/articles/${article.slug}`} className="group block">
+      {!isHtml && (
+        <div className="absolute top-2 right-2 z-10">
+          <AdminEditButton type="article" data={article} />
+        </div>
+      )}
+      <Link href={href} className="group block">
         {/* Thumbnail — 16:9, rounded-lg */}
         <div className="relative aspect-[16/9] bg-gray-100 rounded-lg overflow-hidden mb-5">
           <div

@@ -3,9 +3,9 @@ export const dynamic = "force-dynamic";
 import type { Metadata } from "next";
 import { ArticleList } from "@/components/article-list";
 import { getDb } from "@/db";
-import { articles as articlesTable } from "@/db/schema";
+import { articles as articlesTable, htmlPages as htmlPagesTable } from "@/db/schema";
 import { desc, eq } from "drizzle-orm";
-import { toArticle } from "@/lib/mappers";
+import { toArticle, toHtmlPageCard } from "@/lib/mappers";
 import { renderJsonLd } from "@/lib/json-ld";
 import { SITE_URL } from "@/lib/site";
 
@@ -25,12 +25,25 @@ export const metadata: Metadata = {
 
 export default async function StoryPage() {
   const db = await getDb();
-  const raw = await db
-    .select()
-    .from(articlesTable)
-    .where(eq(articlesTable.category, "growth"))
-    .orderBy(desc(articlesTable.date));
-  const articles = raw.map(toArticle);
+  const [raw, rawHtml] = await Promise.all([
+    db
+      .select()
+      .from(articlesTable)
+      .where(eq(articlesTable.category, "growth"))
+      .orderBy(desc(articlesTable.date)),
+    db
+      .select()
+      .from(htmlPagesTable)
+      .orderBy(desc(htmlPagesTable.date))
+      .catch(() => [] as never[]),
+  ]);
+  // HTML 페이지도 "성장스토리(growth)" 로 설정한 것만 함께 노출.
+  const htmlCards = rawHtml
+    .map(toHtmlPageCard)
+    .filter((c) => c.category === "growth");
+  const articles = [...raw.map(toArticle), ...htmlCards].sort((a, b) =>
+    b.date.localeCompare(a.date),
+  );
 
   return (
     <>
@@ -49,7 +62,10 @@ export default async function StoryPage() {
               itemListElement: articles.slice(0, 10).map((a, i) => ({
                 "@type": "ListItem",
                 position: i + 1,
-                url: `${SITE_URL}/articles/${a.slug}`,
+                url:
+                  a.kind === "html"
+                    ? `${SITE_URL}/p/${a.slug}`
+                    : `${SITE_URL}/articles/${a.slug}`,
               })),
             },
           })}
