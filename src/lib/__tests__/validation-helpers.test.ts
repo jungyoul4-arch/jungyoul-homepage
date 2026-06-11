@@ -13,20 +13,13 @@ vi.mock("drizzle-zod", () => {
     createUpdateSchema: vi.fn(chain),
   };
 });
-vi.mock("@/db/schema", () => ({
-  articles: {},
-  htmlPages: {},
-  highlights: {},
-  teachers: {},
-  videos: {},
-  trackingCodes: {},
-  navMenus: {},
-  headerLinks: {},
-  examTagOptions: {},
-  pictureFrameItems: {},
-  communityPosts: {},
-  communityComments: {},
-  communityTags: {},
+// @/db/schema 는 drizzle 테이블 정의만 노출한다. validation.ts 는 import 한 테이블을
+// (위에서 no-op 으로 모킹한) createInsertSchema 에 그대로 넘길 뿐이라 실제 형태는 무관하다.
+// 스키마에 테이블이 추가돼도 이 테스트가 깨지지 않도록, 모든 export 를 빈 스텁으로
+// 돌려주는 Proxy 로 모킹한다. vitest 4 의 mock export 가드(`prop in target`)는 has 트랩으로 통과.
+vi.mock("@/db/schema", () => new Proxy({}, {
+  has: () => true,
+  get: (_t, prop) => (typeof prop === "string" && prop !== "then" ? {} : undefined),
 }));
 
 import { isUniqueConstraintError } from "../validation";
