@@ -3,6 +3,7 @@ import { createInsertSchema, createUpdateSchema } from "drizzle-zod";
 import {
   articles,
   htmlPages,
+  urlPages,
   highlights,
   teachers,
   videos,
@@ -23,6 +24,10 @@ import { NextResponse } from "next/server";
 const categorySlugFormat = /^[a-z0-9-]+$/;
 const categoryRefine = (v: string) => categorySlugFormat.test(v);
 const categoryRefineMsg = { message: "허용되지 않은 카테고리입니다." };
+
+// URL 페이지의 외부 링크 — http(s) 스킴만 허용해 javascript:/data: 등 위험 스킴을 차단.
+const externalUrlRefine = (v: string) => /^https?:\/\//i.test(v);
+const externalUrlRefineMsg = { message: "http(s):// 로 시작하는 URL만 허용됩니다." };
 
 // 썸네일 텍스트 오버레이 메타 JSON 길이 한도. {version, baseImageUrl, overlays[]} 의 직렬화 길이.
 const OVERLAY_JSON_MAX = 50_000;
@@ -84,6 +89,28 @@ export const updateHtmlPageSchema = createUpdateSchema(htmlPages, {
   category: (schema) => schema.max(50).refine((v) => v === undefined || v === "" || categoryRefine(v), categoryRefineMsg),
   categoryLabel: (schema) => schema.max(50),
   content: (schema) => schema.max(2_000_000),
+  thumbnail: (schema) => schema.max(500),
+  thumbnailOverlays: (schema) => schema.max(OVERLAY_JSON_MAX),
+  date: (schema) => schema.max(50),
+}).omit({ id: true, createdAt: true });
+
+// URL Pages — 외부 URL 카드. externalUrl 은 http(s) 만 허용. slug·content 없음.
+export const insertUrlPageSchema = createInsertSchema(urlPages, {
+  title: (schema) => schema.min(1).max(500),
+  excerpt: (schema) => schema.max(1000),
+  category: (schema) => schema.max(50).refine((v) => v === "" || categoryRefine(v), categoryRefineMsg),
+  categoryLabel: (schema) => schema.max(50),
+  externalUrl: (schema) => schema.min(1).max(500).refine(externalUrlRefine, externalUrlRefineMsg),
+  thumbnail: (schema) => schema.max(500),
+  thumbnailOverlays: (schema) => schema.max(OVERLAY_JSON_MAX),
+  date: (schema) => schema.max(50),
+}).omit({ id: true, createdAt: true, updatedAt: true });
+export const updateUrlPageSchema = createUpdateSchema(urlPages, {
+  title: (schema) => schema.max(500),
+  excerpt: (schema) => schema.max(1000),
+  category: (schema) => schema.max(50).refine((v) => v === undefined || v === "" || categoryRefine(v), categoryRefineMsg),
+  categoryLabel: (schema) => schema.max(50),
+  externalUrl: (schema) => schema.min(1).max(500).refine(externalUrlRefine, externalUrlRefineMsg),
   thumbnail: (schema) => schema.max(500),
   thumbnailOverlays: (schema) => schema.max(OVERLAY_JSON_MAX),
   date: (schema) => schema.max(50),

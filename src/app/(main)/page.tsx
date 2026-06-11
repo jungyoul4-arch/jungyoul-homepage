@@ -8,6 +8,7 @@ import { getDb } from "@/db";
 import {
   articles as articlesTable,
   htmlPages as htmlPagesTable,
+  urlPages as urlPagesTable,
   highlights as highlightsTable,
   videos as videosTable,
   heroSlides as heroSlidesTable,
@@ -15,7 +16,7 @@ import {
   pinnedArticles as pinnedArticlesTable,
 } from "@/db/schema";
 import { desc, asc } from "drizzle-orm";
-import { toArticle, toHtmlPageCard, toHighlight, toVideo, resolveSlides } from "@/lib/mappers";
+import { toArticle, toHtmlPageCard, toUrlPageCard, toHighlight, toVideo, resolveSlides } from "@/lib/mappers";
 import { renderJsonLd } from "@/lib/json-ld";
 import { SITE_URL } from "@/lib/site";
 import { getArticleCategoryTabs } from "@/lib/category-rules";
@@ -23,9 +24,10 @@ import { getArticleCategoryTabs } from "@/lib/category-rules";
 export default async function Home() {
   const db = await getDb();
 
-  const [rawArticles, rawHtmlPages, rawHighlights, rawVideos, rawSlides, rawSlideItems, rawPinned, categoryTabs] = await Promise.all([
+  const [rawArticles, rawHtmlPages, rawUrlPages, rawHighlights, rawVideos, rawSlides, rawSlideItems, rawPinned, categoryTabs] = await Promise.all([
     db.select().from(articlesTable).orderBy(desc(articlesTable.date)),
     db.select().from(htmlPagesTable).orderBy(desc(htmlPagesTable.date)).catch(() => [] as never[]),
+    db.select().from(urlPagesTable).orderBy(desc(urlPagesTable.date)).catch(() => [] as never[]),
     db.select().from(highlightsTable),
     db.select().from(videosTable).orderBy(asc(videosTable.sortOrder)),
     db.select().from(heroSlidesTable).orderBy(asc(heroSlidesTable.sortOrder)),
@@ -38,11 +40,13 @@ export default async function Home() {
   const pinnedArticleIds = rawPinned.map((p) => p.articleId);
   const heroSlides = resolveSlides(rawSlides, rawSlideItems, allArticles);
 
-  // "최신 교육정보" 피드 = 기사 + 독립 HTML 페이지를 date 내림차순으로 병합.
-  // (히어로/관련기사/resolveSlides 는 기사만 사용 — HTML 페이지는 히어로 비포함.)
-  const latestFeed = [...allArticles, ...rawHtmlPages.map(toHtmlPageCard)].sort((a, b) =>
-    b.date.localeCompare(a.date),
-  );
+  // "최신 교육정보" 피드 = 기사 + 독립 HTML 페이지 + 외부 URL 페이지를 date 내림차순으로 병합.
+  // (히어로/관련기사/resolveSlides 는 기사만 사용 — HTML·URL 페이지는 히어로 비포함.)
+  const latestFeed = [
+    ...allArticles,
+    ...rawHtmlPages.map(toHtmlPageCard),
+    ...rawUrlPages.map(toUrlPageCard),
+  ].sort((a, b) => b.date.localeCompare(a.date));
 
   return (
     <>

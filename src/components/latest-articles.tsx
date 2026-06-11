@@ -94,18 +94,12 @@ export function LatestArticles({ articles, pinnedArticleIds = [], categories }: 
 }
 
 function ArticleCard({ article, headlineMode = false }: { article: Article; headlineMode?: boolean }) {
-  // 독립 HTML 페이지는 /p/{slug} 로, 일반 기사는 /articles/{slug} 로 링크.
+  // 독립 HTML 페이지는 /p/{slug}, 외부 URL 페이지는 externalUrl(새 탭), 일반 기사는 /articles/{slug} 로 링크.
   const isHtml = article.kind === "html";
-  const href = isHtml ? `/p/${article.slug}` : `/articles/${article.slug}`;
-  return (
-    <article className="relative">
-      {/* HTML 페이지 카드는 빠른편집(기사 전용) 미지원 — 어드민 → HTML 페이지에서 수정 */}
-      {!isHtml && (
-        <div className="absolute top-2 right-2 z-10">
-          <AdminEditButton type="article" data={article} />
-        </div>
-      )}
-      <Link href={href} className="group block">
+  const isUrl = article.kind === "url";
+  const href = isHtml ? `/p/${article.slug}` : isUrl ? (article.externalUrl ?? "#") : `/articles/${article.slug}`;
+  const cardInner = (
+    <>
         {/* Desktop/Tablet: vertical layout */}
         <div className="hidden sm:block">
           {/* Thumbnail — 균일 16:9 박스. 이미지는 object-fill 로 박스에 정확히 맞춰 늘림(무잘림·무여백, 비-16:9 는 약간 왜곡) */}
@@ -181,7 +175,26 @@ function ArticleCard({ article, headlineMode = false }: { article: Article; head
             </div>
           </div>
         )}
-      </Link>
+    </>
+  );
+
+  return (
+    <article className="relative">
+      {/* HTML·URL 페이지 카드는 빠른편집(기사 전용) 미지원 — 어드민에서 수정 */}
+      {!isHtml && !isUrl && (
+        <div className="absolute top-2 right-2 z-10">
+          <AdminEditButton type="article" data={article} />
+        </div>
+      )}
+      {isUrl ? (
+        <a href={href} target="_blank" rel="noopener noreferrer" className="group block">
+          {cardInner}
+        </a>
+      ) : (
+        <Link href={href} className="group block">
+          {cardInner}
+        </Link>
+      )}
     </article>
   );
 }

@@ -222,17 +222,12 @@ function Pagination({
 
 /* ── Article Card ── */
 function ArticleCard({ article }: { article: Article }) {
-  // 독립 HTML 페이지는 /p/{slug} 로 링크하고 빠른편집(기사 전용) 버튼을 숨긴다. (latest-articles.tsx 와 동일)
+  // 독립 HTML 페이지는 /p/{slug}, 외부 URL 페이지는 externalUrl(새 탭)로 링크하고 빠른편집(기사 전용) 버튼을 숨긴다.
   const isHtml = article.kind === "html";
-  const href = isHtml ? `/p/${article.slug}` : `/articles/${article.slug}`;
-  return (
-    <article className="relative cv-card">
-      {!isHtml && (
-        <div className="absolute top-2 right-2 z-10">
-          <AdminEditButton type="article" data={article} />
-        </div>
-      )}
-      <Link href={href} className="group block">
+  const isUrl = article.kind === "url";
+  const href = isHtml ? `/p/${article.slug}` : isUrl ? (article.externalUrl ?? "#") : `/articles/${article.slug}`;
+  const cardInner = (
+    <>
         {/* Thumbnail — 16:9, rounded-lg */}
         <div className="relative aspect-[16/9] bg-gray-100 rounded-lg overflow-hidden mb-5">
           {isValidThumbnail(article.thumbnail) ? (
@@ -262,7 +257,25 @@ function ArticleCard({ article }: { article: Article }) {
             </span>
           </div>
         </div>
-      </Link>
+    </>
+  );
+
+  return (
+    <article className="relative cv-card">
+      {!isHtml && !isUrl && (
+        <div className="absolute top-2 right-2 z-10">
+          <AdminEditButton type="article" data={article} />
+        </div>
+      )}
+      {isUrl ? (
+        <a href={href} target="_blank" rel="noopener noreferrer" className="group block">
+          {cardInner}
+        </a>
+      ) : (
+        <Link href={href} className="group block">
+          {cardInner}
+        </Link>
+      )}
     </article>
   );
 }

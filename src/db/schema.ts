@@ -76,6 +76,27 @@ export const htmlPages = sqliteTable(
   (t) => [index("html_pages_date_idx").on(t.date)]
 );
 
+// 독립 URL 페이지 — 어드민이 외부 URL 을 등록하면 메인/목록 피드에 썸네일 카드로 노출되고
+// 카드 클릭 시 해당 외부 페이지로 새 탭 이동한다(공개 라우트·iframe 없음). HTML 페이지와 달리 slug·content 가 없다.
+// category 는 기사와 동일 규칙으로 카테고리 탭 필터에 연동(빈 값이면 매퍼가 "url" 폴백 → "전체" 탭만 노출).
+export const urlPages = sqliteTable(
+  "url_pages",
+  {
+    id: text("id").primaryKey(),
+    title: text("title").notNull(),
+    excerpt: text("excerpt").default(""),
+    category: text("category").default(""),
+    categoryLabel: text("category_label").default("링크"),
+    externalUrl: text("external_url").notNull(),        // 카드 클릭 시 이동할 외부 URL (https?://)
+    thumbnail: text("thumbnail").default(""),           // 카드 썸네일
+    thumbnailOverlays: text("thumbnail_overlays").default(""),
+    date: text("date").notNull(),                       // 피드 정렬/표시 (YYYY/MM/DD)
+    createdAt: text("created_at").$defaultFn(() => new Date().toISOString()),
+    updatedAt: text("updated_at").$defaultFn(() => new Date().toISOString()),
+  },
+  (t) => [index("url_pages_date_idx").on(t.date)]
+);
+
 export const trackingCodes = sqliteTable("tracking_codes", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),

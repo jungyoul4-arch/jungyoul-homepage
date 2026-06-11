@@ -75,6 +75,12 @@
 - 목록 페이지 카테고리 토글/필터/페이지네이션은 **shallow routing**(`window.history.pushState/replaceState`)으로 URL 만 갱신 → 서버 라운드트립 없이 `useSearchParams` 파생 상태로 즉시 클라이언트 필터(홈과 동일한 반응성). `article-list.tsx`·`exam-article-filter.tsx`. `router.replace` 사용 금지(force-dynamic 재요청 유발)
 - 본문 에디터 툴바의 (구) HTML 소스 삽입 버튼은 제거되고 이 엔티티로 이전됨 — 레거시 in-article raw 블록 호환은 서버 측 유지 → [`docs/editor.md`](docs/editor.md)
 
+## 독립 URL 페이지 (외부 링크 카드)
+- HTML 페이지와 **형제 엔티티** `url_pages` (drizzle 마이그 `0015_silky_anita_blake.sql`). 어드민이 **외부 URL·카테고리·제목·썸네일**을 등록 → 메인/목록 피드에 썸네일 카드로 노출, 카드 클릭 시 해당 외부 페이지로 **새 탭 이동**. HTML 페이지와 달리 **공개 라우트·slug·iframe 없음**(외부 직접 링크라 불필요)
+- 어드민: `/admin/url-pages` (목록 + "새 URL 추가"), 사이드바 "콘텐츠 관리" 그룹의 "HTML 페이지" 바로 아래(`Globe` 아이콘 — lucide `Link` 는 `next/link` 와 충돌해 사용 금지). 폼 = title/카테고리/date/외부 URL(`<input type="url">`)/excerpt(선택)/`ThumbnailUploader`. API `/api/admin/url-pages`(+`[id]`) `requireAdmin` 게이트 (slug 없어 409 처리 없음)
+- **보안**: `externalUrl` 은 zod refine `externalUrlRefine`(`src/lib/validation.ts`)으로 `^https?://` 만 허용 → `javascript:`/`data:` 등 위험 스킴 차단. 카드 링크는 항상 `target="_blank" rel="noopener noreferrer"`
+- 매핑/노출: `toUrlPageCard`(`mappers.ts`) 가 `kind:"url"` + `externalUrl` + 어드민 지정 `category`(미지정 시 `"url"` 폴백)로 매핑. **HTML 페이지와 동일하게** 홈 `(main)/page.tsx` + `/articles`·`/exam`·`/story` 각 범위에 카테고리 기준 병합. 카드(`latest-articles.tsx`·`article-list.tsx`)는 `kind==="url"` 이면 내부 JSX 를 `cardInner` 로 추출 후 `<Link>` 대신 `<a target="_blank">` 로 감싸 렌더 + 빠른편집(기사 전용) 버튼 숨김. `Article.slug` 는 라우트 미사용이라 매퍼에서 `row.id` 로 채워 카드 key 용도로만 사용
+
 ## 디자인 토큰 (색상)
 - 색상은 모두 `src/app/globals.css` `@theme inline` 블록의 `--color-*` 토큰으로만 표기. **신규 코드에서 hex 값(`#1A1A1A`, `#1E64FA` 등) 임의 입력 금지**
 - 브랜드/텍스트 토큰: `brand-blue`(#1E64FA), `brand-blue-dark`(#0E41AD), `text-primary`(#1A1A1A), `text-secondary`(#666666), `border-light`(#E0E0E0), `article-line`(#E0E9FE), `media-bg`(#f4f7ff)

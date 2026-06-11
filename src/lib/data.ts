@@ -1,7 +1,7 @@
 // 타입 정의 및 카테고리 상수 (DB 전환 후에도 공유)
-// "html" 은 독립 HTML 페이지 전용 의사 카테고리 — categories 배열엔 넣지 않아 탭이 생성되지 않고,
+// "html"·"url" 은 독립 HTML/URL 페이지 전용 의사 카테고리 — categories 배열엔 넣지 않아 탭이 생성되지 않고,
 // "전체" 탭에서만 노출된다(특정 카테고리 탭 필터에 매칭되지 않음).
-export type Category = "all" | "strategy" | "column" | "success" | "news" | "exam" | "growth" | "html";
+export type Category = "all" | "strategy" | "column" | "success" | "news" | "exam" | "growth" | "html" | "url";
 
 export interface Article {
   id: string;
@@ -18,9 +18,11 @@ export interface Article {
   examYear?: string;
   examGrade?: string;
   examSubject?: string;
-  // 콘텐츠 종류. 기본 "article"(=/articles/{slug}). "html" 은 독립 HTML 페이지(=/p/{slug}).
-  // "최신 교육정보" 피드에 섞여 노출되며 카드 링크 경로 분기에 쓰인다.
-  kind?: "article" | "html";
+  // 콘텐츠 종류. 기본 "article"(=/articles/{slug}). "html" 은 독립 HTML 페이지(=/p/{slug}),
+  // "url" 은 외부 URL 페이지(=externalUrl 로 새 탭 이동). 피드에 섞여 노출되며 카드 링크 경로 분기에 쓰인다.
+  kind?: "article" | "html" | "url";
+  // kind="url" 일 때 카드 클릭 시 이동할 외부 URL. 다른 kind 에서는 미사용.
+  externalUrl?: string;
 }
 
 export interface ExamTagOption {

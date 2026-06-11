@@ -3,9 +3,9 @@ export const dynamic = "force-dynamic";
 import type { Metadata } from "next";
 import { ArticleList } from "@/components/article-list";
 import { getDb } from "@/db";
-import { articles as articlesTable, htmlPages as htmlPagesTable } from "@/db/schema";
+import { articles as articlesTable, htmlPages as htmlPagesTable, urlPages as urlPagesTable } from "@/db/schema";
 import { desc, eq } from "drizzle-orm";
-import { toArticle, toHtmlPageCard } from "@/lib/mappers";
+import { toArticle, toHtmlPageCard, toUrlPageCard } from "@/lib/mappers";
 import { renderJsonLd } from "@/lib/json-ld";
 import { SITE_URL } from "@/lib/site";
 
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
 
 export default async function StoryPage() {
   const db = await getDb();
-  const [raw, rawHtml] = await Promise.all([
+  const [raw, rawHtml, rawUrl] = await Promise.all([
     db
       .select()
       .from(articlesTable)
@@ -36,12 +36,20 @@ export default async function StoryPage() {
       .from(htmlPagesTable)
       .orderBy(desc(htmlPagesTable.date))
       .catch(() => [] as never[]),
+    db
+      .select()
+      .from(urlPagesTable)
+      .orderBy(desc(urlPagesTable.date))
+      .catch(() => [] as never[]),
   ]);
-  // HTML 페이지도 "성장스토리(growth)" 로 설정한 것만 함께 노출.
+  // HTML·URL 페이지도 "성장스토리(growth)" 로 설정한 것만 함께 노출.
   const htmlCards = rawHtml
     .map(toHtmlPageCard)
     .filter((c) => c.category === "growth");
-  const articles = [...raw.map(toArticle), ...htmlCards].sort((a, b) =>
+  const urlCards = rawUrl
+    .map(toUrlPageCard)
+    .filter((c) => c.category === "growth");
+  const articles = [...raw.map(toArticle), ...htmlCards, ...urlCards].sort((a, b) =>
     b.date.localeCompare(a.date),
   );
 
@@ -65,7 +73,9 @@ export default async function StoryPage() {
                 url:
                   a.kind === "html"
                     ? `${SITE_URL}/p/${a.slug}`
-                    : `${SITE_URL}/articles/${a.slug}`,
+                    : a.kind === "url"
+                      ? (a.externalUrl ?? `${SITE_URL}/story`)
+                      : `${SITE_URL}/articles/${a.slug}`,
               })),
             },
           })}

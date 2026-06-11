@@ -31,6 +31,17 @@ type DbHtmlPage = {
   date: string;
 };
 
+type DbUrlPage = {
+  id: string;
+  title: string;
+  excerpt?: string | null;
+  category?: string | null;
+  categoryLabel?: string | null;
+  externalUrl: string;
+  thumbnail?: string | null;
+  date: string;
+};
+
 type DbHighlight = {
   id: string;
   title: string;
@@ -90,6 +101,25 @@ export function toHtmlPageCard(row: DbHtmlPage): Article {
     date: row.date,
     slug: row.slug,
     kind: "html",
+  };
+}
+
+// 독립 URL 페이지를 피드 카드(Article 형태)로 매핑.
+// kind="url" + externalUrl 로 표시해 카드가 외부 URL 로 새 탭 이동하도록 한다.
+// slug 는 라우트에 쓰이지 않으나 Article.slug 가 필수라 row.id 로 채워 카드 key 용도로만 쓴다.
+// category 가 비어 있으면(미지정) "url" 폴백 → 어떤 탭에도 매칭되지 않아 "전체" 탭에서만 노출된다.
+export function toUrlPageCard(row: DbUrlPage): Article {
+  return {
+    id: row.id,
+    title: row.title,
+    excerpt: row.excerpt ?? "",
+    category: (row.category || "url") as Category,
+    categoryLabel: row.categoryLabel || "링크",
+    thumbnail: row.thumbnail ?? "",
+    date: row.date,
+    slug: row.id,
+    kind: "url",
+    externalUrl: row.externalUrl,
   };
 }
 

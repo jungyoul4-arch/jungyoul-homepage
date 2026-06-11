@@ -3,9 +3,9 @@ export const dynamic = "force-dynamic";
 import type { Metadata } from "next";
 import { ExamArticleFilter } from "@/components/exam-article-filter";
 import { getDb } from "@/db";
-import { articles as articlesTable, examTagOptions as examTagOptionsTable, htmlPages as htmlPagesTable } from "@/db/schema";
+import { articles as articlesTable, examTagOptions as examTagOptionsTable, htmlPages as htmlPagesTable, urlPages as urlPagesTable } from "@/db/schema";
 import { asc, desc, eq } from "drizzle-orm";
-import { toArticle, toHtmlPageCard } from "@/lib/mappers";
+import { toArticle, toHtmlPageCard, toUrlPageCard } from "@/lib/mappers";
 import { renderJsonLd } from "@/lib/json-ld";
 import { SITE_URL } from "@/lib/site";
 import type { ExamTagOption } from "@/lib/data";
@@ -44,7 +44,7 @@ async function safeExamTagOptions(db: Awaited<ReturnType<typeof getDb>>) {
 
 export default async function ExamPage() {
   const db = await getDb();
-  const [raw, rawTagOptions, rawHtml] = await Promise.all([
+  const [raw, rawTagOptions, rawHtml, rawUrl] = await Promise.all([
     db
       .select()
       .from(articlesTable)
@@ -56,13 +56,21 @@ export default async function ExamPage() {
       .from(htmlPagesTable)
       .orderBy(desc(htmlPagesTable.date))
       .catch(() => [] as never[]),
+    db
+      .select()
+      .from(urlPagesTable)
+      .orderBy(desc(urlPagesTable.date))
+      .catch(() => [] as never[]),
   ]);
-  // HTML 페이지도 "시험지 분석(exam)" 로 설정한 것만 함께 노출
-  // (HTML 은 exam_* 태그가 없어 연도·학년·과목 필터 선택 시 제외 → 태그 미선택 상태에서 노출).
+  // HTML·URL 페이지도 "시험지 분석(exam)" 로 설정한 것만 함께 노출
+  // (exam_* 태그가 없어 연도·학년·과목 필터 선택 시 제외 → 태그 미선택 상태에서 노출).
   const htmlCards = rawHtml
     .map(toHtmlPageCard)
     .filter((c) => c.category === "exam");
-  const articles = [...raw.map(toArticle), ...htmlCards].sort((a, b) =>
+  const urlCards = rawUrl
+    .map(toUrlPageCard)
+    .filter((c) => c.category === "exam");
+  const articles = [...raw.map(toArticle), ...htmlCards, ...urlCards].sort((a, b) =>
     b.date.localeCompare(a.date),
   );
   const tagOptions: ExamTagOption[] = rawTagOptions.map((row) => ({
@@ -92,7 +100,9 @@ export default async function ExamPage() {
                 url:
                   a.kind === "html"
                     ? `${SITE_URL}/p/${a.slug}`
-                    : `${SITE_URL}/articles/${a.slug}`,
+                    : a.kind === "url"
+                      ? (a.externalUrl ?? `${SITE_URL}/exam`)
+                      : `${SITE_URL}/articles/${a.slug}`,
               })),
             },
           })}
