@@ -16,7 +16,7 @@ import {
   pinnedArticles as pinnedArticlesTable,
 } from "@/db/schema";
 import { desc, asc, eq } from "drizzle-orm";
-import { toArticle, toHtmlPageCard, toUrlPageCard, toHighlight, toVideo, resolveSlides } from "@/lib/mappers";
+import { toArticle, toHtmlPageCard, toUrlPageCard, resolveHighlights, toVideo, resolveSlides } from "@/lib/mappers";
 import { renderJsonLd } from "@/lib/json-ld";
 import { SITE_URL } from "@/lib/site";
 import { getArticleCategoryTabs } from "@/lib/category-rules";
@@ -37,6 +37,8 @@ export default async function Home() {
   ]);
 
   const allArticles = rawArticles.map(toArticle);
+  const htmlCards = rawHtmlPages.map(toHtmlPageCard);
+  const urlCards = rawUrlPages.map(toUrlPageCard);
   const pinnedArticleIds = rawPinned.map((p) => p.articleId);
   const heroSlides = resolveSlides(rawSlides, rawSlideItems, allArticles);
 
@@ -44,9 +46,16 @@ export default async function Home() {
   // (히어로/관련기사/resolveSlides 는 기사만 사용 — HTML·URL 페이지는 히어로 비포함.)
   const latestFeed = [
     ...allArticles,
-    ...rawHtmlPages.map(toHtmlPageCard),
-    ...rawUrlPages.map(toUrlPageCard),
+    ...htmlCards,
+    ...urlCards,
   ].sort((a, b) => b.date.localeCompare(a.date));
+
+  // 하이라이트 = 연결 참조를 풀어 컨텐츠의 title/thumbnail/링크로 동기화(없으면 직접입력값).
+  const highlightItems = resolveHighlights(rawHighlights, {
+    articles: allArticles,
+    htmlPages: htmlCards,
+    urlPages: urlCards,
+  });
 
   return (
     <>
@@ -130,7 +139,7 @@ export default async function Home() {
       {/* Hero Carousel — 삼성 뉴스룸 메인 슬라이더 */}
       <HeroCarousel slides={heroSlides} />
       <LatestArticles articles={latestFeed} pinnedArticleIds={pinnedArticleIds} categories={categoryTabs} />
-      <HighlightsCarousel highlights={rawHighlights.map(toHighlight)} />
+      <HighlightsCarousel highlights={highlightItems} />
       <MediaLibrary videos={rawVideos.map(toVideo)} />
     </>
   );

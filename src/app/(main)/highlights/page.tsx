@@ -2,8 +2,14 @@ export const dynamic = "force-dynamic";
 
 import type { Metadata } from "next";
 import { getDb } from "@/db";
-import { highlights as highlightsTable } from "@/db/schema";
-import { toHighlight } from "@/lib/mappers";
+import {
+  highlights as highlightsTable,
+  articles as articlesTable,
+  htmlPages as htmlPagesTable,
+  urlPages as urlPagesTable,
+} from "@/db/schema";
+import { eq } from "drizzle-orm";
+import { toArticle, toHtmlPageCard, toUrlPageCard, resolveHighlights } from "@/lib/mappers";
 import { HighlightCard } from "@/components/highlight-card";
 import { renderJsonLd } from "@/lib/json-ld";
 import { SITE_URL } from "@/lib/site";
@@ -24,8 +30,18 @@ export const metadata: Metadata = {
 
 export default async function HighlightsPage() {
   const db = await getDb();
-  const raw = await db.select().from(highlightsTable);
-  const items = raw.map(toHighlight);
+  const [raw, rawArticles, rawHtmlPages, rawUrlPages] = await Promise.all([
+    db.select().from(highlightsTable),
+    db.select().from(articlesTable).where(eq(articlesTable.hidden, false)),
+    db.select().from(htmlPagesTable).where(eq(htmlPagesTable.hidden, false)).catch(() => [] as never[]),
+    db.select().from(urlPagesTable).where(eq(urlPagesTable.hidden, false)).catch(() => [] as never[]),
+  ]);
+  // 연결 참조를 풀어 컨텐츠의 title/thumbnail/링크로 동기화(없으면 직접입력값).
+  const items = resolveHighlights(raw, {
+    articles: rawArticles.map(toArticle),
+    htmlPages: rawHtmlPages.map(toHtmlPageCard),
+    urlPages: rawUrlPages.map(toUrlPageCard),
+  });
 
   return (
     <div className="max-w-[1480px] mx-auto px-4 lg:px-10 py-10">

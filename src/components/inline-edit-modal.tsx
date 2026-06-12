@@ -8,6 +8,7 @@ import { useAuth, type EditModalType } from "./auth-provider";
 import { ContentEditor } from "./content-editor";
 import { ThumbnailUploader } from "./thumbnail-uploader";
 import { ExamTagSelects } from "./exam-tag-selects";
+import { HighlightContentPicker, type HighlightFormValue } from "./highlight-content-picker";
 import { useCategoryOptions, type CategoryOption } from "@/hooks/use-category-options";
 
 function extractYoutubeId(input: string): string {
@@ -184,7 +185,14 @@ export function InlineEditModal() {
           ) : (
             <>
               {type === "article" && <ArticleForm form={form} update={update} categoryOptions={categoryOptions} />}
-              {type === "highlight" && <HighlightForm form={form} update={update} />}
+              {type === "highlight" && (
+                <HighlightForm
+                  key={id}
+                  form={form}
+                  update={update}
+                  onPatch={(patch) => setForm((prev) => ({ ...prev, ...patch }))}
+                />
+              )}
               {type === "teacher" && <TeacherForm form={form} update={update} />}
               {type === "video" && <VideoForm form={form} update={update} />}
             </>
@@ -334,20 +342,14 @@ function ArticleForm({
 function HighlightForm({
   form,
   update,
+  onPatch,
 }: {
   form: Record<string, unknown>;
   update: (field: string, value: unknown) => void;
+  onPatch: (patch: HighlightFormValue) => void;
 }) {
   return (
     <>
-      <Field label="제목">
-        <input
-          type="text"
-          value={(form.title as string) || ""}
-          onChange={(e) => update("title", e.target.value)}
-          className={inputClass}
-        />
-      </Field>
       <Field label="슬러그">
         <input
           type="text"
@@ -356,24 +358,17 @@ function HighlightForm({
           className={inputClass}
         />
       </Field>
-      <Field label="연결 링크 (선택)">
-        <input
-          type="text"
-          value={(form.linkUrl as string) || ""}
-          onChange={(e) => update("linkUrl", e.target.value)}
-          placeholder="/articles/슬러그, /p/슬러그, https://…"
-          className={inputClass}
-        />
-      </Field>
-      <Field label="썸네일">
-        <ThumbnailUploader
-          value={(form.thumbnail as string) || ""}
-          overlays={(form.thumbnailOverlays as string) || ""}
-          onChange={(url, overlaysJson) => {
-            update("thumbnail", url);
-            update("thumbnailOverlays", overlaysJson ?? "");
+      <Field label="컨텐츠 연결 / 직접 입력">
+        <HighlightContentPicker
+          value={{
+            title: (form.title as string) || "",
+            thumbnail: (form.thumbnail as string) || "",
+            thumbnailOverlays: (form.thumbnailOverlays as string) || "",
+            linkUrl: (form.linkUrl as string) || "",
+            linkedKind: ((form.linkedKind as string) || "") as HighlightFormValue["linkedKind"],
+            linkedId: (form.linkedId as string) || "",
           }}
-          aspect="16:9"
+          onChange={onPatch}
         />
       </Field>
     </>

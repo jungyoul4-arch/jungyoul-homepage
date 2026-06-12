@@ -35,6 +35,11 @@ export const highlights = sqliteTable("highlights", {
   slug: text("slug").unique().notNull(),
   // 카드 클릭 시 이동할 링크(내부 /articles·/p 또는 외부 https). 비우면 /highlights/{slug} 상세로 이동.
   linkUrl: text("link_url").default(""),
+  // 연결된 컨텐츠 참조. 둘 다 비면 직접입력(수동 title/thumbnail/linkUrl) 모드.
+  // linkedKind: "article" | "html" | "url" | "". 채워지면 렌더 시 해당 컨텐츠를 조인해
+  // title/thumbnail/링크를 실시간 동기화(원본 수정 시 자동 반영).
+  linkedKind: text("linked_kind").default(""),
+  linkedId: text("linked_id").default(""),
 });
 
 export const teachers = sqliteTable("teachers", {

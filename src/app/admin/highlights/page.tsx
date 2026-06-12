@@ -2,19 +2,33 @@
 
 import { useEffect, useState } from "react";
 import { Plus, Trash2, Save } from "lucide-react";
+import { HighlightContentPicker, type HighlightFormValue } from "@/components/highlight-content-picker";
 
 interface Highlight {
   id: string;
   title: string;
   thumbnail: string;
   slug: string;
+  linkedKind?: string;
+  linkedId?: string;
 }
+
+type HighlightForm = HighlightFormValue & { slug: string };
+const EMPTY_FORM: HighlightForm = {
+  title: "",
+  thumbnail: "",
+  thumbnailOverlays: "",
+  slug: "",
+  linkUrl: "",
+  linkedKind: "",
+  linkedId: "",
+};
 
 export default function AdminHighlightsPage() {
   const [items, setItems] = useState<Highlight[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ title: "", thumbnail: "", slug: "", linkUrl: "" });
+  const [form, setForm] = useState<HighlightForm>(EMPTY_FORM);
 
   async function load() {
     const res = await fetch("/api/highlights");
@@ -27,15 +41,22 @@ export default function AdminHighlightsPage() {
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
+    if (!form.linkedId && !form.title?.trim()) {
+      alert("컨텐츠를 연결하거나 제목을 입력하세요.");
+      return;
+    }
     const res = await fetch("/api/admin/highlights", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
     });
     if (res.ok) {
-      setForm({ title: "", thumbnail: "", slug: "", linkUrl: "" });
+      setForm(EMPTY_FORM);
       setShowForm(false);
       load();
+    } else {
+      const data = await res.json().catch(() => ({}));
+      alert(data.error || "저장에 실패했습니다.");
     }
   }
 
@@ -62,32 +83,14 @@ export default function AdminHighlightsPage() {
         <form onSubmit={handleAdd} className="bg-white border border-gray-200 rounded-lg p-5 mb-6 max-w-lg space-y-3">
           <input
             type="text"
-            value={form.title}
-            onChange={(e) => setForm({ ...form, title: e.target.value })}
-            placeholder="제목"
-            className="w-full h-9 px-3 border border-gray-300 rounded-sm text-sm focus:outline-none focus:border-blue-600"
-            required
-          />
-          <input
-            type="text"
             value={form.slug}
             onChange={(e) => setForm({ ...form, slug: e.target.value })}
             placeholder="슬러그 (비워두면 자동 생성)"
             className="w-full h-9 px-3 border border-gray-300 rounded-sm text-sm focus:outline-none focus:border-blue-600"
           />
-          <input
-            type="text"
-            value={form.linkUrl}
-            onChange={(e) => setForm({ ...form, linkUrl: e.target.value })}
-            placeholder="연결 링크 (선택) — 예: /articles/슬러그, /p/슬러그, https://…"
-            className="w-full h-9 px-3 border border-gray-300 rounded-sm text-sm focus:outline-none focus:border-blue-600"
-          />
-          <input
-            type="text"
-            value={form.thumbnail}
-            onChange={(e) => setForm({ ...form, thumbnail: e.target.value })}
-            placeholder="썸네일 경로"
-            className="w-full h-9 px-3 border border-gray-300 rounded-sm text-sm focus:outline-none focus:border-blue-600"
+          <HighlightContentPicker
+            value={form}
+            onChange={(patch) => setForm((prev) => ({ ...prev, ...patch }))}
           />
           <button type="submit" className="flex items-center gap-1 px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700">
             <Save size={14} /> 저장

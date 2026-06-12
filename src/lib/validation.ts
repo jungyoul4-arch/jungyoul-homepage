@@ -117,6 +117,9 @@ export const updateUrlPageSchema = createUpdateSchema(urlPages, {
 }).omit({ id: true, createdAt: true });
 
 // Highlights
+const LINKED_KIND_VALUES = ["", "article", "html", "url"];
+const linkedKindRefine = (v: string | undefined) => v === undefined || LINKED_KIND_VALUES.includes(v);
+const linkedKindRefineMsg = { message: "연결 종류는 article·html·url 또는 빈 값이어야 합니다." };
 export const insertHighlightSchema = createInsertSchema(highlights, {
   title: (schema) => schema.max(500),
   slug: (schema) => schema.max(200),
@@ -126,6 +129,9 @@ export const insertHighlightSchema = createInsertSchema(highlights, {
   linkUrl: (schema) => schema.max(500).refine((v) => !v || /^\/|^https?:\/\//i.test(v), {
     message: "링크는 /로 시작하는 상대경로 또는 http(s):// URL이어야 합니다.",
   }),
+  // 연결 컨텐츠 참조 — 비면 직접입력 모드.
+  linkedKind: (schema) => schema.max(20).refine(linkedKindRefine, linkedKindRefineMsg),
+  linkedId: (schema) => schema.max(100),
 }).omit({ id: true });
 export const updateHighlightSchema = createUpdateSchema(highlights, {
   title: (schema) => schema.max(500),
@@ -135,6 +141,8 @@ export const updateHighlightSchema = createUpdateSchema(highlights, {
   linkUrl: (schema) => schema.max(500).refine((v) => v === undefined || v === "" || /^\/|^https?:\/\//i.test(v), {
     message: "링크는 /로 시작하는 상대경로 또는 http(s):// URL이어야 합니다.",
   }),
+  linkedKind: (schema) => schema.max(20).refine(linkedKindRefine, linkedKindRefineMsg),
+  linkedId: (schema) => schema.max(100),
 }).omit({ id: true });
 
 // Teachers

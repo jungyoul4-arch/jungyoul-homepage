@@ -41,6 +41,10 @@ export interface Highlight {
   slug: string;
   // 카드 클릭 시 이동할 링크. 비우면 /highlights/{slug} 상세로 이동.
   linkUrl?: string;
+  // 연결된 컨텐츠 참조(어드민 편집 폼이 현재 연결 상태를 읽기 위함). 둘 다 비면 직접입력 모드.
+  // 공개 카드는 resolveHighlights() 가 이 참조를 풀어 title/thumbnail/linkUrl 을 채운 뒤 렌더.
+  linkedKind?: "article" | "html" | "url" | "";
+  linkedId?: string;
 }
 
 export interface Teacher {

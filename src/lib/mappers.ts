@@ -52,6 +52,8 @@ type DbHighlight = {
   thumbnailOverlays?: string | null;
   slug: string;
   linkUrl?: string | null;
+  linkedKind?: string | null;
+  linkedId?: string | null;
 };
 
 type DbTeacher = {
@@ -137,7 +139,57 @@ export function toHighlight(row: DbHighlight): Highlight {
     thumbnail: row.thumbnail ?? "",
     slug: row.slug,
     linkUrl: row.linkUrl ?? "",
+    linkedKind: (row.linkedKind ?? "") as Highlight["linkedKind"],
+    linkedId: row.linkedId ?? "",
   };
+}
+
+// 하이라이트의 연결 참조(linkedKind+linkedId)를 풀어 공개 카드용 Highlight[] 로 평탄화한다.
+// 참조가 있으면 연결 컨텐츠의 title/thumbnail/링크로 동기화(원본 수정 시 자동 반영),
+// 없으면 직접입력 수동값을 그대로 사용. 연결 컨텐츠를 못 찾으면(삭제·숨김) 수동값 fallback,
+// 그것도 비면 깨진 카드를 막기 위해 목록에서 제외한다. resolveSlides 와 동일한 조인 패턴.
+// content 의 각 배열은 이미 toArticle/toHtmlPageCard/toUrlPageCard 로 매핑된 Article[].
+export function resolveHighlights(
+  rawHighlights: DbHighlight[],
+  content: { articles: Article[]; htmlPages: Article[]; urlPages: Article[] },
+): Highlight[] {
+  const maps: Record<"article" | "html" | "url", Map<string, Article>> = {
+    article: new Map(content.articles.map((a) => [a.id, a])),
+    html: new Map(content.htmlPages.map((a) => [a.id, a])),
+    url: new Map(content.urlPages.map((a) => [a.id, a])),
+  };
+
+  function linkFor(kind: "article" | "html" | "url", item: Article): string {
+    if (kind === "url") return item.externalUrl ?? "";
+    if (kind === "html") return `/p/${item.slug}`;
+    return `/articles/${item.slug}`;
+  }
+
+  return rawHighlights
+    .map((row): Highlight | null => {
+      const base = toHighlight(row);
+      const kind = base.linkedKind;
+      const linkedId = base.linkedId ?? "";
+
+      // 참조 없음 → 직접입력 모드(현행과 동일)
+      if (!kind || !linkedId) return base;
+
+      const item = maps[kind]?.get(linkedId);
+      if (item) {
+        // 참조 모드 → 연결 컨텐츠로 동기화
+        return {
+          ...base,
+          title: item.title,
+          thumbnail: item.thumbnail,
+          linkUrl: linkFor(kind, item),
+        };
+      }
+
+      // 연결 컨텐츠 없음(삭제·숨김) → 수동값 fallback, 둘 다 없으면 제외
+      if (base.title || base.thumbnail || base.linkUrl) return base;
+      return null;
+    })
+    .filter((h): h is Highlight => h !== null);
 }
 
 export function toTeacher(row: DbTeacher): Teacher {

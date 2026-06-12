@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { toArticle, toHighlight, toTeacher, toVideo, resolveSlides } from "../mappers";
+import { toArticle, toHighlight, toTeacher, toVideo, resolveSlides, resolveHighlights } from "../mappers";
 import type { Article } from "../data";
 
 const baseArticleRow = {
@@ -62,7 +62,7 @@ describe("toArticle", () => {
 describe("toHighlight", () => {
   it("maps all fields", () => {
     const h = toHighlight({ id: "2", title: "하이라이트", thumbnail: "/img/h.jpg", slug: "highlight-xyz" });
-    expect(h).toEqual({ id: "2", title: "하이라이트", thumbnail: "/img/h.jpg", slug: "highlight-xyz", linkUrl: "" });
+    expect(h).toEqual({ id: "2", title: "하이라이트", thumbnail: "/img/h.jpg", slug: "highlight-xyz", linkUrl: "", linkedKind: "", linkedId: "" });
   });
 
   it("falls back to empty string when thumbnail is null", () => {
@@ -158,5 +158,78 @@ describe("resolveSlides", () => {
 
   it("returns empty array when given no slides", () => {
     expect(resolveSlides([], [], articles)).toEqual([]);
+  });
+});
+
+describe("resolveHighlights", () => {
+  const content = {
+    articles: [
+      { id: "art1", title: "기사제목", excerpt: "", category: "news" as const, categoryLabel: "뉴스", thumbnail: "/art.jpg", date: "2024-01-01", slug: "art-slug", featured: false },
+    ],
+    htmlPages: [
+      { id: "html1", title: "HTML제목", excerpt: "", category: "html" as const, categoryLabel: "페이지", thumbnail: "/html.jpg", date: "2024-01-01", slug: "html-slug", kind: "html" as const },
+    ],
+    urlPages: [
+      { id: "url1", title: "URL제목", excerpt: "", category: "url" as const, categoryLabel: "링크", thumbnail: "/url.jpg", date: "2024-01-01", slug: "url1", kind: "url" as const, externalUrl: "https://example.com" },
+    ],
+  };
+
+  it("syncs title/thumbnail/link from a linked article", () => {
+    const [h] = resolveHighlights(
+      [{ id: "h1", title: "old", thumbnail: "/old.jpg", slug: "h1", linkedKind: "article", linkedId: "art1" }],
+      content,
+    );
+    expect(h.title).toBe("기사제목");
+    expect(h.thumbnail).toBe("/art.jpg");
+    expect(h.linkUrl).toBe("/articles/art-slug");
+  });
+
+  it("links an html page to /p/{slug}", () => {
+    const [h] = resolveHighlights(
+      [{ id: "h2", title: "", thumbnail: "", slug: "h2", linkedKind: "html", linkedId: "html1" }],
+      content,
+    );
+    expect(h.title).toBe("HTML제목");
+    expect(h.linkUrl).toBe("/p/html-slug");
+  });
+
+  it("links a url page to its externalUrl", () => {
+    const [h] = resolveHighlights(
+      [{ id: "h3", title: "", thumbnail: "", slug: "h3", linkedKind: "url", linkedId: "url1" }],
+      content,
+    );
+    expect(h.title).toBe("URL제목");
+    expect(h.linkUrl).toBe("https://example.com");
+  });
+
+  it("uses manual values when there is no link reference", () => {
+    const [h] = resolveHighlights(
+      [{ id: "h4", title: "수동", thumbnail: "/manual.jpg", slug: "h4", linkUrl: "https://manual.test", linkedKind: "", linkedId: "" }],
+      content,
+    );
+    expect(h.title).toBe("수동");
+    expect(h.thumbnail).toBe("/manual.jpg");
+    expect(h.linkUrl).toBe("https://manual.test");
+  });
+
+  it("falls back to snapshot when linked content is missing but manual values exist", () => {
+    const [h] = resolveHighlights(
+      [{ id: "h5", title: "스냅샷", thumbnail: "/snap.jpg", slug: "h5", linkedKind: "article", linkedId: "deleted" }],
+      content,
+    );
+    expect(h.title).toBe("스냅샷");
+    expect(h.thumbnail).toBe("/snap.jpg");
+  });
+
+  it("excludes a highlight when linked content is missing and no manual values", () => {
+    const result = resolveHighlights(
+      [{ id: "h6", title: "", thumbnail: "", slug: "h6", linkUrl: "", linkedKind: "article", linkedId: "deleted" }],
+      content,
+    );
+    expect(result).toHaveLength(0);
+  });
+
+  it("returns empty array for no highlights", () => {
+    expect(resolveHighlights([], content)).toEqual([]);
   });
 });
