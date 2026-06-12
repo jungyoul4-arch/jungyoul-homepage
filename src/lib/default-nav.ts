@@ -18,6 +18,24 @@ export interface NavGroup {
 // - "growth": 별도 라우트 /story (정율사관 → 성장스토리) 전용
 export const EDUCATION_HIDDEN_CATEGORIES = new Set<string>(["exam", "growth"]);
 
+// catch-all [slug] 인덱스/명시 라우트가 선점하는 slug 예약어.
+// 자식 메뉴의 단일 세그먼트 href 를 "리프 카테고리"(예: /jstory = 학원소식)로 인정할 때
+// 이 예약어와 겹치면 카테고리로 보지 않는다(명시 라우트 폴더 + 부모 인덱스 slug).
+// 새 명시 라우트(src/app/(main)/<slug>) 추가 시 여기에도 등록한다.
+export const RESERVED_ROUTE_SLUGS = new Set<string>([
+  "about", "articles", "contact", "exam", "faq", "highlights",
+  "location", "privacy", "story", "teachers", "terms",
+  "jungyoul", "community", "admin", "p",
+]);
+
+// nav 항목 href 가 단일 세그먼트 경로(`/jstory` 등)이고 예약어가 아니면 그 slug 를 카테고리로 인정.
+// `?category=` 쿼리도, 명시 라우트(/teachers)도, 부모 인덱스(/jungyoul)도 아닌 자식 "리프 카테고리".
+export function extractLeafCategorySlug(href: string): string | null {
+  const m = href.match(/^\/([a-z0-9-]+)$/);
+  if (!m) return null;
+  return RESERVED_ROUTE_SLUGS.has(m[1]) ? null : m[1];
+}
+
 const educationChildren: NavMenuItem[] = categories
   .filter((c) => !EDUCATION_HIDDEN_CATEGORIES.has(c.value))
   .map((c, i) => ({
@@ -63,7 +81,12 @@ export function extractCategorySlugsFromHrefs(hrefs: string[]): string[] {
   const set = new Set<string>();
   for (const href of hrefs) {
     const idx = href.indexOf("?");
-    if (idx === -1) continue;
+    if (idx === -1) {
+      // 쿼리 없는 단일 세그먼트 경로 → 리프 카테고리(예: /jstory)
+      const leaf = extractLeafCategorySlug(href);
+      if (leaf) set.add(leaf);
+      continue;
+    }
     const params = new URLSearchParams(href.slice(idx));
     const cat = params.get("category");
     if (cat) set.add(cat);
@@ -109,7 +132,12 @@ export function mergeCategoryOptions(
   }
   for (const it of navItems) {
     const idx = it.href.indexOf("?");
-    if (idx === -1) continue;
+    if (idx === -1) {
+      // 쿼리 없는 단일 세그먼트 경로 → 리프 카테고리(예: /jstory = "학원소식")
+      const leaf = extractLeafCategorySlug(it.href);
+      if (leaf) map.set(leaf, it.label);
+      continue;
+    }
     const cat = new URLSearchParams(it.href.slice(idx)).get("category");
     if (cat) map.set(cat, it.label);
   }

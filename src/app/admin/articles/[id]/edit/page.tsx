@@ -28,6 +28,7 @@ export default function EditArticlePage() {
     thumbnailOverlays: "",
     date: "",
     featured: false,
+    hidden: false,
     examYear: "",
     examGrade: "",
     examSubject: "",
@@ -50,6 +51,7 @@ export default function EditArticlePage() {
           thumbnailOverlays: article.thumbnailOverlays || "",
           date: article.date,
           featured: !!article.featured,
+          hidden: !!article.hidden,
           examYear: article.examYear || "",
           examGrade: article.examGrade || "",
           examSubject: article.examSubject || "",
@@ -201,6 +203,16 @@ export default function EditArticlePage() {
             onChange={updateThumbnail}
           />
         </div>
+
+        <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={form.hidden}
+            onChange={(e) => update("hidden", e.target.checked)}
+            className="h-4 w-4 rounded border-gray-300"
+          />
+          메인·목록·카테고리 페이지에서 숨기기 (콘텐츠는 보존됩니다)
+        </label>
 
         <div className="flex gap-3 pt-2">
           <button

@@ -1,6 +1,6 @@
 export const dynamic = "force-dynamic";
 
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import type { Metadata } from "next";
@@ -48,6 +48,8 @@ export default async function HighlightPage({ params }: Props) {
     .limit(1);
 
   if (!raw) notFound();
+  // 연결 링크가 지정돼 있으면 해당 게시글/외부 URL 로 위임(상세 페이지 대신 노출).
+  if (raw.linkUrl) redirect(raw.linkUrl);
   const highlight = toHighlight(raw);
 
   return (

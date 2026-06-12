@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import { ArticleList } from "@/components/article-list";
 import { getDb } from "@/db";
 import { articles as articlesTable, htmlPages as htmlPagesTable, urlPages as urlPagesTable } from "@/db/schema";
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, and } from "drizzle-orm";
 import { toArticle, toHtmlPageCard, toUrlPageCard } from "@/lib/mappers";
 import { renderJsonLd } from "@/lib/json-ld";
 import { SITE_URL } from "@/lib/site";
@@ -29,16 +29,18 @@ export default async function StoryPage() {
     db
       .select()
       .from(articlesTable)
-      .where(eq(articlesTable.category, "growth"))
+      .where(and(eq(articlesTable.category, "growth"), eq(articlesTable.hidden, false)))
       .orderBy(desc(articlesTable.date)),
     db
       .select()
       .from(htmlPagesTable)
+      .where(eq(htmlPagesTable.hidden, false))
       .orderBy(desc(htmlPagesTable.date))
       .catch(() => [] as never[]),
     db
       .select()
       .from(urlPagesTable)
+      .where(eq(urlPagesTable.hidden, false))
       .orderBy(desc(urlPagesTable.date))
       .catch(() => [] as never[]),
   ]);

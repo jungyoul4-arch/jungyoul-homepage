@@ -14,7 +14,7 @@ export default function AdminHighlightsPage() {
   const [items, setItems] = useState<Highlight[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ title: "", thumbnail: "", slug: "" });
+  const [form, setForm] = useState({ title: "", thumbnail: "", slug: "", linkUrl: "" });
 
   async function load() {
     const res = await fetch("/api/highlights");
@@ -33,7 +33,7 @@ export default function AdminHighlightsPage() {
       body: JSON.stringify(form),
     });
     if (res.ok) {
-      setForm({ title: "", thumbnail: "", slug: "" });
+      setForm({ title: "", thumbnail: "", slug: "", linkUrl: "" });
       setShowForm(false);
       load();
     }
@@ -73,6 +73,13 @@ export default function AdminHighlightsPage() {
             value={form.slug}
             onChange={(e) => setForm({ ...form, slug: e.target.value })}
             placeholder="슬러그 (비워두면 자동 생성)"
+            className="w-full h-9 px-3 border border-gray-300 rounded-sm text-sm focus:outline-none focus:border-blue-600"
+          />
+          <input
+            type="text"
+            value={form.linkUrl}
+            onChange={(e) => setForm({ ...form, linkUrl: e.target.value })}
+            placeholder="연결 링크 (선택) — 예: /articles/슬러그, /p/슬러그, https://…"
             className="w-full h-9 px-3 border border-gray-300 rounded-sm text-sm focus:outline-none focus:border-blue-600"
           />
           <input

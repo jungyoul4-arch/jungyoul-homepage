@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   extractCategoryTabsFromNavItems,
+  extractLeafCategorySlug,
   mergeCategoryOptions,
   mergeWritableCategorySlugs,
 } from "../default-nav";
@@ -78,5 +79,44 @@ describe("mergeWritableCategorySlugs — 저장 허용 slug 집합", () => {
     const slugs = mergeWritableCategorySlugs([]);
     expect(slugs).toContain("strategy");
     expect(slugs).not.toContain("session");
+  });
+
+  it("리프 카테고리 slug(자식 path-slug)를 저장 허용에 포함하고 예약 라우트는 제외한다", () => {
+    const slugs = mergeWritableCategorySlugs(["/jstory", "/teachers", "/faq"]);
+    expect(slugs).toContain("jstory");
+    expect(slugs).not.toContain("teachers");
+    expect(slugs).not.toContain("faq");
+  });
+});
+
+describe("extractLeafCategorySlug — 리프 카테고리 slug 추출(/jstory 404 근원 수정)", () => {
+  it("쿼리 없는 단일 세그먼트 경로는 slug 를 반환한다", () => {
+    expect(extractLeafCategorySlug("/jstory")).toBe("jstory");
+    expect(extractLeafCategorySlug("/academy-news")).toBe("academy-news");
+  });
+
+  it("예약 라우트(명시 라우트·부모 인덱스)는 null", () => {
+    expect(extractLeafCategorySlug("/teachers")).toBeNull();
+    expect(extractLeafCategorySlug("/articles")).toBeNull();
+    expect(extractLeafCategorySlug("/jungyoul")).toBeNull();
+    expect(extractLeafCategorySlug("/exam")).toBeNull();
+  });
+
+  it("쿼리·다중 세그먼트·외부 URL·대문자는 null", () => {
+    expect(extractLeafCategorySlug("/articles?category=strategy")).toBeNull();
+    expect(extractLeafCategorySlug("/a/b")).toBeNull();
+    expect(extractLeafCategorySlug("https://x.com")).toBeNull();
+    expect(extractLeafCategorySlug("/Jstory")).toBeNull();
+  });
+});
+
+describe("리프 카테고리 — 어드민 폼 옵션/저장 허용 합류", () => {
+  it("mergeCategoryOptions 가 리프 카테고리(/jstory=학원소식)를 옵션으로 추가하고 예약 라우트는 제외한다", () => {
+    const opts = mergeCategoryOptions([
+      { href: "/jstory", label: "학원소식" },
+      { href: "/teachers", label: "선생님" },
+    ]);
+    expect(opts).toContainEqual({ value: "jstory", label: "학원소식" });
+    expect(opts.some((o) => o.value === "teachers")).toBe(false);
   });
 });

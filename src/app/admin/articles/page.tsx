@@ -12,6 +12,7 @@ interface Article {
   date: string;
   slug: string;
   featured: boolean;
+  hidden?: boolean;
 }
 
 export default function AdminArticlesPage() {
@@ -69,6 +70,9 @@ export default function AdminArticlesPage() {
                 <tr key={article.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3 text-gray-900 truncate max-w-xs">
                     {article.title}
+                    {article.hidden && (
+                      <span className="ml-2 px-1.5 py-0.5 bg-gray-200 text-gray-500 rounded text-xs align-middle">숨김</span>
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">

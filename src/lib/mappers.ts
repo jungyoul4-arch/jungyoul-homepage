@@ -13,6 +13,7 @@ type DbArticle = {
   date: string;
   slug: string;
   featured: boolean | null;
+  hidden?: boolean | null;
   examYear?: string | null;
   examGrade?: string | null;
   examSubject?: string | null;
@@ -29,6 +30,7 @@ type DbHtmlPage = {
   categoryLabel?: string | null;
   thumbnail?: string | null;
   date: string;
+  hidden?: boolean | null;
 };
 
 type DbUrlPage = {
@@ -40,6 +42,7 @@ type DbUrlPage = {
   externalUrl: string;
   thumbnail?: string | null;
   date: string;
+  hidden?: boolean | null;
 };
 
 type DbHighlight = {
@@ -48,6 +51,7 @@ type DbHighlight = {
   thumbnail: string | null;
   thumbnailOverlays?: string | null;
   slug: string;
+  linkUrl?: string | null;
 };
 
 type DbTeacher = {
@@ -80,6 +84,7 @@ export function toArticle(row: DbArticle): Article {
     date: row.date,
     slug: row.slug,
     featured: row.featured ?? false,
+    hidden: row.hidden ?? false,
     examYear: row.examYear ?? "",
     examGrade: row.examGrade ?? "",
     examSubject: row.examSubject ?? "",
@@ -101,6 +106,7 @@ export function toHtmlPageCard(row: DbHtmlPage): Article {
     date: row.date,
     slug: row.slug,
     kind: "html",
+    hidden: row.hidden ?? false,
   };
 }
 
@@ -120,6 +126,7 @@ export function toUrlPageCard(row: DbUrlPage): Article {
     slug: row.id,
     kind: "url",
     externalUrl: row.externalUrl,
+    hidden: row.hidden ?? false,
   };
 }
 
@@ -129,6 +136,7 @@ export function toHighlight(row: DbHighlight): Highlight {
     title: row.title,
     thumbnail: row.thumbnail ?? "",
     slug: row.slug,
+    linkUrl: row.linkUrl ?? "",
   };
 }
 

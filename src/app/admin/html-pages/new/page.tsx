@@ -18,6 +18,7 @@ export default function NewHtmlPage() {
     thumbnail: "",
     thumbnailOverlays: "",
     date: new Date().toISOString().slice(0, 10).replace(/-/g, "/"),
+    hidden: false,
   });
 
   function update(field: string, value: string) {
@@ -143,6 +144,16 @@ export default function NewHtmlPage() {
             onChange={updateThumbnail}
           />
         </div>
+
+        <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={form.hidden}
+            onChange={(e) => setForm((prev) => ({ ...prev, hidden: e.target.checked }))}
+            className="h-4 w-4 rounded border-gray-300"
+          />
+          메인·목록·카테고리 페이지에서 숨기기 (콘텐츠는 보존됩니다)
+        </label>
 
         <div className="flex gap-3 pt-2">
           <button

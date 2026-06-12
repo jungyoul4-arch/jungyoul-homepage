@@ -9,6 +9,7 @@ interface UrlPage {
   title: string;
   externalUrl: string;
   date: string;
+  hidden?: boolean;
 }
 
 export default function AdminUrlPagesPage() {
@@ -70,6 +71,9 @@ export default function AdminUrlPagesPage() {
                 <tr key={page.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3 text-gray-900 truncate max-w-xs">
                     {page.title}
+                    {page.hidden && (
+                      <span className="ml-2 px-1.5 py-0.5 bg-gray-200 text-gray-500 rounded text-xs align-middle">숨김</span>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-gray-500 truncate max-w-xs">{page.externalUrl}</td>
                   <td className="px-4 py-3 text-gray-500">{page.date}</td>

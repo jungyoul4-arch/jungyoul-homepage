@@ -103,18 +103,12 @@ export function HighlightsCarousel({ highlights }: HighlightsCarouselProps) {
             className="flex -mr-5 overflow-x-auto scrollbar-hide scroll-smooth"
             style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
           >
-            {highlights.map((item) => (
-              <div
-                key={item.id}
-                className="relative shrink-0 mr-5 w-[calc((100%+20px)/3-20px)] max-[670px]:w-[calc(100%-12px)] max-[670px]:mr-3"
-              >
-                <div className="absolute top-2 right-2 z-10">
-                  <AdminEditButton type="highlight" data={item} />
-                </div>
-                <Link
-                  href={`/highlights/${item.slug}`}
-                  className="group block"
-                >
+            {highlights.map((item) => {
+              // 연결 링크가 있으면 그 링크로, 없으면 기존 하이라이트 상세(/highlights/{slug})로 이동.
+              const href = item.linkUrl || `/highlights/${item.slug}`;
+              const isExternal = /^https?:\/\//i.test(href);
+              const inner = (
+                <>
                   {/* Image — 16:9, rounded-lg */}
                   <div className="relative aspect-video bg-gray-200 overflow-hidden rounded-lg">
                     <div
@@ -144,9 +138,28 @@ export function HighlightsCarousel({ highlights }: HighlightsCarouselProps) {
                   <p className="py-5 max-[670px]:py-3 text-[1.375rem] max-[670px]:text-base font-bold text-text-primary leading-7 tracking-[-0.041rem] truncate">
                     {item.title}
                   </p>
-                </Link>
-              </div>
-            ))}
+                </>
+              );
+              return (
+                <div
+                  key={item.id}
+                  className="relative shrink-0 mr-5 w-[calc((100%+20px)/3-20px)] max-[670px]:w-[calc(100%-12px)] max-[670px]:mr-3"
+                >
+                  <div className="absolute top-2 right-2 z-10">
+                    <AdminEditButton type="highlight" data={item} />
+                  </div>
+                  {isExternal ? (
+                    <a href={href} target="_blank" rel="noopener noreferrer" className="group block">
+                      {inner}
+                    </a>
+                  ) : (
+                    <Link href={href} className="group block">
+                      {inner}
+                    </Link>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>

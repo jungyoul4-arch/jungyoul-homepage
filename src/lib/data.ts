@@ -14,6 +14,8 @@ export interface Article {
   date: string;
   slug: string;
   featured?: boolean;
+  // 공개 피드(메인·목록·카테고리) 노출 제어. true 면 숨김. 어드민 카드 뱃지/필터에 사용.
+  hidden?: boolean;
   // /exam 전용 태그. category="exam" 이 아닌 글에서는 빈 문자열.
   examYear?: string;
   examGrade?: string;
@@ -37,6 +39,8 @@ export interface Highlight {
   title: string;
   thumbnail: string;
   slug: string;
+  // 카드 클릭 시 이동할 링크. 비우면 /highlights/{slug} 상세로 이동.
+  linkUrl?: string;
 }
 
 export interface Teacher {

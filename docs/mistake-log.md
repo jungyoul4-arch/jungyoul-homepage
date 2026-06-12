@@ -2,6 +2,18 @@
 
 기록 형식: 날짜 / 현상 / 원인 / 해결 / 교훈
 
+## 2026-06-12 — 정율사관 > 학원소식(/jstory) 404 근원 해소 — catch-all 리프 카테고리 자동 렌더
+- 현상: 어드민 `nav_menus` 에 정율사관(부모 `/jungyoul`) 자식으로 학원소식(href `/jstory`)을 추가하니 진입 시 404. 다른 정율사관 자식(선생님 `/teachers`·FAQ `/faq`·시험지분석 `/exam`·성장스토리 `/story`)은 모두 명시 라우트가 있어 정상
+- 원인: catch-all `(main)/[slug]/page.tsx` 의 `loadMenu` 가 부모(`parent_id IS NULL AND href=/{slug}`)만 인덱스로 렌더하고, 실패 시 `getDefaultParentBySlug` 폴백 → 없으면 `notFound()`. `/jstory` 는 (a) 명시 라우트도, (b) `?category=` 쿼리도, (c) 부모 메뉴도 아닌 "자식 전용 단일 세그먼트 slug" 라 어디에도 안 잡힘. 2026-05-11 (c) / 2026-05-20 과 **동일 결함의 4회째 재발** — 그간 "명시 라우트 신설 + sitemap + 폴백 정정"의 단발 처방만 반복
+- 해결 (근원적):
+  - `loadMenu` 에 **리프 카테고리 분기** — 부모 매칭 실패 시 `href=/{slug}` 인 자식 메뉴를 조회해, 있고 예약어가 아니면 그 slug 를 카테고리로 하는 기사·HTML·URL 목록을 `<ArticleList hideTabs>`(hidden=false)로 렌더. 글 0건이면 "준비 중" 안내(200, 404 아님)
+  - `src/lib/default-nav.ts` 에 `RESERVED_ROUTE_SLUGS`(명시 라우트 + 부모 인덱스 slug) + `extractLeafCategorySlug()` 도입. `mergeCategoryOptions`/`extractCategorySlugsFromHrefs`(→ `getCategoryOptions`/`getWritableCategorySlugs`)가 리프 path-slug 도 카테고리로 합류 → 어드민 글 작성 카테고리 드롭다운·저장 허용에 "학원소식" 자동 노출
+  - 이제 **어떤 부모의 자식이든 href 를 임의 새 slug 로 추가해도 404 안 남** — 명시 라우트·sitemap·폴백 동기화 불필요(전용 hero/필터가 필요할 때만 명시 라우트). `docs/categories.md` 갱신
+  - 검증: `src/lib/__tests__/default-nav.test.ts` 에 리프 카테고리 추출·합류·예약어 제외 케이스 추가(226 tests pass), typecheck 통과
+- 교훈:
+  - (1) **동일 결함이 3회 이상 단발 처방으로 재발하면 데이터 입력 실수가 아니라 라우팅 모델의 구조적 공백이다**. "어드민 자유 href ↔ 코드 명시 라우트" 결합을 매번 수동 동기화하는 대신 catch-all 이 미지의 자식 slug 를 카테고리로 흡수하게 일반화하니 동기화 절차 자체가 사라짐. 반복 회귀의 진짜 신호는 "절차를 더 잘 지키자"가 아니라 "절차를 없앨 구조로 바꾸자"
+  - (2) **catch-all 일반화 시 예약어(RESERVED) 화이트리스트로 명시 라우트·부모 인덱스 충돌을 차단**한다. 리프 카테고리를 무제한 허용하면 명시 라우트 slug 가 카테고리로 오인될 수 있어, 명시 라우트 폴더 추가 시 `RESERVED_ROUTE_SLUGS` 동시 등록을 룰로 박제(docs/categories.md)
+
 ## 2026-05-20 — /story 명시 라우트 신설로 성장스토리 자식 메뉴 404 회귀 해소
 - 현상: 헤더 "정율사관 → 성장스토리" 자식 메뉴 클릭 시 404. 운영 D1 의 `nav_menus` 자식 행은 `href=/story` 로 저장돼 있는데(backup-20260508.sql:122 기준), 코드에는 `/story` 명시 라우트가 없고 catch-all `(main)/[slug]/page.tsx` 도 `nav_menus` 부모 행(`parent_id IS NULL`) 만 인덱스 페이지로 렌더하므로 자식 href 는 부모로 매칭되지 않아 404 로 떨어짐. 2026-05-11 항목 (c) 에서 "DB 행 정정" 으로 단발 처방 제안만 남기고 코드 레벨 회귀는 미해결 상태로 침전
 - 원인: (1) 폴백(`src/lib/default-nav.ts`) 의 성장스토리 href 가 `/articles?category=success` 로 운영 D1 와 어긋나 있어 폴백 환경에서도 같은 자식 클릭이 articles 페이지로 흐르는 형태로 위장됨 → 회귀 표면화 지연. (2) 본 프로젝트의 "어드민 자유 입력 href + 명시 라우트는 코드" 분리 모델에서 어드민 href 입력에 대한 코드측 라우트 동기화 절차가 `docs/categories.md` 에 "기존 카테고리 재사용 + 별도 명시 라우트" 변형 케이스로 명문화돼 있지 않아, 한 번 누락되면 다음 PR 까지 부채로 남기 쉬움

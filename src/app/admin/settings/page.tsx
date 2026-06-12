@@ -8,12 +8,16 @@ export default function AdminSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [kakaoUrl, setKakaoUrl] = useState("");
+  const [kakaoSaving, setKakaoSaving] = useState(false);
+  const [kakaoMessage, setKakaoMessage] = useState("");
 
   useEffect(() => {
     fetch("/api/admin/settings")
       .then((res) => res.json())
       .then((data) => {
         setLogoUrl(data.logo_url ?? "");
+        setKakaoUrl(data.kakao_channel_url ?? "");
       })
       .catch((e) => {
         console.error("사이트 설정 로드 실패:", e);
@@ -46,6 +50,28 @@ export default function AdminSettingsPage() {
 
   function handleReset() {
     setLogoUrl("");
+  }
+
+  async function handleSaveKakao() {
+    setKakaoSaving(true);
+    setKakaoMessage("");
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: "kakao_channel_url", value: kakaoUrl }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setKakaoMessage(data.error || "저장에 실패했습니다.");
+        return;
+      }
+      setKakaoMessage("저장되었습니다.");
+    } catch {
+      setKakaoMessage("서버와 통신할 수 없습니다.");
+    } finally {
+      setKakaoSaving(false);
+    }
   }
 
   if (loading) {
@@ -108,6 +134,44 @@ export default function AdminSettingsPage() {
               기본값으로 초기화
             </button>
           )}
+        </div>
+      </div>
+
+      <div className="bg-white border border-gray-200 rounded-lg p-6 max-w-lg mt-6">
+        <h2 className="text-sm font-semibold text-gray-900 mb-1">
+          카카오톡 상담 채널
+        </h2>
+        <p className="text-xs text-gray-500 mb-4">
+          메인 사이트 우하단 &quot;카카오톡 상담&quot; 플로팅 버튼이 사용하는 채널 주소입니다.
+          비워두면 기본 채널로 표시됩니다.
+        </p>
+
+        <input
+          type="url"
+          value={kakaoUrl}
+          onChange={(e) => setKakaoUrl(e.target.value)}
+          placeholder="http://pf.kakao.com/_xiqxhxlxb"
+          className="w-full h-10 px-3 border border-gray-300 rounded-sm text-sm focus:outline-none focus:border-blue-600"
+        />
+
+        {kakaoMessage && (
+          <p
+            className={`text-sm mt-4 ${
+              kakaoMessage === "저장되었습니다." ? "text-green-600" : "text-red-600"
+            }`}
+          >
+            {kakaoMessage}
+          </p>
+        )}
+
+        <div className="flex gap-3 mt-6">
+          <button
+            onClick={handleSaveKakao}
+            disabled={kakaoSaving}
+            className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-sm hover:bg-blue-700 transition-colors disabled:opacity-50"
+          >
+            {kakaoSaving ? "저장 중..." : "저장"}
+          </button>
         </div>
       </div>
     </div>

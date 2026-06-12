@@ -62,12 +62,17 @@ describe("toArticle", () => {
 describe("toHighlight", () => {
   it("maps all fields", () => {
     const h = toHighlight({ id: "2", title: "하이라이트", thumbnail: "/img/h.jpg", slug: "highlight-xyz" });
-    expect(h).toEqual({ id: "2", title: "하이라이트", thumbnail: "/img/h.jpg", slug: "highlight-xyz" });
+    expect(h).toEqual({ id: "2", title: "하이라이트", thumbnail: "/img/h.jpg", slug: "highlight-xyz", linkUrl: "" });
   });
 
   it("falls back to empty string when thumbnail is null", () => {
     const h = toHighlight({ id: "3", title: "no thumb", thumbnail: null, slug: "no-thumb" });
     expect(h.thumbnail).toBe("");
+  });
+
+  it("preserves linkUrl(연결 링크) when present", () => {
+    const h = toHighlight({ id: "4", title: "연결", thumbnail: "", slug: "linked", linkUrl: "/articles/x" });
+    expect(h.linkUrl).toBe("/articles/x");
   });
 });
 

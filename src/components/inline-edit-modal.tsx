@@ -317,6 +317,15 @@ function ArticleForm({
           }}
         />
       </Field>
+      <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer select-none">
+        <input
+          type="checkbox"
+          checked={!!form.hidden}
+          onChange={(e) => update("hidden", e.target.checked)}
+          className="h-4 w-4 rounded border-gray-300"
+        />
+        메인·목록에서 숨기기
+      </label>
     </>
   );
 }
@@ -344,6 +353,15 @@ function HighlightForm({
           type="text"
           value={(form.slug as string) || ""}
           onChange={(e) => update("slug", e.target.value)}
+          className={inputClass}
+        />
+      </Field>
+      <Field label="연결 링크 (선택)">
+        <input
+          type="text"
+          value={(form.linkUrl as string) || ""}
+          onChange={(e) => update("linkUrl", e.target.value)}
+          placeholder="/articles/슬러그, /p/슬러그, https://…"
           className={inputClass}
         />
       </Field>

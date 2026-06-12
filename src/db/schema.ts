@@ -13,6 +13,8 @@ export const articles = sqliteTable("articles", {
   date: text("date").notNull(),
   slug: text("slug").unique().notNull(),
   featured: integer("featured", { mode: "boolean" }).default(false),
+  // 메인·목록·카테고리 페이지 노출 제어. true 면 공개 피드에서 숨김(콘텐츠 보존, 어드민에는 계속 표시).
+  hidden: integer("hidden", { mode: "boolean" }).default(false),
   // /exam 전용 태그 — category="exam" 일 때만 폼에 노출. 다른 카테고리에서는 빈 문자열로 남는 silent metadata.
   examYear: text("exam_year").default(""),
   examGrade: text("exam_grade").default(""),
@@ -31,6 +33,8 @@ export const highlights = sqliteTable("highlights", {
   thumbnail: text("thumbnail").default(""),
   thumbnailOverlays: text("thumbnail_overlays").default(""),
   slug: text("slug").unique().notNull(),
+  // 카드 클릭 시 이동할 링크(내부 /articles·/p 또는 외부 https). 비우면 /highlights/{slug} 상세로 이동.
+  linkUrl: text("link_url").default(""),
 });
 
 export const teachers = sqliteTable("teachers", {
@@ -67,6 +71,8 @@ export const htmlPages = sqliteTable(
     category: text("category").default(""),
     categoryLabel: text("category_label").default("페이지"),
     content: text("content").notNull(),                 // 원본 HTML 전체 (verbatim)
+    // 메인·목록·카테고리 페이지 노출 제어. true 면 공개 피드에서 숨김(어드민에는 계속 표시).
+    hidden: integer("hidden", { mode: "boolean" }).default(false),
     thumbnail: text("thumbnail").default(""),            // 카드 썸네일 (16:9)
     thumbnailOverlays: text("thumbnail_overlays").default(""),
     date: text("date").notNull(),                       // 피드 정렬/표시 (YYYY/MM/DD)
@@ -88,6 +94,8 @@ export const urlPages = sqliteTable(
     category: text("category").default(""),
     categoryLabel: text("category_label").default("링크"),
     externalUrl: text("external_url").notNull(),        // 카드 클릭 시 이동할 외부 URL (https?://)
+    // 메인·목록·카테고리 페이지 노출 제어. true 면 공개 피드에서 숨김(어드민에는 계속 표시).
+    hidden: integer("hidden", { mode: "boolean" }).default(false),
     thumbnail: text("thumbnail").default(""),           // 카드 썸네일
     thumbnailOverlays: text("thumbnail_overlays").default(""),
     date: text("date").notNull(),                       // 피드 정렬/표시 (YYYY/MM/DD)

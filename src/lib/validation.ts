@@ -122,12 +122,19 @@ export const insertHighlightSchema = createInsertSchema(highlights, {
   slug: (schema) => schema.max(200),
   thumbnail: (schema) => schema.max(500),
   thumbnailOverlays: (schema) => schema.max(OVERLAY_JSON_MAX),
+  // 카드 연결 링크 — / 상대경로 또는 http(s):// 만 허용(빈 값 허용). javascript:/data: 차단.
+  linkUrl: (schema) => schema.max(500).refine((v) => !v || /^\/|^https?:\/\//i.test(v), {
+    message: "링크는 /로 시작하는 상대경로 또는 http(s):// URL이어야 합니다.",
+  }),
 }).omit({ id: true });
 export const updateHighlightSchema = createUpdateSchema(highlights, {
   title: (schema) => schema.max(500),
   slug: (schema) => schema.max(200),
   thumbnail: (schema) => schema.max(500),
   thumbnailOverlays: (schema) => schema.max(OVERLAY_JSON_MAX),
+  linkUrl: (schema) => schema.max(500).refine((v) => v === undefined || v === "" || /^\/|^https?:\/\//i.test(v), {
+    message: "링크는 /로 시작하는 상대경로 또는 http(s):// URL이어야 합니다.",
+  }),
 }).omit({ id: true });
 
 // Teachers

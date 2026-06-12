@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import { ArticleList } from "@/components/article-list";
 import { getDb } from "@/db";
 import { articles as articlesTable, htmlPages as htmlPagesTable, urlPages as urlPagesTable } from "@/db/schema";
-import { desc, inArray } from "drizzle-orm";
+import { desc, inArray, eq, and } from "drizzle-orm";
 import { toArticle, toHtmlPageCard, toUrlPageCard } from "@/lib/mappers";
 import { renderJsonLd } from "@/lib/json-ld";
 import { SITE_URL } from "@/lib/site";
@@ -30,23 +30,27 @@ export default async function ArticlesPage() {
   const tabs = await getArticleCategoryTabs(db);
   const allowed = tabs.filter((t) => t.value !== "all").map((t) => t.value);
 
-  let query = db
-    .select()
-    .from(articlesTable)
-    .orderBy(desc(articlesTable.date));
+  // hidden=false 는 항상 적용, 카테고리 필터는 allowed 가 있을 때만 결합.
+  const articleConds = [eq(articlesTable.hidden, false)];
   if (allowed.length > 0) {
-    query = query.where(inArray(articlesTable.category, allowed)) as typeof query;
+    articleConds.push(inArray(articlesTable.category, allowed));
   }
   const [raw, rawHtml, rawUrl] = await Promise.all([
-    query,
+    db
+      .select()
+      .from(articlesTable)
+      .where(and(...articleConds))
+      .orderBy(desc(articlesTable.date)),
     db
       .select()
       .from(htmlPagesTable)
+      .where(eq(htmlPagesTable.hidden, false))
       .orderBy(desc(htmlPagesTable.date))
       .catch(() => [] as never[]),
     db
       .select()
       .from(urlPagesTable)
+      .where(eq(urlPagesTable.hidden, false))
       .orderBy(desc(urlPagesTable.date))
       .catch(() => [] as never[]),
   ]);

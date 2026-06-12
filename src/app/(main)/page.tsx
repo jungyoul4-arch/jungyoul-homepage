@@ -15,7 +15,7 @@ import {
   heroSlideItems as heroSlideItemsTable,
   pinnedArticles as pinnedArticlesTable,
 } from "@/db/schema";
-import { desc, asc } from "drizzle-orm";
+import { desc, asc, eq } from "drizzle-orm";
 import { toArticle, toHtmlPageCard, toUrlPageCard, toHighlight, toVideo, resolveSlides } from "@/lib/mappers";
 import { renderJsonLd } from "@/lib/json-ld";
 import { SITE_URL } from "@/lib/site";
@@ -25,9 +25,9 @@ export default async function Home() {
   const db = await getDb();
 
   const [rawArticles, rawHtmlPages, rawUrlPages, rawHighlights, rawVideos, rawSlides, rawSlideItems, rawPinned, categoryTabs] = await Promise.all([
-    db.select().from(articlesTable).orderBy(desc(articlesTable.date)),
-    db.select().from(htmlPagesTable).orderBy(desc(htmlPagesTable.date)).catch(() => [] as never[]),
-    db.select().from(urlPagesTable).orderBy(desc(urlPagesTable.date)).catch(() => [] as never[]),
+    db.select().from(articlesTable).where(eq(articlesTable.hidden, false)).orderBy(desc(articlesTable.date)),
+    db.select().from(htmlPagesTable).where(eq(htmlPagesTable.hidden, false)).orderBy(desc(htmlPagesTable.date)).catch(() => [] as never[]),
+    db.select().from(urlPagesTable).where(eq(urlPagesTable.hidden, false)).orderBy(desc(urlPagesTable.date)).catch(() => [] as never[]),
     db.select().from(highlightsTable),
     db.select().from(videosTable).orderBy(asc(videosTable.sortOrder)),
     db.select().from(heroSlidesTable).orderBy(asc(heroSlidesTable.sortOrder)),

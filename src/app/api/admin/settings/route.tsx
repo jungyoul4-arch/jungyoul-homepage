@@ -6,7 +6,7 @@ import { eq } from "drizzle-orm";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { ImageResponse } from "next/og";
 
-const ALLOWED_KEYS = ["logo_url"];
+const ALLOWED_KEYS = ["logo_url", "kakao_channel_url"];
 
 export async function GET(request: NextRequest) {
   const authError = await requireAdmin(request);
@@ -97,35 +97,58 @@ export async function PUT(request: NextRequest) {
       );
     }
 
+    // kakao_channel_url 은 http(s) 스킴만 허용(빈 값 = 삭제 허용).
+    if (key === "kakao_channel_url" && value && !/^https?:\/\//i.test(value)) {
+      return NextResponse.json(
+        { error: "http(s):// 로 시작하는 URL을 입력하세요." },
+        { status: 400 }
+      );
+    }
+
     const db = await getDb();
 
-    if (value === "" || value === null) {
-      // 로고 초기화: logo_url과 favicon_url 모두 삭제
-      await db.delete(siteSettings).where(eq(siteSettings.key, "logo_url"));
-      await db.delete(siteSettings).where(eq(siteSettings.key, "favicon_url"));
-    } else {
-      // logo_url 저장
-      await db
-        .insert(siteSettings)
-        .values({ key, value, updatedAt: new Date().toISOString() })
-        .onConflictDoUpdate({
-          target: siteSettings.key,
-          set: { value, updatedAt: new Date().toISOString() },
-        });
-
-      // 리사이징된 파비콘 생성 및 저장
-      const faviconUrl = await generateFavicon(value);
-      if (faviconUrl) {
+    if (key === "logo_url") {
+      if (value === "" || value === null) {
+        // 로고 초기화: logo_url과 favicon_url 모두 삭제
+        await db.delete(siteSettings).where(eq(siteSettings.key, "logo_url"));
+        await db.delete(siteSettings).where(eq(siteSettings.key, "favicon_url"));
+      } else {
+        // logo_url 저장
         await db
           .insert(siteSettings)
-          .values({
-            key: "favicon_url",
-            value: faviconUrl,
-            updatedAt: new Date().toISOString(),
-          })
+          .values({ key, value, updatedAt: new Date().toISOString() })
           .onConflictDoUpdate({
             target: siteSettings.key,
-            set: { value: faviconUrl, updatedAt: new Date().toISOString() },
+            set: { value, updatedAt: new Date().toISOString() },
+          });
+
+        // 리사이징된 파비콘 생성 및 저장
+        const faviconUrl = await generateFavicon(value);
+        if (faviconUrl) {
+          await db
+            .insert(siteSettings)
+            .values({
+              key: "favicon_url",
+              value: faviconUrl,
+              updatedAt: new Date().toISOString(),
+            })
+            .onConflictDoUpdate({
+              target: siteSettings.key,
+              set: { value: faviconUrl, updatedAt: new Date().toISOString() },
+            });
+        }
+      }
+    } else {
+      // 일반 설정 키(kakao_channel_url 등) — 단순 upsert, 빈 값이면 삭제.
+      if (value === "" || value === null) {
+        await db.delete(siteSettings).where(eq(siteSettings.key, key));
+      } else {
+        await db
+          .insert(siteSettings)
+          .values({ key, value, updatedAt: new Date().toISOString() })
+          .onConflictDoUpdate({
+            target: siteSettings.key,
+            set: { value, updatedAt: new Date().toISOString() },
           });
       }
     }

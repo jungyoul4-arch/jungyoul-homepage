@@ -24,9 +24,10 @@
 
 ### 부모 메뉴 라우팅 — catch-all 자동화
 - `src/app/(main)/[slug]/page.tsx` 가 catch-all 동적 라우트로 단일 세그먼트 경로를 받는다
-- `nav_menus` 에서 `parent_id IS NULL AND href = "/{slug}"` 행을 찾으면, 자식 행들을 `sortOrder asc` 로 가져와 HeroBanner + H1 + NavTabs + JSON-LD CollectionPage 를 자동 렌더
-- 명시 라우트(`/articles`, `/exam`, `/teachers`, `/faq`, `/about`, `/contact`, `/location`, `/privacy`, `/terms`, `/highlights/*`, `/admin/*`, `/api/*`)는 Next.js 우선순위에 의해 catch-all 보다 먼저 매칭 → 충돌 없음
-- 부모 행이 없으면 `notFound()` — 정상 404
+- **부모 인덱스**: `nav_menus` 에서 `parent_id IS NULL AND href = "/{slug}"` 행을 찾으면, 자식 행들을 `sortOrder asc` 로 가져와 H1 + NavTabs + JSON-LD CollectionPage 를 자동 렌더
+- **리프 카테고리 (2026-06-12 추가)**: 부모 매칭이 실패해도, `href = "/{slug}"` 인 **자식** 메뉴가 nav_menus 에 있고 slug 가 예약어(`RESERVED_ROUTE_SLUGS`)가 아니면, 그 slug 를 카테고리로 하는 기사·HTML·URL 목록을 `<ArticleList hideTabs>` 로 렌더(`hidden=false` 만). 예: 정율사관 > 학원소식(href `/jstory`) → `/jstory` 가 "학원소식" 카테고리 페이지. **어드민이 자식 href 를 임의 새 slug 로 넣어도 404 안 남** — 자식 카테고리 추가에 코드 0줄. 글은 어드민에서 카테고리 "학원소식"(jstory)로 작성하면 자동 노출됨
+- 명시 라우트(`/articles`, `/exam`, `/teachers`, `/faq`, `/about`, `/contact`, `/location`, `/privacy`, `/terms`, `/highlights/*`, `/admin/*`, `/api/*`)는 Next.js 우선순위에 의해 catch-all 보다 먼저 매칭 → 충돌 없음. 이 명시 slug 들은 `src/lib/default-nav.ts` 의 `RESERVED_ROUTE_SLUGS` 에도 등록되어 리프 카테고리로 오인되지 않는다. **새 명시 라우트(`src/app/(main)/<slug>`)를 추가하면 `RESERVED_ROUTE_SLUGS` 에도 반드시 등록**
+- 부모도 리프 카테고리도 아니면 `notFound()` — 정상 404
 - 로컬 dev/fresh-seed 폴백: catch-all 은 `src/lib/default-nav.ts` 의 `getDefaultParentBySlug(slug)` 를 호출한다. `DEFAULT_NAV`(교육정보·정율사관·선생님·FAQ·상담신청) 가 단일 소스이며 헤더(`header.tsx`/`header-server.tsx`)·sitemap(`sitemap.ts`)·`articles/page.tsx` 와 동일 폴백을 공유 → DB 가 비어도 `/jungyoul` 등 부모 라우트가 폴백으로 동작
 
 ## 새 카테고리 추가 절차
@@ -48,7 +49,7 @@
 
 1. 어드민 `/admin/nav-menus` 진입
 2. **상위 메뉴 추가** 클릭 → `label`(예: "모집안내"), `href`(예: `/admissions`) 입력 → 저장
-3. 자식 행을 차례로 추가 — 각 자식의 `href` 는 기존 명시 라우트(`/teachers`, `/faq` 등) 또는 카테고리 쿼리(`/articles?category=X`) 또는 다른 부모 라우트(`/<slug>`)
+3. 자식 행을 차례로 추가 — 각 자식의 `href` 는 (a) 기존 명시 라우트(`/teachers`, `/faq` 등), (b) 카테고리 쿼리(`/articles?category=X`), (c) 다른 부모 라우트(`/<slug>`), 또는 (d) **임의 새 slug(`/jstory` 등) — catch-all 이 자동으로 "리프 카테고리" 콘텐츠 페이지로 렌더**(위 catch-all 자동화의 "리프 카테고리" 참조). (d)의 경우 어드민 글 작성 카테고리 드롭다운에도 자동 노출되어, 그 카테고리로 글을 쓰면 해당 페이지에 모인다
 4. 즉시 헤더에 새 부모 탭이 노출되고, `/admissions` 클릭 시 catch-all 이 자동 인덱스 페이지 렌더 (HeroBanner + H1 "모집안내" + 자식 탭 + JSON-LD)
 
 → 새 라우트 page.tsx 생성, sitemap 등록, Category enum 변경 모두 **불필요**. 운영 D1 의 `nav_menus` 데이터만 변경.
@@ -69,7 +70,9 @@
 #### 변형 시나리오 — 기존 카테고리 재사용 + 별도 명시 라우트
 > **참고**: 본 사이트의 `/story` 예시는 2026-05-20(`decabc5`)에 이 변형으로 우선 출시됐다가, 후속 운영 결정으로 신규 카테고리 `growth` 가 도입되며 폐기됐다(`success` 와 `growth` 공존). 변형 패턴 자체는 다른 케이스에서 재사용 가능하므로 절차는 보존.
 
-"카테고리 = 라우트" 1:1 가정이 깨지는 경우. 이미 존재하는 `articles.category` 값을 새 URL 슬러그로도 노출해야 할 때 사용. 어드민이 자식 메뉴 href 를 `/articles?category=...` 가 아닌 새 슬러그로 입력한 시점에서 코드 라우트 동기화가 누락되면 자식 메뉴 404 가 발생함 (mistake-log 2026-05-11 (c) / 2026-05-20 — 동일 결함이 3 회 재발).
+"카테고리 = 라우트" 1:1 가정이 깨지는 경우. 이미 존재하는 `articles.category` 값을 새 URL 슬러그로도 노출해야 할 때 사용.
+
+> **2026-06-12 업데이트**: catch-all 이 리프 카테고리를 자동 렌더하게 되어, **단순 카테고리 목록만 필요하면 명시 라우트 생성이 불필요**하다(기본 시나리오 (d)). 아래 절차는 **별도 hero 이미지·태그 필터 등 전용 UI 가 필요한 경우에만** 적용한다. 과거 "자식 href 를 새 슬러그로 입력 → 코드 라우트 동기화 누락 → 404"(mistake-log 2026-05-11 (c) / 2026-05-20, 3회 재발) 결함은 catch-all 리프 카테고리 처리로 근원 해소됨.
 
 1. 카테고리 enum 추가는 **하지 않음** (기존 값 재사용)
 2. `/articles` · 홈 탭 노출 분기 변경 **불필요** (기존 카테고리 그대로)
